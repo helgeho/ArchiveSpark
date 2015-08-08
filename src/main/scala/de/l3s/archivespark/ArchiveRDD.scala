@@ -10,7 +10,7 @@ abstract class ArchiveRDD(parent: RDD[CdxRecord]) extends RDD[ArchiveRecord](par
   protected abstract def record(from: CdxRecord): ArchiveRecord
 
   override def compute(split: Partition, context: TaskContext): Iterator[ArchiveRecord] = {
-    firstParent[CdxRecord].iterator(split, context).map(r => record(r)).filter(r => r != null)
+    firstParent[CdxRecord].iterator(split, context).map(r => record(r))
   }
 
   override protected def getPartitions: Array[Partition] = firstParent.partitions

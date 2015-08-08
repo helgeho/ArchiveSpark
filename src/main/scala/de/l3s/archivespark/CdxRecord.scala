@@ -10,7 +10,7 @@ object CdxRecord {
       case pattern(url, timeStr, fullUrl, mimeType, statusStr, checksum, redirectUrl, meta, sizeStr, offsetStr, filename) =>
         try {
           val time = DateTimeFormat.forPattern("yyyyMMddkkmmss").parseDateTime(timeStr)
-          CdxRecord(url, time, fullUrl, mimeType, statusStr.toInt, checksum, redirectUrl, meta, sizeStr.toLong, offsetStr.toLong, filename)
+          CdxRecord(url, time, fullUrl, mimeType, statusStr.toInt, checksum, redirectUrl, meta, new LocationInfo(sizeStr.toLong, offsetStr.toLong, filename))
         } catch {
           case e: Exception => null // skip, malformed
         }
@@ -22,14 +22,12 @@ object CdxRecord {
 /**
  * Created by holzmann on 04.08.2015.
  */
-case class CdxRecord(url: String,
-                     time: DateTime,
-                     fullUrl: String,
-                     mimeType: String,
+case class CdxRecord(surtUrl: String,
+                     timestamp: DateTime,
+                     originalUrl: String,
+                     mime: String,
                      status: Int,
-                     checksum: String,
+                     digest: String,
                      redirectUrl: String,
                      meta: String,
-                     size: Long,
-                     offset: Long,
-                     filename: String)
+                     location: LocationInfo)

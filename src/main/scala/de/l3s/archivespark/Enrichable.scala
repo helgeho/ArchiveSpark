@@ -1,14 +1,32 @@
 package de.l3s.archivespark
 
+import de.l3s.archivespark.enrich.EnrichFunc
+
 /**
  * Created by holzmann on 04.08.2015.
  */
-trait Enrichable[T, Field <: Enrichable[_, Field]] {
-  abstract def value: T
+trait Enrichable[T, This <: Enrichable[_, _, Children], Children <: Enrichable[_, _, Children]] {
+  def get: T
 
-  val enrichments = Map[String, Field]()
+  private var _enrichments = Map[String, Children]()
+  def enrichments = _enrichments
 
-  def get[D](key: String): Enrichable[D, Field] = enrichments(key).asInstanceOf[Enrichable[D, Field]]
+  def get[D](key: String): Enrichable[D, _, Children] = enrichments(key).asInstanceOf[Enrichable[D, Children]]
 
-  //def enrich
+  protected def enrich(f: EnrichFunc[_, _, _], path: Seq[String]): This = {
+    if (path.isEmpty) return enrichThis(f.asInstanceOf[EnrichFunc[_, This, Children]])
+    val field = f.source.head
+    val enriched = get(field).enrich(f, f.source.tail).asInstanceOf[Children]
+    val clone = this.clone().asInstanceOf[This]
+    clone._enrichments ++= Map(field -> enriched)
+    clone
+  }
+
+  private def enrichThis(f: EnrichFunc[_, This, Children]): This = {
+    val clone = this.clone().asInstanceOf[This]
+    clone._enrichments ++= f.derive(this.asInstanceOf[This])
+    clone
+  }
+
+  def toJson: String
 }
