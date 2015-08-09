@@ -11,14 +11,13 @@ object ResolvableRDD {
       val pairedFileMapping = fileMapping.map { r =>
         val split = r.split("\\s+")
         (split(0), split(1))
-      }
-
-      def findLatestCapture(x: Record, y: Record): Record = {
-        if (x.cdx.timestamp <= y.cdx.timestamp) y else x
-      }
+      }.reduceByKey { (r1, r2) => r1 }
 
       val revisitMime = "warc/revisit"
-      val originalPaired = original.filter(r => r.cdx.mime != revisitMime).map(r => (r.cdx.digest, r)).reduceByKey(findLatestCapture)
+      val originalPaired = original.filter(r => r.cdx.mime != revisitMime).map(r => (r.cdx.digest, r)).reduceByKey { (r1, r2) =>
+        if (r1.cdx.timestamp.compareTo(r2.cdx.timestamp) >= 0) r1 else r2
+      }
+
       val (responses, revisits) = (rdd.filter(r => r.cdx.mime != revisitMime), rdd.filter(r => r.cdx.mime == revisitMime))
       val joined = revisits.map(r => (r.cdx.digest, r)).join(originalPaired).map(t => t._2)
 
