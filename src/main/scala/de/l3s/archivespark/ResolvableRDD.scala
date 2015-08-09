@@ -13,8 +13,12 @@ object ResolvableRDD {
         (split(0), split(1))
       }
 
+      def findLatestCapture(x: Record, y: Record): Record = {
+        if (x.cdx.timestamp <= y.cdx.timestamp) y else x
+      }
+
       val revisitMime = "warc/revisit"
-      val originalPaired = original.filter(r => r.cdx.mime != revisitMime).map(r => (r.cdx.digest, r))
+      val originalPaired = original.filter(r => r.cdx.mime != revisitMime).map(r => (r.cdx.digest, r)).reduceByKey(findLatestCapture)
       val (responses, revisits) = (rdd.filter(r => r.cdx.mime != revisitMime), rdd.filter(r => r.cdx.mime == revisitMime))
       val joined = revisits.map(r => (r.cdx.digest, r)).join(originalPaired).map(t => t._2)
 
