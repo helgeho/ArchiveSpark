@@ -1,9 +1,13 @@
 package de.l3s.archivespark.enrich
 
-import java.io.ByteArrayOutputStream
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream, InputStream}
 
 import de.l3s.archivespark.{ArchiveRecordField, ResolvedArchiveRecord}
+import org.apache.commons.io.IOUtils
+import org.archive.format.http.{HttpHeader, HttpResponseParser}
 import org.archive.io.ArchiveReaderFactory
+
+import scala.collection.mutable
 
 /**
  * Created by holzmann on 05.08.2015.
@@ -15,16 +19,39 @@ object Response extends EnrichFunc[ResolvedArchiveRecord, ResolvedArchiveRecord,
     source.access { case (fileName, stream) =>
       val reader = ArchiveReaderFactory.get(fileName, stream, false)
       val record = reader.get
-      var header = record.getHeader
-      val recordOutput: ByteArrayOutputStream = new ByteArrayOutputStream
-      record.dump(recordOutput)
-      recordOutput.close()
-      // TODO: finish this
-      Map(
-        "warcHeader" -> new ArchiveRecordField(header.getHeaderFields),
-        "httpHeader" -> new ArchiveRecordField(null),
-        "payload" -> new ArchiveRecordField(null)
-      )
+      val header = record.getHeader
+
+      var recordOutput: ByteArrayOutputStream = null
+      try {
+        recordOutput = new ByteArrayOutputStream
+        record.dump(recordOutput)
+      } finally {
+        if (recordOutput != null) recordOutput.close()
+      }
+
+      var httpResponse: InputStream = null
+      try {
+        httpResponse = new ByteArrayInputStream(recordOutput.toByteArray)
+
+        val parser = new HttpResponseParser
+        val response = parser.parse(httpResponse)
+        val httpHeaders = response.getHeaders
+
+        val httpHeadersMap = mutable.Map[String, String]()
+        for (httpHeader: HttpHeader <- httpHeaders) {
+          httpHeadersMap.put(httpHeader.getName, httpHeader.getValue)
+        }
+
+        val payload = IOUtils.toByteArray(httpResponse)
+
+        Map(
+          "warcHeader" -> ArchiveRecordField(header.getHeaderFields),
+          "httpHeader" -> ArchiveRecordField(httpHeadersMap),
+          "payload" -> ArchiveRecordField(null)
+        )
+      } finally {
+        if (httpResponse != null) httpResponse.close()
+      }
     }
   }
 }
