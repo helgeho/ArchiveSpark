@@ -30,4 +30,15 @@ case class CdxRecord(surtUrl: String,
                      digest: String,
                      redirectUrl: String,
                      meta: String,
-                     location: LocationInfo)
+                     location: LocationInfo) {
+  def toJson: Map[String, Any] = Map[String, Any](
+    "surtUrl" -> surtUrl,
+    "timestamp" -> timestamp.toString,
+    "originalUrl" -> originalUrl,
+    "mime" -> mime,
+    "status" -> status.toString,
+    "digest" -> digest,
+    "redirectUrl" -> redirectUrl,
+    "meta" -> meta
+  )
+}

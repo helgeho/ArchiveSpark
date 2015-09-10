@@ -15,7 +15,8 @@ lazy val archivespark = (project in file(".")).
       "org.apache.spark" %% "spark-core" % "1.4.1",
       "org.apache.hadoop" % "hadoop-client" % "2.5.0",
       "com.github.nscala-time" %% "nscala-time" % "2.0.0",
-      "org.netpreserve.commons" % "webarchive-commons" % "1.1.5"
+      "org.netpreserve.commons" % "webarchive-commons" % "1.1.5",
+      "org.json4s" %% "json4s-native" % "3.2.11"
     ),
     resolvers ++= Seq(
       "cloudera" at "https://repository.cloudera.com/artifactory/cloudera-repos",

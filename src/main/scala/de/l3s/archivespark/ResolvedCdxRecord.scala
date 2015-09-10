@@ -13,4 +13,14 @@ class ResolvedCdxRecord(original: CdxRecord, locationPath: String, val parentRec
   def redirectUrl = original.redirectUrl
   def meta = original.meta
   val location = new LocationInfo(original.location.compressedSize, original.location.offset, original.location.filename, locationPath)
+
+  def toJson: Map[String, Any] = {
+    if (parentRecord != null) {
+      parentRecord.toJson ++ Map[String, Any](
+        "original" -> original.toJson
+      )
+    } else {
+      original.toJson
+    }
+  }
 }

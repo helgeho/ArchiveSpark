@@ -12,6 +12,6 @@ object HdfsArchiveRDD {
 /**
  * Created by holzmann on 04.08.2015.
  */
-class HdfsArchiveRDD private (val warcPath: String, parent: RDD[CdxRecord])(implicit sc: SparkContext) extends ArchiveRDD(parent) {
-  override protected def record(record: CdxRecord): ArchiveRecord = new HdfsArchiveRecord(this, record)
+class HdfsArchiveRDD private (val warcPath: String, parent: RDD[CdxRecord])(implicit sc: SparkContext) extends ResolvedArchiveRDD(parent) {
+  override protected def record(record: CdxRecord): ResolvedArchiveRecord = new HdfsArchiveRecord(this, record).resolve(null)
 }

@@ -28,5 +28,5 @@ trait Enrichable[T, This <: Enrichable[_, _, Children], Children <: Enrichable[_
     clone
   }
 
-  def toJson: String
+  def toJson: Map[String, Any]
 }
