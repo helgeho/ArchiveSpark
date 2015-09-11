@@ -2,20 +2,21 @@ package de.l3s.archivespark.enrich
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, InputStream}
 
-import de.l3s.archivespark.{ArchiveRecordField, ResolvedArchiveRecord}
+import de.l3s.archivespark.{ArchiveRecordField, Enrichable, ResolvedArchiveRecord}
 import org.apache.commons.io.IOUtils
 import org.archive.format.http.{HttpHeader, HttpResponseParser}
 import org.archive.io.ArchiveReaderFactory
 
+import scala.collection.JavaConverters._
 import scala.collection.mutable
 
 /**
  * Created by holzmann on 05.08.2015.
  */
-object Response extends EnrichFunc[ResolvedArchiveRecord, ResolvedArchiveRecord, ArchiveRecordField] {
+object Response extends EnrichFunc[ResolvedArchiveRecord, ResolvedArchiveRecord] {
   override def source: Seq[String] = Seq()
 
-  override def derive(source: ResolvedArchiveRecord): Map[String, ArchiveRecordField[_]] = {
+  override def derive(source: ResolvedArchiveRecord): Map[String, Enrichable[_, _]] = {
     source.access { case (fileName, stream) =>
       val reader = ArchiveReaderFactory.get(fileName, stream, false)
       val record = reader.get
@@ -38,7 +39,7 @@ object Response extends EnrichFunc[ResolvedArchiveRecord, ResolvedArchiveRecord,
         val httpHeaders = response.getHeaders
 
         val httpHeadersMap = mutable.Map[String, String]()
-        for (httpHeader: HttpHeader <- httpHeaders) {
+        for (httpHeader: HttpHeader <- httpHeaders.iterator().asScala) {
           httpHeadersMap.put(httpHeader.getName, httpHeader.getValue)
         }
 

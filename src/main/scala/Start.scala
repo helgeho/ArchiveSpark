@@ -14,8 +14,9 @@ object Start {
     val conf = new SparkConf().setAppName(appName).setMaster(master)
     implicit val sc = new SparkContext(conf)
 
-    val rdd = ArchiveSpark.hdfs("/data/ia/derivatives/de/cdx/*/*.cdx", "/data/ia/w/de")
-    val filteredRdd = rdd.filter(r => r.get.originalUrl == "...")
+//    val rdd = ArchiveSpark.hdfs("/data/ia/derivatives/de/cdx/*/*.cdx", "/data/ia/w/de")
+    val rdd = ArchiveSpark.hdfs("/data/ia/derivatives/de/cdx/TA/TA-100000-000000.arc.cdx", "/data/ia/w/de")
+    val filteredRdd = rdd.filter(r => r.get.surtUrl.startsWith("de,entspannungs-shop"))
     filteredRdd.enrich(Response)
 
     filteredRdd.saveAsTextFile("out.json")
