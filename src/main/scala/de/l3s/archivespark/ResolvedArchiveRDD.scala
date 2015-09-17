@@ -6,12 +6,12 @@ import org.apache.spark.{Partition, TaskContext}
 /**
  * Created by holzmann on 04.08.2015.
  */
-abstract class ResolvedArchiveRDD(parent: RDD[CdxRecord]) extends RDD[ResolvedArchiveRecord](parent) {
-  protected def record(from: CdxRecord): ResolvedArchiveRecord
+abstract class ResolvedArchiveRDD[Base](parent: RDD[Base]) extends RDD[ResolvedArchiveRecord](parent) {
+  protected def record(from: Base): ResolvedArchiveRecord
 
   override def compute(split: Partition, context: TaskContext): Iterator[ResolvedArchiveRecord] = {
-    firstParent[CdxRecord].iterator(split, context).map(r => record(r)).filter(r => r != null)
+    parent.iterator(split, context).filter(r => r != null).map(r => record(r)).filter(r => r != null)
   }
 
-  override protected def getPartitions: Array[Partition] = firstParent.partitions
+  override protected def getPartitions: Array[Partition] = parent.partitions
 }

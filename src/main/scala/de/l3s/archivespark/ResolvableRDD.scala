@@ -10,6 +10,8 @@ import scala.reflect.ClassTag
  */
 object ResolvableRDD {
   implicit class ResolvableRDD[Record <: ArchiveRecord : ClassTag](rdd: RDD[Record]) {
+    def resolve(cdx: ResolvedCdxRecord) = rdd.map(r => r.resolve(cdx))
+
     def resolve(original: RDD[Record], fileMapping: RDD[String]): RDD[ResolvedArchiveRecord] = {
       val pairedFileMapping = fileMapping.map { r =>
         val split = r.split("\\s+")
@@ -37,7 +39,7 @@ object ResolvableRDD {
         val parent = t._2._1
         val parentLocation = t._2._2
 
-        val parentCdx = CdxRecord(
+        val parentCdx = new CdxRecord(
           parent.surtUrl,
           parent.timestamp,
           parent.originalUrl,

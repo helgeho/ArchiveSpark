@@ -6,12 +6,12 @@ import org.apache.spark.rdd.RDD
 /**
  * Created by holzmann on 04.08.2015.
  */
-abstract class ArchiveRDD(parent: RDD[CdxRecord]) extends RDD[ArchiveRecord](parent) {
-  protected def record(from: CdxRecord): ArchiveRecord
+abstract class ArchiveRDD[Base](parent: RDD[Base]) extends RDD[ArchiveRecord](parent) {
+  protected def record(from: Base): ArchiveRecord
 
   override def compute(split: Partition, context: TaskContext): Iterator[ArchiveRecord] = {
-    firstParent[CdxRecord].iterator(split, context).map(r => record(r))
+    parent.iterator(split, context).filter(r => r != null).map(r => record(r)).filter(r => r != null)
   }
 
-  override protected def getPartitions: Array[Partition] = firstParent.partitions
+  override protected def getPartitions: Array[Partition] = parent.partitions
 }

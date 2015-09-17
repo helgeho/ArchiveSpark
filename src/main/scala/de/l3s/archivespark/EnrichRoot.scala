@@ -8,7 +8,7 @@ import de.l3s.archivespark.enrich.EnrichFunc
 trait EnrichRoot[T, This <: EnrichRoot[T, This]] extends Enrichable[T, This] {
   def enrich(f: EnrichFunc[This, _]): This = {
     val root = this.asInstanceOf[This]
-    if (!f.checkExistence(root)) enrich(f, f.source)
+    if (!f.exists(root)) enrich(f, f.source)
     else root
   }
 }

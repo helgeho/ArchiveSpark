@@ -7,10 +7,10 @@ import de.l3s.archivespark.utils.Json._
  */
 class ArchiveRecordField[T] private (val get: T) extends Enrichable[T, ArchiveRecordField[T]] {
   override def toJson: Map[String, Any] = Map[String, Any](
-      null.asInstanceOf[String] -> this.get
+      null.asInstanceOf[String] -> json(this.get)
     ) ++ enrichments.map{ case (name, field) => (name, mapToAny(field.toJson)) }
 
-  override def copy(): Any = clone()
+  override def copy(): ArchiveRecordField[T] = clone().asInstanceOf[ArchiveRecordField[T]]
 }
 
 object ArchiveRecordField {

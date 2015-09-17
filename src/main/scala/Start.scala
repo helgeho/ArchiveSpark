@@ -1,7 +1,9 @@
-import de.l3s.archivespark.ArchiveSpark
+import de.l3s.archivespark.enrich.functions.Response
+import de.l3s.archivespark.{Implicits, ArchiveSpark}
 import de.l3s.archivespark.EnrichableRDD._
-import de.l3s.archivespark.enrich.Response
+import Implicits._
 import org.apache.spark.{SparkConf, SparkContext}
+import de.l3s.archivespark.JsonConvertibleRDD._
 
 /**
  * Created by holzmann on 04.08.2015.
@@ -14,11 +16,10 @@ object Start {
     val conf = new SparkConf().setAppName(appName).setMaster(master)
     implicit val sc = new SparkContext(conf)
 
-//    val rdd = ArchiveSpark.hdfs("/data/ia/derivatives/de/cdx/*/*.cdx", "/data/ia/w/de")
-    val rdd = ArchiveSpark.hdfs("/data/ia/derivatives/de/cdx/TA/TA-100000-000000.arc.cdx", "/data/ia/w/de")
-    val filteredRdd = rdd.filter(r => r.get.surtUrl.startsWith("de,entspannungs-shop"))
-    filteredRdd.enrich(Response)
+    val rdd = ArchiveSpark.hdfs("/data/ia/derivatives/de/cdx_orig_WILL_BE_REMOVED/TA/TA-100000-000000.arc.cdx", "/data/ia/w/de")
+    val filteredRdd = rdd.filter(r => r.surtUrl.startsWith("de,entspannungs-shop"))
+    val enriched = filteredRdd.enrich(Response)
 
-    filteredRdd.saveAsTextFile("out.json")
+    enriched.saveAsJson("out.json")
   }
 }

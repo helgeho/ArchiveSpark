@@ -5,13 +5,13 @@ import org.apache.spark.rdd.RDD
 
 object HdfsArchiveRDD {
   def apply(cdxPath: String, warcPath: String)(implicit sc: SparkContext): HdfsArchiveRDD = {
-    new HdfsArchiveRDD(warcPath, sc.textFile(cdxPath).map(str => CdxRecord.fromString(str)))
+    new HdfsArchiveRDD(warcPath, ArchiveSpark.resolvedCdxWithPath(cdxPath, warcPath))
   }
 }
 
-/**
- * Created by holzmann on 04.08.2015.
- */
-class HdfsArchiveRDD private (val warcPath: String, parent: RDD[CdxRecord])(implicit sc: SparkContext) extends ResolvedArchiveRDD(parent) {
-  override protected def record(record: CdxRecord): ResolvedArchiveRecord = new HdfsArchiveRecord(this, record).resolve(null)
+class HdfsArchiveRDD private (val warcPath: String, parent: RDD[(String, ResolvedCdxRecord)]) extends ResolvedArchiveRDD[(String, ResolvedCdxRecord)](parent) {
+  override protected def record(cdxWithPath: (String, ResolvedCdxRecord)) = {
+    val (path, cdx) = cdxWithPath
+    new ResolvedHdfsArchiveRecord(cdx, path)
+  }
 }
