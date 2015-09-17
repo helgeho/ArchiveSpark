@@ -1,7 +1,5 @@
 package de.l3s.archivespark.enrich
 
-import de.l3s.archivespark.{EnrichRoot, Enrichable}
-
 /**
  * Created by holzmann on 07.08.2015.
  */

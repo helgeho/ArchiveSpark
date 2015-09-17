@@ -1,4 +1,4 @@
-package de.l3s.archivespark
+package de.l3s.archivespark.utils
 
 import de.l3s.archivespark.utils.Json._
 

@@ -1,6 +1,5 @@
 package de.l3s.archivespark.utils
 
-import de.l3s.archivespark.JsonConvertible
 import org.json4s.DefaultFormats
 import org.json4s.native.JsonMethods._
 import org.json4s.native.Serialization._

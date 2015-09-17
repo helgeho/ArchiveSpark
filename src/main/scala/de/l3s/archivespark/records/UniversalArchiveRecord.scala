@@ -1,4 +1,7 @@
-package de.l3s.archivespark
+package de.l3s.archivespark.records
+
+import de.l3s.archivespark.cdx.{CdxRecord, ResolvedCdxRecord}
+import de.l3s.archivespark.{ArchiveRecord, ResolvedArchiveRecord}
 
 /**
  * Created by holzmann on 07.08.2015.

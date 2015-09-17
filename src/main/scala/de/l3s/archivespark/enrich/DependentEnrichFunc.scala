@@ -1,7 +1,5 @@
 package de.l3s.archivespark.enrich
 
-import de.l3s.archivespark.{Enrichable, EnrichRoot}
-
 /**
  * Created by holzmann on 05.08.2015.
  */
@@ -14,8 +12,13 @@ trait DependentEnrichFunc[Root <: EnrichRoot[_, Root], Source <: Enrichable[_, S
 
   def on(dependency: EnrichFunc[Root, _]): DependentEnrichFunc[Root, Source] = new PipedEnrichFunc[Root, Source](this, dependency)
 
+  override def enrich(root: Root): Root = {
+    val rootWithDependency = if (dependency.exists(root)) root else dependency.enrich(root)
+    super.enrich(rootWithDependency)
+  }
+
   override def exists(root: Root): Boolean = {
-    if (!dependency.exists(root)) { root.enrich(dependency); false }
+    if (!dependency.exists(root)) false
     else super.exists(root)
   }
 }

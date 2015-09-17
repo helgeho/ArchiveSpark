@@ -1,5 +1,7 @@
 package de.l3s.archivespark
 
+import de.l3s.archivespark.cdx.{CdxRecord, ResolvedCdxRecord}
+import de.l3s.archivespark.rdd.{UniversalArchiveRDD, HdfsArchiveRDD}
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 

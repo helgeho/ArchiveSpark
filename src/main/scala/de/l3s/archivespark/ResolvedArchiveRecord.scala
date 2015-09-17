@@ -2,6 +2,8 @@ package de.l3s.archivespark
 
 import java.io.InputStream
 
+import de.l3s.archivespark.cdx.ResolvedCdxRecord
+import de.l3s.archivespark.enrich.EnrichRoot
 import de.l3s.archivespark.utils.Json._
 
 /**

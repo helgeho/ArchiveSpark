@@ -1,7 +1,7 @@
 package de.l3s.archivespark
 
-import org.apache.spark.{TaskContext, Partition}
 import org.apache.spark.rdd.RDD
+import org.apache.spark.{Partition, TaskContext}
 
 /**
  * Created by holzmann on 04.08.2015.

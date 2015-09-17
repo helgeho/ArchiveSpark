@@ -1,5 +1,6 @@
 package de.l3s.archivespark
 
+import de.l3s.archivespark.enrich.Enrichable
 import de.l3s.archivespark.utils.Json._
 
 /**

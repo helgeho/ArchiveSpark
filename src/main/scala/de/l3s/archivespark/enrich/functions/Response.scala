@@ -2,8 +2,8 @@ package de.l3s.archivespark.enrich.functions
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, InputStream}
 
-import de.l3s.archivespark.enrich.{Derivatives, EnrichFunc}
-import de.l3s.archivespark.{ArchiveRecordField, Enrichable, ResolvedArchiveRecord}
+import de.l3s.archivespark.enrich.{Enrichable, Derivatives, EnrichFunc}
+import de.l3s.archivespark.{ArchiveRecordField, ResolvedArchiveRecord}
 import org.apache.commons.io.IOUtils
 import org.archive.format.http.{HttpHeader, HttpResponseParser}
 import org.archive.io.ArchiveReaderFactory

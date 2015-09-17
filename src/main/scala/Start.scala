@@ -1,9 +1,7 @@
-import de.l3s.archivespark.enrich.functions.Response
-import de.l3s.archivespark.{Implicits, ArchiveSpark}
-import de.l3s.archivespark.EnrichableRDD._
-import Implicits._
-import org.apache.spark.{SparkConf, SparkContext}
-import de.l3s.archivespark.JsonConvertibleRDD._
+import de.l3s.archivespark.ArchiveSpark
+import de.l3s.archivespark.enrich.functions._
+import de.l3s.archivespark.implicits._
+import org.apache.spark._
 
 /**
  * Created by holzmann on 04.08.2015.
