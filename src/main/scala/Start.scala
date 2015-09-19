@@ -16,7 +16,7 @@ object Start {
 
     val rdd = ArchiveSpark.hdfs("/data/ia/derivatives/de/cdx_orig_WILL_BE_REMOVED/TA/TA-100000-000000.arc.cdx", "/data/ia/w/de")
     val filteredRdd = rdd.filter(r => r.surtUrl.startsWith("de,entspannungs-shop"))
-    val enriched = filteredRdd.enrich(Response)
+    val enriched = filteredRdd.enrich(StringContent)
 
     enriched.saveAsJson("out.json")
   }

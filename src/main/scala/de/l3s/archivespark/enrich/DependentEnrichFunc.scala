@@ -12,9 +12,9 @@ trait DependentEnrichFunc[Root <: EnrichRoot[_, Root], Source <: Enrichable[_, S
 
   def on(dependency: EnrichFunc[Root, _]): DependentEnrichFunc[Root, Source] = new PipedEnrichFunc[Root, Source](this, dependency)
 
-  override def enrich(root: Root): Root = {
-    val rootWithDependency = if (dependency.exists(root)) root else dependency.enrich(root)
-    super.enrich(rootWithDependency)
+  override private[enrich] def enrich(root: Root, excludeFromOutput: Boolean): Root = {
+    val rootWithDependency = if (dependency.exists(root)) root else dependency.enrich(root, excludeFromOutput = true)
+    super.enrich(rootWithDependency, excludeFromOutput)
   }
 
   override def exists(root: Root): Boolean = {

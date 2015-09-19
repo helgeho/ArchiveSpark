@@ -16,6 +16,7 @@ object Json extends Serializable {
   def jsonToMap(json: String): Map[String, Any] = parse(json).extract[Map[String, Any]]
 
   def mapToAny(map: Map[String, Any]): Any = {
+    if (map.isEmpty) return null
     if (map.size == 1 && map.keys.head == null) map.values.head
     else map.map{ case (key, value) => if (key == null) (SingleValueKey, value) else (key, value) }
   }

@@ -8,7 +8,19 @@ import scala.reflect.ClassTag
  * Created by holzmann on 04.08.2015.
  */
 trait Enrichable[T, This <: Enrichable[T, This]] extends Cloneable with Serializable with JsonConvertible {
+  private var excludeFromOutput: Option[Boolean] = None
+
   def get: T
+
+  def isExcludedFromOutput: Boolean = excludeFromOutput match {
+    case Some(value) => value
+    case None => false
+  }
+
+  def excludeFromOutput(value: Boolean = true, overwrite: Boolean = true): Unit = excludeFromOutput match {
+    case Some(value) => if (overwrite) excludeFromOutput = Some(value)
+    case None => excludeFromOutput = Some(value)
+  }
 
   private[enrich] var _enrichments = Map[String, Enrichable[_, _]]()
   def enrichments = _enrichments

@@ -3,6 +3,7 @@ package de.l3s.archivespark.enrich.functions
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, InputStream}
 
 import de.l3s.archivespark.enrich.{Enrichable, Derivatives, EnrichFunc}
+import de.l3s.archivespark.utils.IdentityMap
 import de.l3s.archivespark.{ArchiveRecordField, ResolvedArchiveRecord}
 import org.apache.commons.io.IOUtils
 import org.archive.format.http.{HttpHeader, HttpResponseParser}
@@ -17,6 +18,10 @@ import scala.collection.mutable
 object Response extends EnrichFunc[ResolvedArchiveRecord, ResolvedArchiveRecord] {
   override def source: Seq[String] = Seq()
   override def fields = Seq("recordHeader", "httpHeader", "payload")
+
+  override def field: IdentityMap[String] = IdentityMap(
+    "content" -> "payload"
+  )
 
   override def derive(source: ResolvedArchiveRecord, derivatives: Derivatives[Enrichable[_, _]]): Unit = {
     source.access { case (fileName, stream) =>
