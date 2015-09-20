@@ -1,6 +1,7 @@
 package de.l3s.archivespark.implicits.classes
 
 import de.l3s.archivespark.utils.JsonConvertible
+import org.apache.hadoop.io.compress.GzipCodec
 import org.apache.spark.rdd.RDD
 
 /**
@@ -11,5 +12,5 @@ class JsonConvertibleRDD[Record <: JsonConvertible](rdd: RDD[Record]) {
 
   def toJsonStrings = rdd.map(r => r.toJsonString)
 
-  def saveAsJson(path: String) = toJsonStrings.saveAsTextFile(path)
+  def saveAsJson(path: String) = if (path.endsWith(".gz")) toJsonStrings.saveAsTextFile(path, classOf[GzipCodec]) else toJsonStrings.saveAsTextFile(path)
 }
