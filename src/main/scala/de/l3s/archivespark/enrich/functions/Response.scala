@@ -1,3 +1,16 @@
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2015 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ */
+
 package de.l3s.archivespark.enrich.functions
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, InputStream}
@@ -12,9 +25,6 @@ import org.archive.io.ArchiveReaderFactory
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 
-/**
- * Created by holzmann on 05.08.2015.
- */
 object Response extends EnrichFunc[ResolvedArchiveRecord, ResolvedArchiveRecord] {
   override def source: Seq[String] = Seq()
   override def fields = Seq("recordHeader", "httpHeader", "payload")
@@ -23,7 +33,7 @@ object Response extends EnrichFunc[ResolvedArchiveRecord, ResolvedArchiveRecord]
     "content" -> "payload"
   )
 
-  override def derive(source: ResolvedArchiveRecord, derivatives: Derivatives[Enrichable[_, _]]): Unit = {
+  override def derive(source: ResolvedArchiveRecord, derivatives: Derivatives[Enrichable[_]]): Unit = {
     source.access { case (fileName, stream) =>
       val reader = ArchiveReaderFactory.get(fileName, stream, false)
       val record = reader.get

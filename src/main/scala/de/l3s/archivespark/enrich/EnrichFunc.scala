@@ -1,11 +1,21 @@
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2015 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ */
+
 package de.l3s.archivespark.enrich
 
 import de.l3s.archivespark.utils.IdentityMap
 
-/**
- * Created by holzmann on 05.08.2015.
- */
-trait EnrichFunc[Root <: EnrichRoot[_, Root], Source <: Enrichable[_, Source]] extends Serializable {
+trait EnrichFunc[Root <: EnrichRoot[_], Source <: Enrichable[_]] extends Serializable {
   def source: Seq[String]
   def fields: Seq[String]
 
@@ -16,19 +26,19 @@ trait EnrichFunc[Root <: EnrichRoot[_, Root], Source <: Enrichable[_, Source]] e
     enrichPath(root, source, excludeFromOutput).asInstanceOf[Root]
   }
 
-  private def enrichPath(current: Enrichable[_, _], path: Seq[String], excludeFromOutput: Boolean): Enrichable[_, _] = {
+  private def enrichPath(current: Enrichable[_], path: Seq[String], excludeFromOutput: Boolean): Enrichable[_] = {
     if (path.isEmpty) enrichSource(current.asInstanceOf[Source], excludeFromOutput)
     else {
       val field = path.head
       val enrichedField = enrichPath(current._enrichments(field), path.tail, excludeFromOutput)
-      val clone = current.copy().asInstanceOf[Enrichable[_, _]]
+      val clone = current.copy()
       clone._enrichments = clone._enrichments.updated(field, enrichedField)
       clone
     }
   }
 
-  private def enrichSource(source: Source, excludeFromOutput: Boolean): Source = {
-    val derivatives = new Derivatives[Enrichable[_, _]](fields)
+  private def enrichSource(source: Source, excludeFromOutput: Boolean): Enrichable[_] = {
+    val derivatives = new Derivatives[Enrichable[_]](fields)
     derive(source, derivatives)
     derivatives.get.values.foreach(e => e.excludeFromOutput(excludeFromOutput, overwrite = false))
 
@@ -37,12 +47,12 @@ trait EnrichFunc[Root <: EnrichRoot[_, Root], Source <: Enrichable[_, Source]] e
     clone
   }
 
-  def derive(source: Source, derivatives: Derivatives[Enrichable[_, _]]): Unit
+  def derive(source: Source, derivatives: Derivatives[Enrichable[_]]): Unit
 
   def field: IdentityMap[String] = IdentityMap[String]()
 
   def exists(root: Root): Boolean = {
-    var field: Enrichable[_, _] = root
+    var field: Enrichable[_] = root
     for (key <- source) field.enrichments.get(key) match {
       case Some(nextField) => field = nextField
       case None => return false

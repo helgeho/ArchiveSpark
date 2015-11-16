@@ -25,4 +25,9 @@ lazy val archivespark = (project in file(".")).
     )
   )
 
-assemblyOption in assembly := (assemblyOption in assembly).value.copy(cacheOutput = false)
+assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = false, cacheOutput = false)
+
+assemblyMergeStrategy in assembly := {
+  case PathList("META-INF", xs @ _*) => MergeStrategy.discard
+  case _ => MergeStrategy.first
+}

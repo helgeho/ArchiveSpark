@@ -1,13 +1,23 @@
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2015 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ */
+
 package de.l3s.archivespark.enrich
 
-import de.l3s.archivespark.utils.JsonConvertible
+import de.l3s.archivespark.utils.{Copyable, JsonConvertible}
 
 import scala.reflect.ClassTag
 
-/**
- * Created by holzmann on 04.08.2015.
- */
-trait Enrichable[T, This <: Enrichable[T, This]] extends Cloneable with Serializable with JsonConvertible {
+trait Enrichable[T] extends Serializable with Copyable[Enrichable[T]] with JsonConvertible {
   private var excludeFromOutput: Option[Boolean] = None
 
   def get: T
@@ -22,11 +32,11 @@ trait Enrichable[T, This <: Enrichable[T, This]] extends Cloneable with Serializ
     case None => excludeFromOutput = Some(value)
   }
 
-  private[enrich] var _enrichments = Map[String, Enrichable[_, _]]()
+  private[enrich] var _enrichments = Map[String, Enrichable[_]]()
   def enrichments = _enrichments
 
-  def apply[D : ClassTag](key: String): Option[Enrichable[D, _]] = {
-    def find(current: Enrichable[_, _], path: Seq[String]): Enrichable[_, _] = {
+  def apply[D : ClassTag](key: String): Option[Enrichable[D]] = {
+    def find(current: Enrichable[_], path: Seq[String]): Enrichable[_] = {
       if (path.isEmpty || (path.length == 1 && path.head == "")) return current
       if (path.head == "") {
         var target = find(this, path.drop(1))
@@ -46,7 +56,7 @@ trait Enrichable[T, This <: Enrichable[T, This]] extends Cloneable with Serializ
     val target = find(this, key.trim.split("\\."))
     if (target == null) return None
     target.get match {
-      case _: D => Some(target.asInstanceOf[Enrichable[D, _]])
+      case _: D => Some(target.asInstanceOf[Enrichable[D]])
       case _ => None
     }
   }
@@ -55,6 +65,4 @@ trait Enrichable[T, This <: Enrichable[T, This]] extends Cloneable with Serializ
     case Some(enrichable) => Some(enrichable.get)
     case None => None
   }
-
-  def copy(): This
 }
