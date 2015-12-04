@@ -24,6 +24,6 @@
 
 package de.l3s.archivespark.utils
 
-trait Copyable[T] extends Cloneable {
+trait Copyable[T] extends Cloneable { this: T =>
   def copy(): T
 }

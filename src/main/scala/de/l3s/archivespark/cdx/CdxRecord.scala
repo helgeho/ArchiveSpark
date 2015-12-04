@@ -57,6 +57,12 @@ case class CdxRecord(surtUrl: String,
                      redirectUrl: String,
                      meta: String,
                      location: LocationInfo) extends JsonConvertible {
+  def toSimpleString = {
+    val timestampStr = timestamp.formatted("yyyyMMddHHmmss")
+    val statusStr = if (status < 0) "-" else status.toString
+    s"$surtUrl\t$timestampStr\t$originalUrl\t$mime\t$statusStr\t$digest\t$redirectUrl\t$meta"
+  }
+
   def toJson: Map[String, Any] = Map[String, Any](
     "surtUrl" -> surtUrl,
     "timestamp" -> (if (timestamp == null) null else timestamp.toString),

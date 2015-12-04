@@ -37,6 +37,8 @@ class ResolvedCdxRecord(original: CdxRecord, locationPath: String, val parentRec
   def meta = original.meta
   val location = LocationInfo(original.location.compressedSize, original.location.offset, original.location.filename, locationPath)
 
+  def toSimpleString = original.toSimpleString
+
   def toJson: Map[String, Any] = {
     if (parentRecord != null) {
       original.toJson + ("parent" -> parentRecord.toJson)

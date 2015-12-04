@@ -39,7 +39,7 @@ trait Enrichable[T] extends Serializable with Copyable[Enrichable[T]] with JsonC
   }
 
   def excludeFromOutput(value: Boolean = true, overwrite: Boolean = true): Unit = excludeFromOutput match {
-    case Some(value) => if (overwrite) excludeFromOutput = Some(value)
+    case Some(v) => if (overwrite) excludeFromOutput = Some(v)
     case None => excludeFromOutput = Some(value)
   }
 

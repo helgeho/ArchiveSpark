@@ -22,8 +22,16 @@
  * SOFTWARE.
  */
 
-package de.l3s.archivespark.enrich
+package de.l3s.archivespark
 
-trait EnrichRoot[T] extends Enrichable[T] {
-
-}
+//class MultiArchiveRecordField[T] private (val get: T) extends Enrichable[Array[T]] { this: T =>
+//  override def toJson: Map[String, Any] = (if (isExcludedFromOutput) Map[String, Any]() else Map(
+//    null.asInstanceOf[String] -> json(this.get)
+//  )) ++ enrichments.map{ case (name, field) => (name, mapToAny(field.toJson)) }.filter{ case (_, field) => field != null }
+//
+//  override def copy(): ArchiveRecordField[T] = clone().asInstanceOf[ArchiveRecordField[T]]
+//}
+//
+//object MultiArchiveRecordField {
+//  def apply[T](value: T): MultiArchiveRecordField[T] = new MultiArchiveRecordField[T](value)
+//}
