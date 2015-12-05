@@ -26,7 +26,7 @@ package de.l3s.archivespark.cdx
 
 import de.l3s.archivespark.utils.JsonConvertible
 
-class ResolvedCdxRecord(original: CdxRecord, locationPath: String, val parentRecord: CdxRecord) extends JsonConvertible {
+class ResolvedCdxRecord(original: CdxRecord, locationPath: String, val parentRecord: CdxRecord) extends JsonConvertible with Serializable {
   def surtUrl = original.surtUrl
   def timestamp = original.timestamp
   def originalUrl = original.originalUrl
