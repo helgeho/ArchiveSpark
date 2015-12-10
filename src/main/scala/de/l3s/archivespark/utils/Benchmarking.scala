@@ -24,12 +24,14 @@
 
 package de.l3s.archivespark.utils
 
+import scala.math._
+
 object Benchmarking {
   def time[R](id: String)(action: => R): R = {
     val before = System.nanoTime
     val result = action
     val after = System.nanoTime
-    val seconds = (after - before).toDouble / 1000 / 1000
+    val seconds = (after - before).toDouble / pow(10, 9)
     println(s"[Benchmarking $id: $seconds seconds]")
     result
   }
