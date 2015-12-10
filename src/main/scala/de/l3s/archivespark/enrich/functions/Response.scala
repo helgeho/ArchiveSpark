@@ -40,7 +40,7 @@ object Response extends EnrichFunc[ResolvedArchiveRecord, ResolvedArchiveRecord]
   override def derive(source: ResolvedArchiveRecord, derivatives: Derivatives[Enrichable[_]]): Unit = {
     source.access { case (fileName, stream) =>
       val reader = ArchiveReaderFactory.get(fileName, stream, false)
-      val record = new HttpArchiveRecord(reader.get)
+      val record = HttpArchiveRecord(reader.get)
 
       derivatives << ArchiveRecordField(record.header)
       derivatives << ArchiveRecordField(record.httpHeader)

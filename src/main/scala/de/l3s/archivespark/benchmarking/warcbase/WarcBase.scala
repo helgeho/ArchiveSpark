@@ -41,7 +41,7 @@ object WarcBase {
   def hbase(table: String)(conf: Configuration => Unit)(implicit sc: SparkContext) = {
     HBase.rdd(table) { c =>
       c.set(TableInputFormat.SCAN_COLUMN_FAMILY, "c"); // content family of WarcBase
-      c.setInt(TableInputFormat.SCAN_MAXVERSIONS, 999999); // get all versions
+      c.setInt(TableInputFormat.SCAN_MAXVERSIONS, Int.MaxValue); // get all versions
       conf(c)
     }.flatMap{ result =>
       for (cell <- result.listCells().asScala) yield { // one record per version / capture
@@ -53,7 +53,7 @@ object WarcBase {
         val warcPath = "[^\\ ]+\\.[w]?arc(\\.gz)?".r.findFirstIn(value).get
         val warcId = if (warcPath.endsWith(".gz")) warcPath.substring(0, warcPath.length - 3) else warcPath
         val reader = ArchiveReaderFactory.get(warcId, new ByteArrayInputStream(valueBytes), false)
-        (cell.getTimestamp, url, mime, new HttpArchiveRecord(reader.get))
+        (cell.getTimestamp, url, mime, HttpArchiveRecord(reader.get))
       }
     }
   }

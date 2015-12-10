@@ -24,11 +24,13 @@
 
 package de.l3s.archivespark.jobs
 
+import java.util.Calendar
+
 import de.l3s.archivespark.benchmarking.warcbase.WarcBase
 import de.l3s.archivespark.benchmarking.{Benchmark, BenchmarkLogger}
 import de.l3s.archivespark.enrich.functions._
 import de.l3s.archivespark.implicits._
-import de.l3s.archivespark.utils.HttpArchiveRecord
+import de.l3s.archivespark.utils.{HttpArchiveRecord, HttpResponse}
 import de.l3s.archivespark.{ArchiveSpark, ResolvedArchiveRecord}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat
@@ -64,9 +66,9 @@ object Benchmarking {
 
   def archiveSpark(implicit sc: SparkContext) = ArchiveSpark.hdfs(s"$cdxPath/*.cdx", warcPath)
 
-  def warcBase(implicit sc: SparkContext) = WarcBase.loadWarc(s"$warcPath/*.warc.gz")
+  def warcBase(implicit sc: SparkContext) = WarcBase.loadWarc(s"$warcPath/*.warc.gz").coalesce(ArchiveSpark.partitions)
 
-  def hbase(conf: Configuration => Unit)(implicit sc: SparkContext) = WarcBase.hbase(hbaseTable) { c => conf(c) }
+  def hbase(conf: Configuration => Unit)(implicit sc: SparkContext) = WarcBase.hbase(hbaseTable) { c => conf(c) }.repartition(ArchiveSpark.partitions)
 
   def rowKey(url: String) = UrlUtils.urlToKey(url)
 
@@ -79,7 +81,7 @@ object Benchmarking {
 
   def benchmarkSpark(name: String)(rdd: => RDD[RecordTransformers.WARecord])(implicit sc: SparkContext, logger: BenchmarkLogger) = {
     Benchmark.time(name, sparkId, times) {
-      rdd.map(r => r.getContentString.length).sum()
+      rdd.map(r => HttpResponse(r.getContentBytes).stringContent.length).sum()
     }.log(logValues)
   }
 
@@ -133,6 +135,39 @@ object Benchmarking {
         c.set(TableInputFormat.SCAN_ROW_START, rowKey(reverse))
         c.set(TableInputFormat.SCAN_ROW_STOP, rowKey(next))
       }.filter{case (time, url, mime, record) => url.matches(s"^$reverse[\\.\\/].*")}
+    }
+  }
+
+  def runOneMonthLatestOnline(implicit sc: SparkContext, logger: BenchmarkLogger) = {
+    val name = "one domain (text/html)"
+    val year = 2011
+    val month = 12
+    val calendar = Calendar.getInstance()
+    calendar.set(year, month, 1, 0, 0, 0)
+    val startDate = calendar.getTime
+    calendar.set(year, month + 1, 1, 0, 0, 0)
+    val stopDate = calendar.getTime
+
+    benchmarkArchiveSpark(name) {
+      archiveSpark
+        .filter(r => r.status == 200 && r.timestamp.getYear == year && r.timestamp.getMonthOfYear == month)
+        .map(r => (r.surtUrl, r)).reduceByKey((r1, r2) => if (r1.timestamp.compareTo(r2.timestamp) > 0) r1 else r2)
+        .values
+    }
+
+    benchmarkSpark(name) {
+      warcBase
+        .filter(r => HttpResponse(r.getContentBytes).status == 200 && r.getCrawldate.startsWith(s"$year$month"))
+        .map(r => (r.getUrl, r)).reduceByKey((r1, r2) => if (r1.getCrawldate.toInt > r2.getCrawldate.toInt) r1 else r2)
+        .values
+    }
+
+    benchmarkHbase(name) {
+      hbase { c =>
+        c.setLong(TableInputFormat.SCAN_TIMERANGE_END, startDate.getTime)
+        c.setLong(TableInputFormat.SCAN_TIMERANGE_START, stopDate.getTime)
+        c.setInt(TableInputFormat.SCAN_MAXVERSIONS, 1); // only latest
+      }.filter{case (time, url, mime, record) => record.httpResponse.status == 200}
     }
   }
  }

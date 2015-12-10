@@ -24,40 +24,51 @@
 
 package de.l3s.archivespark.utils
 
-import java.io.ByteArrayOutputStream
+import java.io.{ByteArrayInputStream, InputStream}
 
+import org.apache.commons.io.IOUtils
 import org.apache.http.entity.ByteArrayEntity
 import org.apache.http.util.EntityUtils
-import org.archive.io.ArchiveRecord
+import org.archive.format.http.{HttpHeader, HttpResponseParser}
 
 import scala.collection.JavaConverters._
 
-object HttpArchiveRecord {
-  def apply(record: ArchiveRecord): HttpArchiveRecord = new HttpArchiveRecord(record)
+object HttpResponse {
+  def apply(bytes: Array[Byte]): HttpResponse = new HttpResponse(bytes)
 }
 
-class HttpArchiveRecord private (val record: ArchiveRecord) {
-  lazy val header = {
-    val header = record.getHeader
-    header.getHeaderFields.asScala.toMap
-  }
+class HttpResponse private (bytes: Array[Byte]) {
+  private var _header: collection.mutable.Map[String, String] = null
+  private var _payload: Array[Byte] = null
 
-  lazy val httpResponse: HttpResponse = {
-    var recordOutput: ByteArrayOutputStream = null
+  lazy val response = {
+    _header = collection.mutable.Map[String, String]()
+
+    var httpResponse: InputStream = null
     try {
-      recordOutput = new ByteArrayOutputStream()
-      record.dump(recordOutput)
-      HttpResponse(recordOutput.toByteArray)
+      httpResponse = new ByteArrayInputStream(bytes)
+
+      val parser = new HttpResponseParser
+      val response = parser.parse(httpResponse)
+      val httpHeaders = response.getHeaders
+
+      for (httpHeader: HttpHeader <- httpHeaders.iterator().asScala) {
+        _header.put(httpHeader.getName, httpHeader.getValue)
+      }
+
+      _payload = IOUtils.toByteArray(httpResponse)
+
+      response
     } finally {
-      if (recordOutput != null) recordOutput.close()
+      if (httpResponse != null) httpResponse.close()
     }
   }
 
-  lazy val httpHeader = httpResponse.header
+  lazy val status = response.getMessage.getStatus
 
-  lazy val payload = httpResponse.payload
+  lazy val header = { response; _header }
+
+  lazy val payload = { response; _payload }
 
   lazy val stringContent = EntityUtils.toString(new ByteArrayEntity(payload)).trim
-
-  def close() = record.close()
 }
