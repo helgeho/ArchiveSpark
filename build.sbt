@@ -12,28 +12,18 @@ lazy val archivespark = (project in file(".")).
   settings(commonSettings: _*).
   settings(
     libraryDependencies ++= Seq(
-      "org.apache.spark" %% "spark-core" % "1.3.0" % "provided" excludeAll(
+      "org.apache.spark" %% "spark-core" % "1.5.2" % "provided" excludeAll(
         ExclusionRule(organization = "org.apache.hadoop"),
         ExclusionRule(organization = "org.scala-lang")),
-      "org.apache.hadoop" % "hadoop-client" % "2.5.0" % "provided" excludeAll(
-        ExclusionRule(organization = "org.apache.spark"),
-        ExclusionRule(organization = "org.spark-project"),
-        ExclusionRule(organization = "org.scala-lang")),
-      "com.github.nscala-time" %% "nscala-time" % "2.0.0" excludeAll(
-        ExclusionRule(organization = "org.apache.spark"),
-        ExclusionRule(organization = "org.spark-project"),
-        ExclusionRule(organization = "org.scala-lang"),
-        ExclusionRule(organization = "org.apache.hadoop")),
-      "org.netpreserve.commons" % "webarchive-commons" % "1.1.5" excludeAll(
-        ExclusionRule(organization = "org.apache.spark"),
-        ExclusionRule(organization = "org.spark-project"),
-        ExclusionRule(organization = "org.scala-lang"),
-        ExclusionRule(organization = "org.apache.hadoop")),
-      "org.json4s" %% "json4s-native" % "3.2.11" excludeAll(
-        ExclusionRule(organization = "org.apache.spark"),
-        ExclusionRule(organization = "org.spark-project"),
-        ExclusionRule(organization = "org.scala-lang"),
-        ExclusionRule(organization = "org.apache.hadoop"))
+      "org.apache.hadoop" % "hadoop-client" % "2.5.0" % "provided",
+      "org.apache.hbase" % "hbase" % "1.1.2" % "provided",
+      "org.apache.hbase" % "hbase-common" % "1.1.2" % "provided",
+      "org.apache.hbase" % "hbase-client" % "1.1.2" % "provided",
+      "org.apache.hbase" % "hbase-server" % "1.1.2" % "provided",
+      "org.apache.hbase" % "hbase-protocol" % "1.1.2" % "provided",
+      "com.github.nscala-time" %% "nscala-time" % "2.0.0" excludeAll ExclusionRule(organization = "org.scala-lang"),
+      "org.netpreserve.commons" % "webarchive-commons" % "1.1.5" excludeAll ExclusionRule(organization = "org.apache.hadoop"),
+      "org.json4s" %% "json4s-native" % "3.2.11"
     ),
     resolvers ++= Seq(
       "cloudera" at "https://repository.cloudera.com/artifactory/cloudera-repos",

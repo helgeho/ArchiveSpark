@@ -26,20 +26,44 @@ package de.l3s.archivespark
 
 import de.l3s.archivespark.cdx.{CdxRecord, ResolvedCdxRecord}
 import de.l3s.archivespark.rdd.{UniversalArchiveRDD, HdfsArchiveRDD}
+import de.l3s.archivespark.records.{ResolvedHdfsArchiveRecord, HdfsArchiveRecord}
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 
 object ArchiveSpark {
+  private var initialized = false
+
+  var parallelism = 0
+
+  def partitions(implicit sc: SparkContext) = if (parallelism > 0) parallelism else sc.defaultParallelism
+
+  def initialize(sc: SparkContext): Unit = {
+    if (initialized) return
+    initialized = true
+    sc.getConf.registerKryoClasses(Array(
+      classOf[ResolvedCdxRecord],
+      classOf[ResolvedArchiveRecord],
+      classOf[ArchiveRecord],
+      classOf[HdfsArchiveRecord],
+      classOf[UniversalArchiveRDD],
+      classOf[ResolvedHdfsArchiveRecord],
+      classOf[CdxRecord],
+      classOf[ArchiveRecordField[_]]
+    ))
+  }
+
   def load(cdxPath: String)(implicit sc: SparkContext): UniversalArchiveRDD = UniversalArchiveRDD(cdxPath)
 
   def hdfs(cdxPath: String, warcPath: String)(implicit sc: SparkContext): HdfsArchiveRDD = HdfsArchiveRDD(cdxPath, warcPath)
 
   def textFileWithPath(path: String)(implicit sc: SparkContext): RDD[(String, String)] = {
-    sc.wholeTextFiles(path).flatMap{case (filename, content) => content.split("\n").map(line => (filename, line))}
+    initialize(sc)
+    sc.wholeTextFiles(path, partitions).flatMap{case (filename, content) => content.split("\n").map(line => (filename, line))}
   }
 
   def cdx(path: String)(implicit sc: SparkContext): RDD[CdxRecord] = {
-    sc.textFile(path).map(line => CdxRecord.fromString(line)).filter(cdx => cdx != null)
+    initialize(sc)
+    sc.textFile(path, partitions).map(line => CdxRecord.fromString(line)).filter(cdx => cdx != null)
   }
 
   def resolvedCdx(path: String, warcPath: String)(implicit sc: SparkContext): RDD[ResolvedCdxRecord] = {

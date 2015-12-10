@@ -1,3 +1,5 @@
+package de.l3s.archivespark.jobs
+
 /*
  * The MIT License (MIT)
  *
@@ -22,31 +24,31 @@
  * SOFTWARE.
  */
 
-package de.l3s.archivespark.enrich.functions
+import de.l3s.archivespark.ArchiveSpark
+import de.l3s.archivespark.enrich.functions._
+import de.l3s.archivespark.implicits._
+import org.apache.spark._
 
-import de.l3s.archivespark.enrich.{Derivatives, EnrichFunc, Enrichable}
-import de.l3s.archivespark.utils.{HttpArchiveRecord, IdentityMap}
-import de.l3s.archivespark.{ArchiveRecordField, ResolvedArchiveRecord}
-import org.archive.io.ArchiveReaderFactory
+object Start {
+  def main(args: Array[String]): Unit = {
+    val appName = "ArchiveSpark"
+    val master = "yarn-client"
 
-object Response extends EnrichFunc[ResolvedArchiveRecord, ResolvedArchiveRecord] {
-  override def source: Seq[String] = Seq()
-  override def fields = Seq("recordHeader", "httpHeader", "payload")
+    val conf = new SparkConf().setAppName(appName).setMaster(master)
+    implicit val sc = new SparkContext(conf)
 
-  override def field: IdentityMap[String] = IdentityMap(
-    "content" -> "payload"
-  )
+    val rdd = ArchiveSpark.hdfs("/data/ia/derivatives/de/cdx_orig_WILL_BE_REMOVED/TA/TA-100000-000000.arc.cdx", "/data/ia/w/de")
+    val filteredRdd = rdd.filter(r => r.surtUrl.startsWith("de,entspannungs-shop"))
+    val enriched = filteredRdd.enrich(StringContent)
 
-  override def derive(source: ResolvedArchiveRecord, derivatives: Derivatives[Enrichable[_]]): Unit = {
-    source.access { case (fileName, stream) =>
-      val reader = ArchiveReaderFactory.get(fileName, stream, false)
-      val record = new HttpArchiveRecord(reader.get)
+//    val mapEnriched = enriched.mapEnrich[Array[Byte], String]("record.reponse.payload", "string") { payload =>
+//      payload.toString
+//    }
 
-      derivatives << ArchiveRecordField(record.header)
-      derivatives << ArchiveRecordField(record.httpHeader)
-      derivatives << ArchiveRecordField(record.payload)
+//    val dependencyMapEnriched = mapEnriched.mapEnrich[String, String](StringContent, "firstToken") { str =>
+//      str.split(' ').head
+//    }
 
-      record.close()
-    }
+    enriched.saveAsJson("out.json")
   }
 }

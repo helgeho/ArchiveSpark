@@ -22,31 +22,22 @@
  * SOFTWARE.
  */
 
-package de.l3s.archivespark.enrich.functions
+package de.l3s.archivespark.benchmarking
 
-import de.l3s.archivespark.enrich.{Derivatives, EnrichFunc, Enrichable}
-import de.l3s.archivespark.utils.{HttpArchiveRecord, IdentityMap}
-import de.l3s.archivespark.{ArchiveRecordField, ResolvedArchiveRecord}
-import org.archive.io.ArchiveReaderFactory
+import java.io.{FileOutputStream, PrintStream}
 
-object Response extends EnrichFunc[ResolvedArchiveRecord, ResolvedArchiveRecord] {
-  override def source: Seq[String] = Seq()
-  override def fields = Seq("recordHeader", "httpHeader", "payload")
+class BenchmarkLogger(val filename: String) {
+  private var lastName: String = null
 
-  override def field: IdentityMap[String] = IdentityMap(
-    "content" -> "payload"
-  )
-
-  override def derive(source: ResolvedArchiveRecord, derivatives: Derivatives[Enrichable[_]]): Unit = {
-    source.access { case (fileName, stream) =>
-      val reader = ArchiveReaderFactory.get(fileName, stream, false)
-      val record = new HttpArchiveRecord(reader.get)
-
-      derivatives << ArchiveRecordField(record.header)
-      derivatives << ArchiveRecordField(record.httpHeader)
-      derivatives << ArchiveRecordField(record.payload)
-
-      record.close()
-    }
+  def log[T](result: BenchmarkResult[T], logValues: Boolean = false): T = {
+    val stream = new FileOutputStream(filename, true)
+    val out = new PrintStream(stream, true)
+    if (result.name != lastName) out.println(result.name)
+    val times = (if (logValues) result.measures.map(m => s"${m.value},${m.seconds}") else result.measures.map(m => m.seconds)).mkString("\t")
+    out.println(s"\t${result.id}\t$times")
+    out.close()
+    stream.close()
+    lastName = result.name
+    result.measures.last.value
   }
 }

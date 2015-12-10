@@ -22,31 +22,21 @@
  * SOFTWARE.
  */
 
-package de.l3s.archivespark.enrich.functions
+package de.l3s.archivespark.benchmarking.warcbase
 
-import de.l3s.archivespark.enrich.{Derivatives, EnrichFunc, Enrichable}
-import de.l3s.archivespark.utils.{HttpArchiveRecord, IdentityMap}
-import de.l3s.archivespark.{ArchiveRecordField, ResolvedArchiveRecord}
-import org.archive.io.ArchiveReaderFactory
+import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.hbase.HBaseConfiguration
+import org.apache.hadoop.hbase.client.Result
+import org.apache.hadoop.hbase.io.ImmutableBytesWritable
+import org.apache.hadoop.hbase.mapreduce.TableInputFormat
+import org.apache.spark.SparkContext
+import org.apache.spark.rdd.NewHadoopRDD
 
-object Response extends EnrichFunc[ResolvedArchiveRecord, ResolvedArchiveRecord] {
-  override def source: Seq[String] = Seq()
-  override def fields = Seq("recordHeader", "httpHeader", "payload")
-
-  override def field: IdentityMap[String] = IdentityMap(
-    "content" -> "payload"
-  )
-
-  override def derive(source: ResolvedArchiveRecord, derivatives: Derivatives[Enrichable[_]]): Unit = {
-    source.access { case (fileName, stream) =>
-      val reader = ArchiveReaderFactory.get(fileName, stream, false)
-      val record = new HttpArchiveRecord(reader.get)
-
-      derivatives << ArchiveRecordField(record.header)
-      derivatives << ArchiveRecordField(record.httpHeader)
-      derivatives << ArchiveRecordField(record.payload)
-
-      record.close()
-    }
+object HBase {
+  def rdd(table: String)(conf: Configuration => Unit)(implicit sc: SparkContext) = {
+    val hbaseConf = HBaseConfiguration.create()
+    hbaseConf.set(TableInputFormat.INPUT_TABLE, table)
+    conf(hbaseConf)
+    new NewHadoopRDD(sc, classOf[TableInputFormat], classOf[ImmutableBytesWritable], classOf[Result], hbaseConf).map{case (k,v) => v}
   }
 }

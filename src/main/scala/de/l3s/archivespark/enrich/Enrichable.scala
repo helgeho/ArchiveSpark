@@ -65,11 +65,7 @@ trait Enrichable[T] extends Serializable with Copyable[Enrichable[T]] with JsonC
       }
     }
     val target = find(this, key.trim.split("\\."))
-    if (target == null) return None
-    target.get match {
-      case _: D => Some(target.asInstanceOf[Enrichable[D]])
-      case _ => None
-    }
+    if (target == null) None else Some(target.asInstanceOf[Enrichable[D]])
   }
 
   def get[D : ClassTag](key: String): Option[D] = apply[D](key) match {

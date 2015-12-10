@@ -22,31 +22,20 @@
  * SOFTWARE.
  */
 
-package de.l3s.archivespark.enrich.functions
+package de.l3s.archivespark.benchmarking
 
-import de.l3s.archivespark.enrich.{Derivatives, EnrichFunc, Enrichable}
-import de.l3s.archivespark.utils.{HttpArchiveRecord, IdentityMap}
-import de.l3s.archivespark.{ArchiveRecordField, ResolvedArchiveRecord}
-import org.archive.io.ArchiveReaderFactory
+object Benchmark {
+  def time[R](name: String, id: String)(action: => R): BenchmarkResult[R] = {
+    val before = System.nanoTime
+    val result = action
+    val after = System.nanoTime
+    val seconds = (after - before).toDouble / 1000 / 1000
+    BenchmarkResult(name, id, Seq(BenchmarkMeasure(result, seconds)))
+  }
 
-object Response extends EnrichFunc[ResolvedArchiveRecord, ResolvedArchiveRecord] {
-  override def source: Seq[String] = Seq()
-  override def fields = Seq("recordHeader", "httpHeader", "payload")
-
-  override def field: IdentityMap[String] = IdentityMap(
-    "content" -> "payload"
-  )
-
-  override def derive(source: ResolvedArchiveRecord, derivatives: Derivatives[Enrichable[_]]): Unit = {
-    source.access { case (fileName, stream) =>
-      val reader = ArchiveReaderFactory.get(fileName, stream, false)
-      val record = new HttpArchiveRecord(reader.get)
-
-      derivatives << ArchiveRecordField(record.header)
-      derivatives << ArchiveRecordField(record.httpHeader)
-      derivatives << ArchiveRecordField(record.payload)
-
-      record.close()
-    }
+  def time[R](name: String, id: String, times: Int)(action: => R): BenchmarkResult[R] = {
+    var results = Seq(time(name, id)(action))
+    for (i <- 1 to (times - 1)) results :+= time(name, id)(action)
+    BenchmarkResult(name, id, results.flatMap(r => r.measures))
   }
 }

@@ -24,10 +24,9 @@
 
 package de.l3s.archivespark.enrich.functions
 
+import de.l3s.archivespark.enrich.{DependentEnrichFunc, Derivatives, EnrichFunc, Enrichable}
 import de.l3s.archivespark.utils.IdentityMap
 import de.l3s.archivespark.{ArchiveRecordField, ResolvedArchiveRecord}
-import de.l3s.archivespark.enrich.{EnrichFunc, Enrichable, Derivatives, DependentEnrichFunc}
-import org.apache.http.HttpEntity
 import org.apache.http.entity.ByteArrayEntity
 import org.apache.http.util.EntityUtils
 
@@ -41,7 +40,7 @@ object StringContent extends DependentEnrichFunc[ResolvedArchiveRecord, ArchiveR
   )
 
   override def derive(source: ArchiveRecordField[Array[Byte]], derivatives: Derivatives[Enrichable[_]]): Unit = {
-    val entity: HttpEntity = new ByteArrayEntity(source.get)
+    val entity = new ByteArrayEntity(source.get)
     derivatives << ArchiveRecordField(EntityUtils.toString(entity).trim)
   }
 }

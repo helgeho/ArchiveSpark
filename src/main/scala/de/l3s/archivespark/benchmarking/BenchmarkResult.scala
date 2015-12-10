@@ -22,31 +22,9 @@
  * SOFTWARE.
  */
 
-package de.l3s.archivespark.enrich.functions
+package de.l3s.archivespark.benchmarking
 
-import de.l3s.archivespark.enrich.{Derivatives, EnrichFunc, Enrichable}
-import de.l3s.archivespark.utils.{HttpArchiveRecord, IdentityMap}
-import de.l3s.archivespark.{ArchiveRecordField, ResolvedArchiveRecord}
-import org.archive.io.ArchiveReaderFactory
-
-object Response extends EnrichFunc[ResolvedArchiveRecord, ResolvedArchiveRecord] {
-  override def source: Seq[String] = Seq()
-  override def fields = Seq("recordHeader", "httpHeader", "payload")
-
-  override def field: IdentityMap[String] = IdentityMap(
-    "content" -> "payload"
-  )
-
-  override def derive(source: ResolvedArchiveRecord, derivatives: Derivatives[Enrichable[_]]): Unit = {
-    source.access { case (fileName, stream) =>
-      val reader = ArchiveReaderFactory.get(fileName, stream, false)
-      val record = new HttpArchiveRecord(reader.get)
-
-      derivatives << ArchiveRecordField(record.header)
-      derivatives << ArchiveRecordField(record.httpHeader)
-      derivatives << ArchiveRecordField(record.payload)
-
-      record.close()
-    }
-  }
+case class BenchmarkResult[T](name: String, id: String, measures: Seq[BenchmarkMeasure[T]]) {
+  def log(logValues: Boolean = false)(implicit logger: BenchmarkLogger): T = log(logger, logValues)
+  def log(logger: BenchmarkLogger, logValues: Boolean): T = logger.log(this, logValues)
 }
