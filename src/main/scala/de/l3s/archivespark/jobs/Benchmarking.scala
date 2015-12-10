@@ -90,9 +90,7 @@ object Benchmarking {
 
   def warcBase(implicit sc: SparkContext) = WarcBase.loadWarc(s"$warcPath/*.warc.gz")
 
-  def hbase(conf: Configuration => Unit)(implicit sc: SparkContext) = {
-    WarcBase.hbase(hbaseTable) { c => conf(c) }
-  }
+  def hbase(conf: Configuration => Unit)(implicit sc: SparkContext) = WarcBase.hbase(hbaseTable) { c => conf(c) }
 
   def rowKey(url: String) = UrlUtils.urlToKey(url)
 

@@ -60,5 +60,5 @@ class EnrichableRDD[Root <: EnrichRoot[_] : ClassTag](rdd: RDD[Root]) {
     rdd.map(r => enrichFunc.enrich(r))
   }
 
-  def filterExists(path: String): RDD[Root] = rdd.filter(r => r.get(path).nonEmpty)
+  def filterExists(path: String): RDD[Root] = rdd.filter(r => r[Nothing](path).nonEmpty)
 }
