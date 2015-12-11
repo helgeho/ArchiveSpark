@@ -31,10 +31,13 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hbase.CellUtil
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat
 import org.apache.hadoop.hbase.util.Bytes
+import org.apache.hadoop.io.LongWritable
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.archive.io.ArchiveReaderFactory
-import org.warcbase.spark.matchbox.{RecordLoader, RecordTransformers}
+import org.warcbase.io.WarcRecordWritable
+import org.warcbase.mapreduce.WacWarcInputFormat
+import org.warcbase.spark.matchbox.RecordTransformers._
 import scala.collection.JavaConverters._
 
 object WarcBase {
@@ -58,23 +61,12 @@ object WarcBase {
     }
   }
 
-  // compare https://github.com/lintool/warcbase/blob/master/src/main/scala/org/warcbase/spark/rdd/RecordRDD.scala#L48
-  // added a try..catch block to filter out records that throw exceptions when trying to access their content / meta information
-  def keepValidPages(rdd: RDD[RecordTransformers.WARecord]): RDD[RecordTransformers.WARecord] = {
-    rdd.filter{ r =>
-      try {
-        r.getCrawldate != null &&
-          (r.getMimeType == "text/html" ||
-            r.getUrl.endsWith("htm") ||
-            r.getUrl.endsWith("html")) &&
-          !r.getUrl.endsWith("robots.txt")
-      } catch {
-        case e: Exception => false
-      }
-    }
-  }
-
-  def loadWarc(path: String)(implicit sc: SparkContext) = {
-    keepValidPages(RecordLoader.loadWarc(path, sc))
+  /*
+  compare https://github.com/lintool/warcbase/blob/master/src/main/scala/org/warcbase/spark/matchbox/RecordLoader.scala#L32
+  modified to not apply any filters, which may slow down loading, in order to be fair when comparing to other ArchiveSpark
+   */
+  def loadWarc(path: String)(implicit sc: SparkContext): RDD[WARecord] = {
+    sc.newAPIHadoopFile(path, classOf[WacWarcInputFormat], classOf[LongWritable], classOf[WarcRecordWritable])
+      .map(r => new WarcRecord(r._2.getRecord))
   }
 }

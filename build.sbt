@@ -14,7 +14,8 @@ lazy val archivespark = (project in file(".")).
     libraryDependencies ++= Seq(
       "org.apache.spark" %% "spark-core" % "1.5.2" % "provided" excludeAll(
         ExclusionRule(organization = "org.apache.hadoop"),
-        ExclusionRule(organization = "org.scala-lang")),
+        ExclusionRule(organization = "org.scala-lang"),
+        ExclusionRule(organization = "com.google.guava")),
       "org.apache.hadoop" % "hadoop-client" % "2.5.0" % "provided",
       "org.apache.hbase" % "hbase" % "1.1.2" % "provided",
       "org.apache.hbase" % "hbase-common" % "1.1.2" % "provided",
@@ -22,8 +23,10 @@ lazy val archivespark = (project in file(".")).
       "org.apache.hbase" % "hbase-server" % "1.1.2" % "provided",
       "org.apache.hbase" % "hbase-protocol" % "1.1.2" % "provided",
       "com.github.nscala-time" %% "nscala-time" % "2.0.0" excludeAll ExclusionRule(organization = "org.scala-lang"),
-      "org.netpreserve.commons" % "webarchive-commons" % "1.1.5" excludeAll ExclusionRule(organization = "org.apache.hadoop"),
-      "org.json4s" %% "json4s-native" % "3.2.11"
+      "org.netpreserve.commons" % "webarchive-commons" % "1.1.5" excludeAll(
+        ExclusionRule(organization = "org.apache.hadoop"),
+        ExclusionRule(organization = "com.google.guava")),
+      "org.json4s" %% "json4s-native" % "3.2.11" excludeAll ExclusionRule(organization = "org.scala-lang")
     ),
     resolvers ++= Seq(
       "cloudera" at "https://repository.cloudera.com/artifactory/cloudera-repos",

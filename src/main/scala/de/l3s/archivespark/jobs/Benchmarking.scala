@@ -62,6 +62,7 @@ object Benchmarking {
 
     runOneUrl
     runOneDomain
+    runOneMonthLatestOnline
   }
 
   def archiveSpark(implicit sc: SparkContext) = ArchiveSpark.hdfs(s"$cdxPath/*.cdx", warcPath)
