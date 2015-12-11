@@ -66,6 +66,7 @@ object Benchmarking {
     runOneUrl
     runOneDomain
     runOneMonthLatestOnline
+    runOneDomainOnline
   }
 
   def archiveSpark(implicit sc: SparkContext) = ArchiveSpark.hdfs(s"$cdxPath/*.cdx", warcPath)
@@ -143,7 +144,7 @@ object Benchmarking {
   }
 
   def runOneMonthLatestOnline(implicit sc: SparkContext, logger: BenchmarkLogger) = {
-    val name = "one domain (text/html)"
+    val name = "one month latest online"
     val year = 2011
     val month = 12
     val calendar = Calendar.getInstance()
@@ -155,14 +156,14 @@ object Benchmarking {
     benchmarkArchiveSpark(name) {
       archiveSpark
         .filter(r => r.status == 200 && r.timestamp.getYear == year && r.timestamp.getMonthOfYear == month)
-        .map(r => (r.surtUrl, r)).reduceByKey((r1, r2) => if (r1.timestamp.compareTo(r2.timestamp) > 0) r1 else r2)
+        .map(r => (r.surtUrl, r)).reduceByKey((r1, r2) => if (r1.timestamp.compareTo(r2.timestamp) > 0) r1 else r2, ArchiveSpark.partitions)
         .values
     }
 
     benchmarkSpark(name) {
       warcBase
         .filter(r => HttpResponse(r.getContentBytes).status == 200 && r.getCrawldate.startsWith(s"$year$month"))
-        .map(r => (r.getUrl, r)).reduceByKey((r1, r2) => if (r1.getCrawldate.toInt > r2.getCrawldate.toInt) r1 else r2)
+        .map(r => (r.getUrl, r)).reduceByKey((r1, r2) => if (r1.getCrawldate.toInt > r2.getCrawldate.toInt) r1 else r2, ArchiveSpark.partitions)
         .values
     }
 
@@ -172,6 +173,33 @@ object Benchmarking {
         c.setLong(TableInputFormat.SCAN_TIMERANGE_START, stopDate.getTime)
         c.setInt(TableInputFormat.SCAN_MAXVERSIONS, 1); // only latest
       }.filter{case (time, url, mime, record) => record.httpResponse.status == 200}
+    }
+  }
+
+  def runOneDomainOnline(implicit sc: SparkContext, logger: BenchmarkLogger) = {
+    val name = "one domain online"
+    val domain = "15october.net"
+    val surt = domain.split("\\.").reverse.mkString(",")
+    val reverse = domain.split("\\.").reverse.mkString(".")
+    val next = reverse.substring(0, reverse.length - 1) + (reverse.charAt(reverse.length - 1) + 1).asInstanceOf[Char]
+
+    benchmarkArchiveSpark(name) {
+      archiveSpark
+        .filter(r => r.mime == "text/html" && r.surtUrl.matches(s"^$surt[\\,\\)].*") && r.status == 200)
+    }
+
+    benchmarkSpark(name) {
+      warcBase
+        .keepMimeTypes(Set("text/html"))
+        .filter(r => r.getDomain.matches(s"(^|\\.)${domain + "$"}") && HttpResponse(r.getContentBytes).status == 200)
+    }
+
+    benchmarkHbase(name) {
+      hbase { c =>
+        c.set(TableInputFormat.SCAN_COLUMNS, "text/html")
+        c.set(TableInputFormat.SCAN_ROW_START, rowKey(reverse))
+        c.set(TableInputFormat.SCAN_ROW_STOP, rowKey(next))
+      }.filter{case (time, url, mime, record) => url.matches(s"^$reverse[\\.\\/].*") && record.httpResponse.status == 200}
     }
   }
  }
