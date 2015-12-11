@@ -42,6 +42,7 @@ import org.warcbase.spark.rdd.RecordRDD._
 
 object Benchmarking {
   val times = 5
+  val retries = 100
   val logFile = "benchmarks.txt"
   val logValues = true
 
@@ -59,6 +60,8 @@ object Benchmarking {
     val conf = new SparkConf().setAppName(appName)
     implicit val sc = new SparkContext(conf)
     implicit val logger = new BenchmarkLogger(logFile)
+
+    Benchmark.retries = retries
 
     runOneUrl
     runOneDomain
@@ -87,7 +90,7 @@ object Benchmarking {
   }
 
   def benchmarkHbase(name: String)(rdd: => RDD[(Long, String, String, HttpArchiveRecord)])(implicit sc: SparkContext, logger: BenchmarkLogger) = {
-    Benchmark.time(name, sparkId, times) {
+    Benchmark.time(name, hbaseId, times) {
       rdd.map{case (timestamp, url, mime, record) => record.stringContent.length}.sum()
     }.log(logValues)
   }

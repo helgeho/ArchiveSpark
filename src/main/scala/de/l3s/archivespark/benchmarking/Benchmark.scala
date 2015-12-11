@@ -27,12 +27,25 @@ package de.l3s.archivespark.benchmarking
 import scala.math._
 
 object Benchmark {
+  var retries = 0
+
   def time[R](name: String, id: String)(action: => R): BenchmarkResult[R] = {
-    val before = System.nanoTime
-    val result = action
-    val after = System.nanoTime
-    val seconds = (after - before).toDouble / pow(10, 9)
-    BenchmarkResult(name, id, Seq(BenchmarkMeasure(result, seconds)))
+    var exception: Exception = null
+    var attempt = 0
+    while (attempt <= retries) {
+      try {
+        val before = System.nanoTime
+        val result = action
+        val after = System.nanoTime
+        val seconds = (after - before).toDouble / pow(10, 9)
+        return BenchmarkResult(name, id, Seq(BenchmarkMeasure(result, seconds)))
+      } catch {
+        case e: Exception =>
+          attempt += 1
+          exception = e
+      }
+    }
+    throw exception
   }
 
   def time[R](name: String, id: String, times: Int)(action: => R): BenchmarkResult[R] = {
