@@ -26,7 +26,7 @@ package de.l3s.archivespark.jobs
 
 import java.util.Calendar
 
-import de.l3s.archivespark.benchmarking.warcbase.WarcBase
+import de.l3s.archivespark.benchmarking.warcbase.{WarcRecord, WarcBase}
 import de.l3s.archivespark.benchmarking.{Benchmark, BenchmarkLogger}
 import de.l3s.archivespark.enrich.functions._
 import de.l3s.archivespark.implicits._
@@ -37,12 +37,10 @@ import org.apache.hadoop.hbase.mapreduce.TableInputFormat
 import org.apache.spark._
 import org.apache.spark.rdd.RDD
 import org.warcbase.data.UrlUtils
-import org.warcbase.spark.matchbox.RecordTransformers
-import org.warcbase.spark.rdd.RecordRDD._
 
 object Benchmarking {
-  val times = 5
-  val retries = 100
+  val times = 1
+  val retries = 1
   val logFile = "benchmarks.txt"
   val logValues = true
 
@@ -58,6 +56,9 @@ object Benchmarking {
     val appName = "ArchiveSpark.Benchmarking"
 
     val conf = new SparkConf().setAppName(appName)
+    ArchiveSpark.initialize(conf)
+    conf.registerKryoClasses(Array(classOf[WarcRecord]))
+
     implicit val sc = new SparkContext(conf)
     implicit val logger = new BenchmarkLogger(logFile)
 
@@ -73,9 +74,9 @@ object Benchmarking {
 
   def warcBase(implicit sc: SparkContext) = WarcBase.loadWarc(s"$warcPath/*.warc.gz").coalesce(ArchiveSpark.partitions)
 
-  def hbase(conf: Configuration => Unit)(implicit sc: SparkContext) = WarcBase.hbase(hbaseTable) { c => conf(c) }.repartition(ArchiveSpark.partitions)
+  def hbase(conf: Configuration => Unit)(implicit sc: SparkContext) = WarcBase.flatVersions(WarcBase.hbase(hbaseTable) { c => conf(c) }.repartition(ArchiveSpark.partitions))
 
-  def rowKey(url: String) = UrlUtils.urlToKey(url)
+  def rowKey(url: String) = Option(UrlUtils.urlToKey(url)).getOrElse(url)
 
   def benchmarkArchiveSpark(name: String)(rdd: => RDD[ResolvedArchiveRecord])(implicit sc: SparkContext, logger: BenchmarkLogger) = {
     Benchmark.time(name, archiveSparkId, times) {
@@ -84,15 +85,15 @@ object Benchmarking {
     }.log(logValues)
   }
 
-  def benchmarkSpark(name: String)(rdd: => RDD[RecordTransformers.WARecord])(implicit sc: SparkContext, logger: BenchmarkLogger) = {
+  def benchmarkSpark(name: String)(rdd: => RDD[WarcRecord])(implicit sc: SparkContext, logger: BenchmarkLogger) = {
     Benchmark.time(name, sparkId, times) {
-      rdd.map(r => HttpResponse(r.getContentBytes).stringContent.length).sum()
+      rdd.map(r => new HttpResponse(r.getContentBytes).stringContent.length).sum()
     }.log(logValues)
   }
 
-  def benchmarkHbase(name: String)(rdd: => RDD[(Long, String, String, HttpArchiveRecord)])(implicit sc: SparkContext, logger: BenchmarkLogger) = {
+  def benchmarkHbase(name: String)(rdd: => RDD[HttpArchiveRecord])(implicit sc: SparkContext, logger: BenchmarkLogger) = {
     Benchmark.time(name, hbaseId, times) {
-      rdd.map{case (timestamp, url, mime, record) => record.stringContent.length}.sum()
+      rdd.map(r => r.stringContent.length).sum()
     }.log(logValues)
   }
 
@@ -112,7 +113,7 @@ object Benchmarking {
       hbase { c =>
         c.set(TableInputFormat.SCAN_ROW_START, rowKey(url))
         c.set(TableInputFormat.SCAN_ROW_STOP, rowKey(url))
-      }
+      }.map{case (timestamp, url, mime, record) => record}
     }
   }
 
@@ -130,16 +131,16 @@ object Benchmarking {
 
     benchmarkSpark(name) {
       warcBase
-        .keepMimeTypes(Set("text/html"))
-        .filter(r => r.getDomain.matches(s"(^|\\.)${domain + "$"}"))
+        .filter(r => r.getMimeType == "text/html" && r.getDomain.matches(s"(^|.*\\.)${domain + "$"}"))
     }
 
     benchmarkHbase(name) {
       hbase { c =>
-        c.set(TableInputFormat.SCAN_COLUMNS, "text/html")
-        c.set(TableInputFormat.SCAN_ROW_START, rowKey(reverse))
-        c.set(TableInputFormat.SCAN_ROW_STOP, rowKey(next))
+        c.set(TableInputFormat.SCAN_COLUMNS, "c:text/html")
+        c.set(TableInputFormat.SCAN_ROW_START, reverse)
+        c.set(TableInputFormat.SCAN_ROW_STOP, next)
       }.filter{case (time, url, mime, record) => url.matches(s"^$reverse[\\.\\/].*")}
+        .map{case (timestamp, url, mime, record) => record}
     }
   }
 
@@ -155,15 +156,16 @@ object Benchmarking {
 
     benchmarkArchiveSpark(name) {
       archiveSpark
-        .filter(r => r.status == 200 && r.timestamp.getYear == year && r.timestamp.getMonthOfYear == month)
-        .map(r => (r.surtUrl, r)).reduceByKey((r1, r2) => if (r1.timestamp.compareTo(r2.timestamp) > 0) r1 else r2, ArchiveSpark.partitions)
+        .filter(r => r.status == 200 && r.time.getYear == year && r.time.getMonthOfYear == month)
+        .map(r => (r.surtUrl, r)).reduceByKey((r1, r2) => if (r1.time.compareTo(r2.time) > 0) r1 else r2, ArchiveSpark.partitions)
         .values
     }
 
     benchmarkSpark(name) {
       warcBase
-        .filter(r => HttpResponse(r.getContentBytes).status == 200 && r.getCrawldate.startsWith(s"$year$month"))
-        .map(r => (r.getUrl, r)).reduceByKey((r1, r2) => if (r1.getCrawldate.toInt > r2.getCrawldate.toInt) r1 else r2, ArchiveSpark.partitions)
+        .filter{r => new HttpResponse(r.getContentBytes).status == 200 && r.getCrawldate.startsWith(s"$year$month")}
+        .map(r => (r.getUrl, r))
+        .reduceByKey({(r1, r2) => if (r1.getCrawldate.toInt > r2.getCrawldate.toInt) r1 else r2}, ArchiveSpark.partitions)
         .values
     }
 
@@ -171,13 +173,15 @@ object Benchmarking {
       hbase { c =>
         c.setLong(TableInputFormat.SCAN_TIMERANGE_END, startDate.getTime)
         c.setLong(TableInputFormat.SCAN_TIMERANGE_START, stopDate.getTime)
-        c.setInt(TableInputFormat.SCAN_MAXVERSIONS, 1); // only latest
       }.filter{case (time, url, mime, record) => record.httpResponse.status == 200}
+        .map{case (time, url, mime, record) => (url, (time, record))}
+        .reduceByKey((tr1, tr2) => if (tr1._1 > tr2._1) tr1 else tr2, ArchiveSpark.partitions)
+        .map{case (url, tr) => tr._2}
     }
   }
 
   def runOneDomainOnline(implicit sc: SparkContext, logger: BenchmarkLogger) = {
-    val name = "one domain online"
+    val name = "one domain (text/html) online"
     val domain = "15october.net"
     val surt = domain.split("\\.").reverse.mkString(",")
     val reverse = domain.split("\\.").reverse.mkString(".")
@@ -190,16 +194,16 @@ object Benchmarking {
 
     benchmarkSpark(name) {
       warcBase
-        .keepMimeTypes(Set("text/html"))
-        .filter(r => r.getDomain.matches(s"(^|\\.)${domain + "$"}") && HttpResponse(r.getContentBytes).status == 200)
+        .filter(r => r.getMimeType == "text/html" && r.getDomain.matches(s"(^|.*\\.)${domain + "$"}") && HttpResponse(r.getContentBytes).status == 200)
     }
 
     benchmarkHbase(name) {
       hbase { c =>
-        c.set(TableInputFormat.SCAN_COLUMNS, "text/html")
-        c.set(TableInputFormat.SCAN_ROW_START, rowKey(reverse))
-        c.set(TableInputFormat.SCAN_ROW_STOP, rowKey(next))
+        c.set(TableInputFormat.SCAN_COLUMNS, "c:text/html")
+        c.set(TableInputFormat.SCAN_ROW_START, reverse)
+        c.set(TableInputFormat.SCAN_ROW_STOP, next)
       }.filter{case (time, url, mime, record) => url.matches(s"^$reverse[\\.\\/].*") && record.httpResponse.status == 200}
+        .map{case (timestamp, url, mime, record) => record}
     }
   }
  }

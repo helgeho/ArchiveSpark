@@ -35,11 +35,10 @@ object CdxRecord {
 
   def fromString(str: String): CdxRecord = {
     str match {
-      case pattern(url, timeStr, fullUrl, mimeType, statusStr, checksum, redirectUrl, meta, sizeStr, offsetStr, filename) =>
+      case pattern(url, timestamp, fullUrl, mimeType, statusStr, checksum, redirectUrl, meta, sizeStr, offsetStr, filename) =>
         try {
-          val time = Try(dateTimeFormat.parseDateTime(timeStr)).getOrElse(null)
           val status = Try(statusStr.toInt).getOrElse(-1)
-          CdxRecord(url, time, fullUrl, mimeType, statusStr.toInt, checksum, redirectUrl, meta, new LocationInfo(sizeStr.toLong, offsetStr.toLong, filename))
+          CdxRecord(url, timestamp, fullUrl, mimeType, statusStr.toInt, checksum, redirectUrl, meta, new LocationInfo(sizeStr.toLong, offsetStr.toLong, filename))
         } catch {
           case e: Exception => null // skip, malformed
         }
@@ -49,7 +48,7 @@ object CdxRecord {
 }
 
 case class CdxRecord(surtUrl: String,
-                     timestamp: DateTime,
+                     timestamp: String,
                      originalUrl: String,
                      mime: String,
                      status: Int,
@@ -57,15 +56,16 @@ case class CdxRecord(surtUrl: String,
                      redirectUrl: String,
                      meta: String,
                      location: LocationInfo) extends JsonConvertible {
+  def time = Try(CdxRecord.dateTimeFormat.parseDateTime(timestamp)).getOrElse(null)
+
   def toSimpleString = {
-    val timestampStr = timestamp.formatted("yyyyMMddHHmmss")
     val statusStr = if (status < 0) "-" else status.toString
-    s"$surtUrl\t$timestampStr\t$originalUrl\t$mime\t$statusStr\t$digest\t$redirectUrl\t$meta"
+    s"$surtUrl\t$timestamp\t$originalUrl\t$mime\t$statusStr\t$digest\t$redirectUrl\t$meta"
   }
 
   def toJson: Map[String, Any] = Map[String, Any](
     "surtUrl" -> surtUrl,
-    "timestamp" -> (if (timestamp == null) null else timestamp.toString),
+    "timestamp" -> timestamp,
     "originalUrl" -> originalUrl,
     "mime" -> mime,
     "status" -> status,

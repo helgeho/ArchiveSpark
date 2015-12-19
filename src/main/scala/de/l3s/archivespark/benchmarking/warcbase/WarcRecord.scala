@@ -24,22 +24,34 @@
 
 package de.l3s.archivespark.benchmarking.warcbase
 
-import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.fs.Path
-import org.apache.hadoop.hbase.HBaseConfiguration
-import org.apache.hadoop.hbase.client.Result
-import org.apache.hadoop.hbase.io.ImmutableBytesWritable
-import org.apache.hadoop.hbase.mapreduce.TableInputFormat
-import org.apache.spark.SparkContext
-import org.apache.spark.rdd.NewHadoopRDD
+import java.text.SimpleDateFormat
 
-object HBase {
-  def rdd(table: String)(conf: Configuration => Unit)(implicit sc: SparkContext) = {
-    val hbaseConf = HBaseConfiguration.create()
-    hbaseConf.addResource(new Path(sys.env("HBASE_CONF_DIR"), "core-site.xml"))
-    hbaseConf.addResource(new Path(sys.env("HBASE_CONF_DIR"), "hbase-site.xml"))
-    hbaseConf.set(TableInputFormat.INPUT_TABLE, table)
-    conf(hbaseConf)
-    new NewHadoopRDD(sc, classOf[TableInputFormat], classOf[ImmutableBytesWritable], classOf[Result], hbaseConf).map{case (k,v) => v}
+import org.archive.util.ArchiveUtils
+import org.warcbase.data.WarcRecordUtils
+import org.warcbase.io.WarcRecordWritable
+import org.warcbase.spark.matchbox.ExtractTopLevelDomain
+
+/*
+compare https://github.com/lintool/warcbase/blob/master/src/main/scala/org/warcbase/spark/archive/io/WarcRecord.scala
+- make ISO8601 a local variable instead of a field of the class in order to enable serialization using Kryo
+- transform as much vals as possible to defs to not compute everything on every record and to not keep everything in memory
+- remove trait ArchiveRecord to allow defs instead of vals (trait should never require vals anyway)
+ */
+class WarcRecord(r: WarcRecordWritable) {
+  val date = r.getRecord.getHeader.getDate
+
+  def getCrawldate: String = {
+    val ISO8601 = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssX")
+    ArchiveUtils.get14DigitDate(ISO8601.parse(date)).substring(0, 8)
   }
+
+  val getContentBytes: Array[Byte] = WarcRecordUtils.getContent(r.getRecord)
+
+  def getContentString: String = new String(getContentBytes)
+
+  def getMimeType = WarcRecordUtils.getWarcResponseMimeType(getContentBytes)
+
+  val getUrl = r.getRecord.getHeader.getUrl
+
+  def getDomain = ExtractTopLevelDomain(getUrl)
 }

@@ -29,6 +29,7 @@ import java.io.ByteArrayInputStream
 import de.l3s.archivespark.utils.HttpArchiveRecord
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hbase.CellUtil
+import org.apache.hadoop.hbase.client.Result
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat
 import org.apache.hadoop.hbase.util.Bytes
 import org.apache.hadoop.io.LongWritable
@@ -37,7 +38,7 @@ import org.apache.spark.rdd.RDD
 import org.archive.io.ArchiveReaderFactory
 import org.warcbase.io.WarcRecordWritable
 import org.warcbase.mapreduce.WacWarcInputFormat
-import org.warcbase.spark.matchbox.RecordTransformers._
+
 import scala.collection.JavaConverters._
 
 object WarcBase {
@@ -46,7 +47,11 @@ object WarcBase {
       c.set(TableInputFormat.SCAN_COLUMN_FAMILY, "c"); // content family of WarcBase
       c.setInt(TableInputFormat.SCAN_MAXVERSIONS, Int.MaxValue); // get all versions
       conf(c)
-    }.flatMap{ result =>
+    }
+  }
+
+  def flatVersions(hbaseRdd: RDD[Result]) = {
+    hbaseRdd.flatMap{ result =>
       for (cell <- result.listCells().asScala) yield { // one record per version / capture
         val url = CellUtil.getCellKeyAsString(cell)
         val mime = Bytes.toString(CellUtil.cloneQualifier(cell))
@@ -63,10 +68,13 @@ object WarcBase {
 
   /*
   compare https://github.com/lintool/warcbase/blob/master/src/main/scala/org/warcbase/spark/matchbox/RecordLoader.scala#L32
-  modified to not apply any filters, which may slow down loading, in order to be fair when comparing to other ArchiveSpark
+  - only load records with positive content length but less than 100 MB to avoid memory issues
+  - removed any other prefilters
+  - return custom WarcRecord class instead of ArchiveRecord trait
    */
-  def loadWarc(path: String)(implicit sc: SparkContext): RDD[WARecord] = {
+  def loadWarc(path: String)(implicit sc: SparkContext): RDD[WarcRecord] = {
     sc.newAPIHadoopFile(path, classOf[WacWarcInputFormat], classOf[LongWritable], classOf[WarcRecordWritable])
-      .map(r => new WarcRecord(r._2.getRecord))
+    .filter{case (_, r) => r.getRecord.getHeader.getContentLength > 0 && r.getRecord.getHeader.getContentLength < 100 * 1024 * 1024}
+    .map{case (_, r) => new WarcRecord(r)}
   }
 }

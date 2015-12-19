@@ -37,7 +37,7 @@ object HttpResponse {
   def apply(bytes: Array[Byte]): HttpResponse = new HttpResponse(bytes)
 }
 
-class HttpResponse private (bytes: Array[Byte]) {
+class HttpResponse (bytes: Array[Byte]) {
   private var _header: collection.mutable.Map[String, String] = null
   private var _payload: Array[Byte] = null
 

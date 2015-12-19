@@ -36,7 +36,7 @@ object HttpArchiveRecord {
   def apply(record: ArchiveRecord): HttpArchiveRecord = new HttpArchiveRecord(record)
 }
 
-class HttpArchiveRecord private (val record: ArchiveRecord) {
+class HttpArchiveRecord (val record: ArchiveRecord) {
   lazy val header = {
     val header = record.getHeader
     header.getHeaderFields.asScala.toMap

@@ -25,10 +25,11 @@
 package de.l3s.archivespark
 
 import de.l3s.archivespark.cdx.{CdxRecord, ResolvedCdxRecord}
-import de.l3s.archivespark.rdd.{UniversalArchiveRDD, HdfsArchiveRDD}
-import de.l3s.archivespark.records.{ResolvedHdfsArchiveRecord, HdfsArchiveRecord}
-import org.apache.spark.SparkContext
+import de.l3s.archivespark.rdd.{HdfsArchiveRDD, UniversalArchiveRDD}
+import de.l3s.archivespark.records.{HdfsArchiveRecord, ResolvedHdfsArchiveRecord}
+import de.l3s.archivespark.utils.{HttpArchiveRecord, HttpResponse}
 import org.apache.spark.rdd.RDD
+import org.apache.spark.{SparkConf, SparkContext}
 
 object ArchiveSpark {
   private var initialized = false
@@ -40,7 +41,11 @@ object ArchiveSpark {
   def initialize(sc: SparkContext): Unit = {
     if (initialized) return
     initialized = true
-    sc.getConf.registerKryoClasses(Array(
+    initialize(sc.getConf)
+  }
+
+  def initialize(conf: SparkConf): Unit = {
+    conf.registerKryoClasses(Array(
       classOf[ResolvedCdxRecord],
       classOf[ResolvedArchiveRecord],
       classOf[ArchiveRecord],
@@ -48,7 +53,9 @@ object ArchiveSpark {
       classOf[UniversalArchiveRDD],
       classOf[ResolvedHdfsArchiveRecord],
       classOf[CdxRecord],
-      classOf[ArchiveRecordField[_]]
+      classOf[ArchiveRecordField[_]],
+      classOf[HttpResponse],
+      classOf[HttpArchiveRecord]
     ))
   }
 
