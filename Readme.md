@@ -4,11 +4,23 @@ An Apache Spark framework that facilitates access to Web Archives, enables easy 
 
 ### Build
 
-At the moment there are no binaries provided. In order to use ArchiveSpark, please compile it yourself using the SBT assembly plugin:
+At the moment we do not provide binaries. In order to use ArchiveSpark, please compile it yourself using the SBT assembly plugin:
 
-`sbt assembly`
+1. `sbt assemblyPackageDependency`
+2. `sbt assembly`
+
+These commands will create two JAR files under `target/scala-2.10`, one for ArchiveSpark and one for the required dependencies.
+Please include these files in your project to use ArchiveSpark or add them to your JVM classpath.
 
 ### Usage
+
+There are multiple ways to use ArchiveSpark, among others: you can create a Java/Scala project to write your jobs and run it using `spark-submit` or use it interactively with `spark-shell`.
+For more information on how to use [Apache Spark](http://spark.apache.org), please read the [documentation](http://spark.apache.org/docs/1.5.2).
+ 
+ArchiveSpark is also compatible with [Jupyter](http://jupyter.org). We recommend to use [Apache Toree](https://github.com/apache/incubator-toree) as kernel for ArchiveSpark with Jupyter.
+Example Jupyter notebooks can be found under [`notebooks`](notebooks).
+
+#### Getting started
 
 First of all, a SparkContext needs to be implicitely available.
 If a SparkContext already exists, e.g., in a `sc` variable when using `spark-shell`, you will need to make it implicit:
@@ -51,7 +63,20 @@ Finally, you can save your data in a pretty JSON format:
 enriched.saveAsJson("out.json")
 ```
 
-(ArchiveSpark requires some implicit functions to be imported: `import de.l3s.archivespark.implicits._`)
+#### Prerequisites
+
+1. ArchiveSpark requires some implicit functions to be imported: `import de.l3s.archivespark.implicits._`
+2. ArchiveSpark requires the `KryoSerializer` to serialize its objects. Please set it using the Spark parameter `--conf spark.serializer=org.apache.spark.serializer.KryoSerializer`.
+
+### Related projects
+
+*[ArchivePig](https://github.com/helgeho/ArchivePig)*
+The original implementation of the ArchiveSpark concept was built on [Apache Pig](https://pig.apache.org) instead of Spark.
+The project was the inspiration for this one and can be found under [ArchivePig](https://github.com/helgeho/ArchivePig).
+However, it is not actively being developed anymore, but can be used if you prefer Pig over Spark.
+
+*[Web2Warc](https://github.com/helgeho/Web2Warc)*
+If you do not have Web archive data available to use it with ArchiveSpark, easily create your own from any collection of websites with [Web2Warc](https://github.com/helgeho/Web2Warc).
 
 ### License
 

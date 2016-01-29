@@ -34,7 +34,7 @@ object CdxRecord {
   val dateTimeFormat = DateTimeFormat.forPattern("yyyyMMddHHmmss")
 
   def fromString(str: String): CdxRecord = {
-    str match {
+    str.trim match {
       case pattern(url, timestamp, fullUrl, mimeType, statusStr, checksum, redirectUrl, meta, sizeStr, offsetStr, filename) =>
         try {
           val status = Try(statusStr.toInt).getOrElse(-1)

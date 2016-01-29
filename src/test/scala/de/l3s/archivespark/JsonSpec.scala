@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
+ * Copyright (c) 2015-2016 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,42 +22,25 @@
  * SOFTWARE.
  */
 
-package de.l3s.archivespark.utils
+package de.l3s.archivespark
 
-import java.io.ByteArrayOutputStream
+import de.l3s.archivespark.utils.Json
+import org.scalatest.FlatSpec
+import org.scalatest.Matchers._
 
-import org.apache.http.entity.ByteArrayEntity
-import org.apache.http.util.EntityUtils
-import org.archive.io.ArchiveRecord
+class JsonSpec extends FlatSpec {
+  "JSON of a Map" should "look like a JSON object with every key/value pair being a field with value" in {
+    val map = Map("a" -> 1, "b" -> 2, "c" -> 3)
+    val json = """{"a":1,"b":2,"c":3}"""
 
-import scala.collection.JavaConverters._
-
-object HttpArchiveRecord {
-  def apply(record: ArchiveRecord): HttpArchiveRecord = new HttpArchiveRecord(record)
-}
-
-class HttpArchiveRecord (val record: ArchiveRecord) {
-  lazy val header = {
-    val header = record.getHeader
-    header.getHeaderFields.asScala.mapValues(o => o.toString).toMap
+    val field = ArchiveRecordField(map)
   }
 
-  lazy val httpResponse: HttpResponse = {
-    var recordOutput: ByteArrayOutputStream = null
-    try {
-      recordOutput = new ByteArrayOutputStream()
-      record.dump(recordOutput)
-      HttpResponse(recordOutput.toByteArray)
-    } finally {
-      if (recordOutput != null) recordOutput.close()
-    }
+  "JSON of a byte array" should "be a string representation with length" in {
+    val bytes = Array[Byte](1,2,3,4,5)
+    val json = "\"bytes(length: 5)\""
+
+    val field = ArchiveRecordField(bytes)
+    field.toJsonString shouldEqual json
   }
-
-  lazy val httpHeader = httpResponse.headers
-
-  lazy val payload = httpResponse.payload
-
-  lazy val stringContent = EntityUtils.toString(new ByteArrayEntity(payload)).trim
-
-  def close() = record.close()
 }

@@ -28,17 +28,19 @@ import org.json4s.DefaultFormats
 import org.json4s.native.JsonMethods._
 import org.json4s.native.Serialization._
 
+import scala.reflect.ClassTag
+
 object Json extends Serializable {
   implicit val formats = DefaultFormats
 
   val SingleValueKey = "_"
 
-  def mapToJson(map: Map[String, Any], pretty: Boolean = true): String = if (pretty) writePretty(map) else write(map)
+  def mapToJson(map: Map[String, Any], pretty: Boolean = true): String = if (pretty) writePretty(mapToJsonValue(map)) else write(mapToJsonValue(map))
   def jsonToMap(json: String): Map[String, Any] = parse(json).extract[Map[String, Any]]
 
-  def mapToAny(map: Map[String, Any]): Any = {
-    if (map.isEmpty) return null
-    if (map.size == 1 && map.keys.head == null) map.values.head
+  def mapToJsonValue(map: Map[String, Any]): AnyRef = {
+    if (map == null || map.isEmpty) return null
+    if (map.size == 1 && map.keys.head == null) map.values.head.asInstanceOf[AnyRef]
     else map.map{ case (key, value) => if (key == null) (SingleValueKey, value) else (key, value) }
   }
 

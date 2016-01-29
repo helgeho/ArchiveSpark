@@ -33,9 +33,9 @@ import de.l3s.archivespark.utils.Json._
 abstract class ResolvedArchiveRecord(override val get: ResolvedCdxRecord) extends EnrichRoot[ResolvedCdxRecord] {
   def access[R >: Null](action: (String, InputStream) => R): R
 
-  override def toJson: Map[String, Any] = (if (isExcludedFromOutput) Map[String, Any]() else Map(
+  override def toJson: Map[String, Any] = Map(
     "record" -> json(this.get)
-  )) ++ enrichments.map{ case (name, field) => (name, mapToAny(field.toJson)) }.filter{ case (_, field) => field != null }
+  ) ++ enrichments.map{ case (name, field) => (name, mapToJsonValue(field.toJson)) }.filter{ case (_, field) => field != null }
 
   def copy(): ResolvedArchiveRecord = clone().asInstanceOf[ResolvedArchiveRecord]
 }

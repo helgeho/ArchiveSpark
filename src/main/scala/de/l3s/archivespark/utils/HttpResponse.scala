@@ -38,11 +38,11 @@ object HttpResponse {
 }
 
 class HttpResponse (bytes: Array[Byte]) {
-  private var _header: collection.mutable.Map[String, String] = null
+  private var _headers: Map[String, String] = null
   private var _payload: Array[Byte] = null
 
   lazy val response = {
-    _header = collection.mutable.Map[String, String]()
+    val headers = collection.mutable.Map[String, String]()
 
     var httpResponse: InputStream = null
     try {
@@ -53,9 +53,10 @@ class HttpResponse (bytes: Array[Byte]) {
       val httpHeaders = response.getHeaders
 
       for (httpHeader: HttpHeader <- httpHeaders.iterator().asScala) {
-        _header.put(httpHeader.getName, httpHeader.getValue)
+        headers.put(httpHeader.getName, httpHeader.getValue)
       }
 
+      _headers = headers.toMap
       _payload = IOUtils.toByteArray(httpResponse)
 
       response
@@ -66,7 +67,7 @@ class HttpResponse (bytes: Array[Byte]) {
 
   lazy val status = response.getMessage.getStatus
 
-  lazy val header = { response; _header }
+  lazy val headers = { response; _headers }
 
   lazy val payload = { response; _payload }
 

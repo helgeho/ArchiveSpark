@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
+ * Copyright (c) 2015-2016 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,9 +28,9 @@ import de.l3s.archivespark.enrich.Enrichable
 import de.l3s.archivespark.utils.Json._
 
 class ArchiveRecordField[T] private (val get: T) extends Enrichable[T] {
-  override def toJson: Map[String, Any] = (if (isExcludedFromOutput) Map[String, Any]() else Map(
+  override def toJson: Map[String, Any] = (if (isExcludedFromOutput) null else Map(
       null.asInstanceOf[String] -> json(this.get)
-    )) ++ enrichments.map{ case (name, field) => (name, mapToAny(field.toJson)) }.filter{ case (_, field) => field != null }
+    )) ++ enrichments.map{ case (name, field) => (name, mapToJsonValue(field.toJson)) }.filter{ case (_, field) => field != null }
 
   override def copy(): ArchiveRecordField[T] = clone().asInstanceOf[ArchiveRecordField[T]]
 }

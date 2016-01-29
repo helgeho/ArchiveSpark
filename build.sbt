@@ -26,7 +26,8 @@ lazy val archivespark = (project in file(".")).
       "org.netpreserve.commons" % "webarchive-commons" % "1.1.5" excludeAll(
         ExclusionRule(organization = "org.apache.hadoop"),
         ExclusionRule(organization = "com.google.guava")),
-      "org.json4s" %% "json4s-native" % "3.2.11" excludeAll ExclusionRule(organization = "org.scala-lang")
+      "org.json4s" %% "json4s-native" % "3.2.11" excludeAll ExclusionRule(organization = "org.scala-lang"),
+      "org.scalatest" %% "scalatest" % "2.2.6" % Test
     ),
     resolvers ++= Seq(
       "cloudera" at "https://repository.cloudera.com/artifactory/cloudera-repos",
@@ -34,7 +35,7 @@ lazy val archivespark = (project in file(".")).
     )
   )
 
-assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = false, cacheOutput = false)
+assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = false, includeDependency = false)
 
 assemblyMergeStrategy in assembly := {
   case PathList("META-INF", xs @ _*) => MergeStrategy.discard
