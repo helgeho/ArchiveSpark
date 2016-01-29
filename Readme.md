@@ -66,16 +66,18 @@ enriched.saveAsJson("out.json")
 #### Prerequisites
 
 1. ArchiveSpark requires some implicit functions to be imported: `import de.l3s.archivespark.implicits._`
-2. ArchiveSpark requires the `KryoSerializer` to serialize its objects. Please set it using the Spark parameter `--conf spark.serializer=org.apache.spark.serializer.KryoSerializer`.
+2. ArchiveSpark requires the `KryoSerializer` to serialize its objects.<br/>Please set it using the Spark parameter `--conf spark.serializer=org.apache.spark.serializer.KryoSerializer`
 
 ### Related projects
 
-*[ArchivePig](https://github.com/helgeho/ArchivePig)*
+__[ArchivePig](https://github.com/helgeho/ArchivePig)__
+
 The original implementation of the ArchiveSpark concept was built on [Apache Pig](https://pig.apache.org) instead of Spark.
 The project was the inspiration for this one and can be found under [ArchivePig](https://github.com/helgeho/ArchivePig).
 However, it is not actively being developed anymore, but can be used if you prefer Pig over Spark.
 
-*[Web2Warc](https://github.com/helgeho/Web2Warc)*
+__[Web2Warc](https://github.com/helgeho/Web2Warc)__
+
 If you do not have Web archive data available to use it with ArchiveSpark, easily create your own from any collection of websites with [Web2Warc](https://github.com/helgeho/Web2Warc).
 
 ### License
