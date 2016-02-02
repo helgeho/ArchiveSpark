@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
+ * Copyright (c) 2015-2016 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,12 +26,12 @@ package de.l3s.archivespark.jobs
 
 import java.util.Calendar
 
-import de.l3s.archivespark.benchmarking.warcbase.{WarcRecord, WarcBase}
-import de.l3s.archivespark.benchmarking.{Benchmark, BenchmarkLogger}
 import de.l3s.archivespark.enrich.functions._
 import de.l3s.archivespark.implicits._
 import de.l3s.archivespark.utils.{HttpArchiveRecord, HttpResponse}
 import de.l3s.archivespark.{ArchiveSpark, ResolvedArchiveRecord}
+import de1.l3s.archivesparkb.benchmarking.{Benchmark, BenchmarkLogger}
+import de1.l3s.archivesparkb.benchmarking.warcbase.{WarcBase, WarcRecord}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat
 import org.apache.spark._

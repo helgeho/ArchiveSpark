@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
+ * Copyright (c) 2015-2016 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package de.l3s.archivespark.benchmarking.warcbase
+package de1.l3s.archivesparkb.benchmarking.warcbase
 
 import java.io.ByteArrayInputStream
 
@@ -38,7 +38,6 @@ import org.apache.spark.rdd.RDD
 import org.archive.io.ArchiveReaderFactory
 import org.warcbase.io.WarcRecordWritable
 import org.warcbase.mapreduce.WacWarcInputFormat
-
 import scala.collection.JavaConverters._
 
 object WarcBase {

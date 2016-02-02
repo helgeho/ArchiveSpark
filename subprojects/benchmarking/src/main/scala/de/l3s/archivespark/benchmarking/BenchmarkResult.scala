@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
+ * Copyright (c) 2015-2016 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,4 +24,7 @@
 
 package de.l3s.archivespark.benchmarking
 
-case class BenchmarkMeasure[T](value: T, seconds: Double)
+case class BenchmarkResult[T](name: String, id: String, measures: Seq[BenchmarkMeasure[T]]) {
+  def log(logValues: Boolean = false)(implicit logger: BenchmarkLogger): T = log(logger, logValues)
+  def log(logger: BenchmarkLogger, logValues: Boolean): T = logger.log(this, logValues)
+}
