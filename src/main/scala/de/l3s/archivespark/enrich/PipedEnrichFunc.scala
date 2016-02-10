@@ -25,7 +25,9 @@
 package de.l3s.archivespark.enrich
 
 class PipedEnrichFunc[Root <: EnrichRoot[_], Source <: Enrichable[_]]
-(parent: DependentEnrichFunc[Root, Source], override val dependency: EnrichFunc[Root, _]) extends DependentEnrichFunc[Root, Source] {
+(parent: DependentEnrichFunc[Root, Source], override val dependency: EnrichFunc[Root, _])
+  extends DependentEnrichFunc[Root, Source] {
+
   override def dependencyField: String = parent.dependencyField
 
   override def derive(source: Source, derivatives: Derivatives[Enrichable[_]]): Unit = parent.derive(source, derivatives)

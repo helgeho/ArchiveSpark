@@ -27,7 +27,7 @@ package de.l3s.archivespark.enrich
 import de.l3s.archivespark.utils.IdentityMap
 
 trait EnrichFunc[Root <: EnrichRoot[_], Source <: Enrichable[_]] extends Serializable {
-  def source: Seq[String]
+  def source: Seq[String] = Seq()
   def fields: Seq[String]
 
   def enrich(root: Root): Root = enrich(root, excludeFromOutput = false)
@@ -41,17 +41,25 @@ trait EnrichFunc[Root <: EnrichRoot[_], Source <: Enrichable[_]] extends Seriali
     if (path.isEmpty) enrichSource(current.asInstanceOf[Source], excludeFromOutput)
     else {
       val field = path.head
-      val enrichedField = enrichPath(current._enrichments(field), path.tail, excludeFromOutput)
-      val clone = current.copy()
-      clone._enrichments = clone._enrichments.updated(field, enrichedField)
-      clone
+      current._enrichments.get(field) match {
+        case Some(enrichable) =>
+          val enrichedField = enrichPath(current._enrichments(field), path.tail, excludeFromOutput)
+          val clone = current.copy()
+          clone._enrichments = clone._enrichments.updated(field, enrichedField)
+          clone
+        case None => current
+      }
     }
   }
 
   private def enrichSource(source: Source, excludeFromOutput: Boolean): Enrichable[_] = {
     val derivatives = new Derivatives[Enrichable[_]](fields)
     derive(source, derivatives)
-    derivatives.get.values.foreach(e => e.excludeFromOutput(excludeFromOutput, overwrite = false))
+    for (enrichable <- derivatives.get.values) {
+      enrichable._root = source._root
+      enrichable._parent = source
+      enrichable.excludeFromOutput(excludeFromOutput, overwrite = false)
+    }
 
     val clone = source.copy()
     clone._enrichments ++= derivatives.get

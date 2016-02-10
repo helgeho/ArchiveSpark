@@ -28,7 +28,7 @@ import de.l3s.archivespark.enrich.Enrichable
 import de.l3s.archivespark.utils.Json._
 
 class ArchiveRecordField[T] private (val get: T) extends Enrichable[T] {
-  override def toJson: Map[String, Any] = (if (isExcludedFromOutput) null else Map(
+  override def toJson: Map[String, Any] = (if (isExcludedFromOutput) Map() else Map(
       null.asInstanceOf[String] -> json(this.get)
     )) ++ enrichments.map{ case (name, field) => (name, mapToJsonValue(field.toJson)) }.filter{ case (_, field) => field != null }
 

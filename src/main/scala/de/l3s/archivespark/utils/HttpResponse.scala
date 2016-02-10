@@ -29,21 +29,22 @@ import java.io.{ByteArrayInputStream, InputStream}
 import org.apache.commons.io.IOUtils
 import org.apache.http.entity.ByteArrayEntity
 import org.apache.http.util.EntityUtils
-import org.archive.format.http.{HttpHeader, HttpResponseParser}
+import org.archive.format.http.HttpResponseParser
 
 import scala.collection.JavaConverters._
+import scala.util.Try
 
 object HttpResponse {
+  val DefaultChartset = "UTF-8"
+
   def apply(bytes: Array[Byte]): HttpResponse = new HttpResponse(bytes)
 }
 
-class HttpResponse (bytes: Array[Byte]) {
-  private var _headers: Map[String, String] = null
+class HttpResponse (val bytes: Array[Byte]) {
+  private var _header: HttpHeader = null
   private var _payload: Array[Byte] = null
 
   lazy val response = {
-    val headers = collection.mutable.Map[String, String]()
-
     var httpResponse: InputStream = null
     try {
       httpResponse = new ByteArrayInputStream(bytes)
@@ -52,11 +53,12 @@ class HttpResponse (bytes: Array[Byte]) {
       val response = parser.parse(httpResponse)
       val httpHeaders = response.getHeaders
 
-      for (httpHeader: HttpHeader <- httpHeaders.iterator().asScala) {
-        headers.put(httpHeader.getName, httpHeader.getValue)
+      val header = collection.mutable.Map[String, String]()
+      for (httpHeader <- httpHeaders.iterator().asScala) {
+        header.put(httpHeader.getName, httpHeader.getValue)
       }
+      _header = new HttpHeader(header.toMap)
 
-      _headers = headers.toMap
       _payload = IOUtils.toByteArray(httpResponse)
 
       response
@@ -65,11 +67,11 @@ class HttpResponse (bytes: Array[Byte]) {
     }
   }
 
-  lazy val status = response.getMessage.getStatus
-
-  lazy val headers = { response; _headers }
+  lazy val header = { response; _header }
 
   lazy val payload = { response; _payload }
 
-  lazy val stringContent = EntityUtils.toString(new ByteArrayEntity(payload)).trim
+  lazy val stringContent = Try {EntityUtils.toString(new ByteArrayEntity(payload), header.charset.getOrElse(HttpResponse.DefaultChartset)).trim}
+
+  def status = Try { response.getMessage.getStatus }
 }

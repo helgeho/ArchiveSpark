@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
+ * Copyright (c) 2015-2016 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,18 +22,24 @@
  * SOFTWARE.
  */
 
-package de.l3s.archivespark
+package de.l3s.archivespark.implicits.classes
 
-import de.l3s.archivespark.enrich.EnrichRoot
-import de.l3s.archivespark.implicits.classes._
-import de.l3s.archivespark.utils.JsonConvertible
-import org.apache.spark.rdd.RDD
+import de.l3s.archivespark.enrich.{EnrichFunc, EnrichRoot}
 
 import scala.reflect.ClassTag
 
-package object implicits extends ImplicitConversions {
-  implicit class ImplicitEnrichableRDD[Root <: EnrichRoot[_] : ClassTag](rdd: RDD[Root]) extends EnrichableRDD[Root](rdd)
-  implicit class ImplicitJsonConvertibleRDD[Record <: JsonConvertible](rdd: RDD[Record]) extends JsonConvertibleRDD[Record](rdd)
-  implicit class ImplicitResolvableRDD[Record <: ArchiveRecord : ClassTag](rdd: RDD[Record]) extends ResolvableRDD[Record](rdd)
-  implicit class ImplicitSimplifiedGetterEnrichRoot[Root <: EnrichRoot[_]](root: Root) extends SimplifiedGetterEnrichRoot[Root](root)
+class SimplifiedGetterEnrichRoot[Root <: EnrichRoot[_]](root: EnrichRoot[_]) {
+  def value[T : ClassTag](f: EnrichFunc[Root, _]): Option[T] = {
+    var path = f.source.mkString(".")
+    if (path.length == 0) path = f.fields.head
+    else path += "." + f.fields.head
+    root.get[T](path)
+  }
+
+  def value[T : ClassTag](f: EnrichFunc[Root, _], field: String): Option[T] = {
+    var path = f.source.mkString(".")
+    if (path.length == 0) path = field
+    else path += "." + field
+    root.get[T](path)
+  }
 }

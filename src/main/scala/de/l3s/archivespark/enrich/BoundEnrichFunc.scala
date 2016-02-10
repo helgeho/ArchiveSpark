@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
+ * Copyright (c) 2015-2016 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,18 +22,13 @@
  * SOFTWARE.
  */
 
-package de.l3s.archivespark
+package de.l3s.archivespark.enrich
 
-import de.l3s.archivespark.enrich.EnrichRoot
-import de.l3s.archivespark.implicits.classes._
-import de.l3s.archivespark.utils.JsonConvertible
-import org.apache.spark.rdd.RDD
+abstract class BoundEnrichFunc[Root <: EnrichRoot[_], Source <: Enrichable[_]](bound: DependentEnrichFunc[Root, Source]) extends DependentEnrichFunc[Root, Source] {
+  override def dependency = bound
 
-import scala.reflect.ClassTag
-
-package object implicits extends ImplicitConversions {
-  implicit class ImplicitEnrichableRDD[Root <: EnrichRoot[_] : ClassTag](rdd: RDD[Root]) extends EnrichableRDD[Root](rdd)
-  implicit class ImplicitJsonConvertibleRDD[Record <: JsonConvertible](rdd: RDD[Record]) extends JsonConvertibleRDD[Record](rdd)
-  implicit class ImplicitResolvableRDD[Record <: ArchiveRecord : ClassTag](rdd: RDD[Record]) extends ResolvableRDD[Record](rdd)
-  implicit class ImplicitSimplifiedGetterEnrichRoot[Root <: EnrichRoot[_]](root: Root) extends SimplifiedGetterEnrichRoot[Root](root)
+  override def on(dependency: EnrichFunc[Root, _]): DependentEnrichFunc[Root, Source] = {
+    val boundPipe = new PipedEnrichFunc(bound, dependency)
+    new PipedEnrichFunc(this, boundPipe)
+  }
 }

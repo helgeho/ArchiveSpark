@@ -28,6 +28,7 @@ import de.l3s.archivespark.ArchiveRecordField
 import de.l3s.archivespark.enrich._
 import de.l3s.archivespark.utils.IdentityMap
 import org.apache.spark.rdd.RDD
+import de.l3s.archivespark.implicits._
 
 import scala.reflect.ClassTag
 
@@ -60,5 +61,11 @@ class EnrichableRDD[Root <: EnrichRoot[_] : ClassTag](rdd: RDD[Root]) {
     rdd.map(r => enrichFunc.enrich(r))
   }
 
-  def filterExists(path: String): RDD[Root] = rdd.filter(r => r[Nothing](path).nonEmpty)
+  def filterExists(path: String): RDD[Root] = rdd.filter(r => r[Nothing](path).isDefined)
+  def filterExists(f: EnrichFunc[Root, _]): RDD[Root] = rdd.filter(r => f.exists(r))
+
+  def mapPath[T : ClassTag](path: String): RDD[T] = rdd.map(r => r.get[T](path)).filter(o => o.isDefined).map(o => o.get)
+
+  def mapResult[T : ClassTag](f: EnrichFunc[Root, _]): RDD[T] = rdd.enrich(f).map(r => r.value[T](f)).filter(o => o.isDefined).map(o => o.get)
+  def mapResult[T : ClassTag](f: EnrichFunc[Root, _], field: String): RDD[T] = rdd.enrich(f).map(r => r.value[T](f, field)).filter(o => o.isDefined).map(o => o.get)
 }

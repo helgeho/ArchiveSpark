@@ -21,7 +21,9 @@ lazy val archivespark = (project in file(".")).
       "org.netpreserve.commons" % "webarchive-commons" % "1.1.5" excludeAll(
         ExclusionRule(organization = "org.apache.hadoop"),
         ExclusionRule(organization = "com.google.guava")),
+      "com.google.guava" % "guava" % "19.0",
       "org.json4s" %% "json4s-native" % "3.2.11" excludeAll ExclusionRule(organization = "org.scala-lang"),
+      "org.jsoup" % "jsoup" % "1.8.3",
       "org.scalatest" %% "scalatest" % "2.2.6" % Test
     ),
     resolvers ++= Seq(

@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
+ * Copyright (c) 2015-2016 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,16 +24,17 @@
 
 package de.l3s.archivespark
 
-import de.l3s.archivespark.enrich.EnrichRoot
-import de.l3s.archivespark.implicits.classes._
-import de.l3s.archivespark.utils.JsonConvertible
-import org.apache.spark.rdd.RDD
+import de.l3s.archivespark.enrich.Enrichable
+import de.l3s.archivespark.utils.Json._
 
-import scala.reflect.ClassTag
+class IdentityArchiveRecordField[T] private () extends Enrichable[T] {
+  def get: T = parent.get
 
-package object implicits extends ImplicitConversions {
-  implicit class ImplicitEnrichableRDD[Root <: EnrichRoot[_] : ClassTag](rdd: RDD[Root]) extends EnrichableRDD[Root](rdd)
-  implicit class ImplicitJsonConvertibleRDD[Record <: JsonConvertible](rdd: RDD[Record]) extends JsonConvertibleRDD[Record](rdd)
-  implicit class ImplicitResolvableRDD[Record <: ArchiveRecord : ClassTag](rdd: RDD[Record]) extends ResolvableRDD[Record](rdd)
-  implicit class ImplicitSimplifiedGetterEnrichRoot[Root <: EnrichRoot[_]](root: Root) extends SimplifiedGetterEnrichRoot[Root](root)
+  override def toJson: Map[String, Any] = Map() ++ enrichments.map{ case (name, field) => (name, mapToJsonValue(field.toJson)) }.filter{ case (_, field) => field != null }
+
+  override def copy(): IdentityArchiveRecordField[T] = clone().asInstanceOf[IdentityArchiveRecordField[T]]
+}
+
+object IdentityArchiveRecordField {
+  def apply[T](): IdentityArchiveRecordField[T] = new IdentityArchiveRecordField[T]
 }

@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
+ * Copyright (c) 2015-2016 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,28 +24,36 @@
 
 package de.l3s.archivespark.enrich.functions
 
-import de.l3s.archivespark.enrich.{DependentEnrichFunc, Derivatives, EnrichFunc, Enrichable}
-import de.l3s.archivespark.utils.{HttpResponse, HttpHeader, IdentityMap}
-import de.l3s.archivespark.{ArchiveRecordField, ResolvedArchiveRecord}
-import org.apache.http.entity.ByteArrayEntity
-import org.apache.http.util.EntityUtils
+import de.l3s.archivespark.ArchiveRecordField
+import de.l3s.archivespark.enrich._
+import de.l3s.archivespark.utils.IdentityMap
+import org.jsoup.parser.Parser
 
-object StringContent extends DependentEnrichFunc[ResolvedArchiveRecord, ArchiveRecordField[Array[Byte]]] {
-  override def dependency: EnrichFunc[ResolvedArchiveRecord, _] = Response
-  override def dependencyField: String = "content"
+import scala.collection.JavaConverters._
 
-  override def fields: Seq[String] = Seq("string")
+private object HtmlAttributeNamespace extends IdentityEnrichFunction[String](Html, "html", "attributes")
+
+object HtmlAttribute {
+  def apply(name: String): HtmlAttribute = new HtmlAttribute(name)
+}
+
+class HtmlAttribute private (attribute: String) extends BoundEnrichFunc(HtmlAttributeNamespace) {
+  override def dependencyField: String = HtmlAttributeNamespace.fieldName
+
+  override def fields: Seq[String] = Seq(attribute)
   override def field: IdentityMap[String] = IdentityMap(
-    "text" -> "string"
+    "value" -> attribute
   )
 
-  override def derive(source: ArchiveRecordField[Array[Byte]], derivatives: Derivatives[Enrichable[_]]): Unit = {
-    val defaultCharset = HttpResponse.DefaultChartset
-    val charset = source.parent.get(Response.HttpHeaderField) match {
-      case Some(headers: Map[String, String]) => HttpHeader(headers).charset.getOrElse(defaultCharset)
-      case None => defaultCharset
+  override def derive(source: Enrichable[String], derivatives: Derivatives[Enrichable[_]]): Unit = {
+    val nodes = Parser.parseXmlFragment(source.get, "").asScala
+    if (nodes.nonEmpty) {
+      val el = nodes.head
+      val lc = attribute.toLowerCase
+      el.attributes().asScala.find(a => a.getKey.toLowerCase == lc) match {
+        case Some(a) => derivatives << ArchiveRecordField(a.getValue)
+        case None => // skip
+      }
     }
-    val entity = new ByteArrayEntity(source.get)
-    derivatives << ArchiveRecordField(EntityUtils.toString(entity, charset).trim)
   }
 }

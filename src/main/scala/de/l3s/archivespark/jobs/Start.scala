@@ -31,10 +31,7 @@ import org.apache.spark._
 
 object Start {
   def main(args: Array[String]): Unit = {
-    val appName = "ArchiveSpark"
-    val master = "yarn-client"
-
-    val conf = new SparkConf().setAppName(appName).setMaster(master)
+    val conf = new SparkConf().setAppName("ArchiveSpark")
     implicit val sc = new SparkContext(conf)
 
     val rdd = ArchiveSpark.hdfs("/data/ia/derivatives/de/cdx_orig_WILL_BE_REMOVED/TA/TA-100000-000000.arc.cdx", "/data/ia/w/de")

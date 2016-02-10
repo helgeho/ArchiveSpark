@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
+ * Copyright (c) 2015-2016 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,14 +22,33 @@
  * SOFTWARE.
  */
 
-package de.l3s.archivespark.implicits
+package de.l3s.archivespark.utils
 
-import de.l3s.archivespark.cdx.{CdxRecord, ResolvedCdxRecord}
-import de.l3s.archivespark.{ArchiveRecord, ResolvedArchiveRecord}
+object HttpHeader {
+  val RedirectLocationHeaderField = "Location"
+  val RemoteAddrHeaderField = "Remote_Addr"
+  val MimeTypeHeaderField = "Content-Type"
 
-object Implicits extends Implicits
+  def apply(headers: Map[String, String]): HttpHeader = new HttpHeader(headers)
+}
 
-class Implicits {
-  implicit def resolvedArchiveRecordToResolvedCdxRecord(record: ResolvedArchiveRecord): ResolvedCdxRecord = record.get
-  implicit def archiveRecordToCdxRecord(record: ArchiveRecord): CdxRecord = record.get
+class HttpHeader(val headers: Map[String, String]) {
+  lazy val ip = headers.get(HttpHeader.RemoteAddrHeaderField)
+
+  lazy val mime = headers.get(HttpHeader.MimeTypeHeaderField).map(m => m.split(';').head.trim)
+
+  lazy val mimeTypeParamter = headers.get(HttpHeader.MimeTypeHeaderField).flatMap{m =>
+    val split = m.split(';')
+    if (split.tail.nonEmpty) {
+      val parameterSplit = split(1).split('=')
+      Some((parameterSplit(0).trim, if (parameterSplit.tail.nonEmpty) parameterSplit(1).trim else null))
+    } else None
+  }
+
+  lazy val charset = mimeTypeParamter match {
+    case Some((key, value)) => if (key == "charset") Option(value) else None
+    case None => None
+  }
+
+  lazy val redirectLocation = headers.get(HttpHeader.RedirectLocationHeaderField)
 }

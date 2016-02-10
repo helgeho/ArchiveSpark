@@ -53,7 +53,7 @@ class HttpArchiveRecord (val record: ArchiveRecord) {
     }
   }
 
-  lazy val httpHeader = httpResponse.headers
+  lazy val httpHeader = httpResponse.header
 
   lazy val payload = httpResponse.payload
 

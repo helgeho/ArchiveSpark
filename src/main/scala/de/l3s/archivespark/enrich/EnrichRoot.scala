@@ -25,5 +25,5 @@
 package de.l3s.archivespark.enrich
 
 trait EnrichRoot[T] extends Enrichable[T] {
-
+  _root = this
 }

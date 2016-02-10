@@ -30,8 +30,11 @@ import de.l3s.archivespark.{ArchiveRecordField, ResolvedArchiveRecord}
 import org.archive.io.ArchiveReaderFactory
 
 object Response extends EnrichFunc[ResolvedArchiveRecord, ResolvedArchiveRecord] {
-  override def source: Seq[String] = Seq()
-  override def fields = Seq("recordHeader", "httpHeader", "payload")
+  val RecordHeaderField = "recordHeader"
+  val HttpHeaderField = "httpHeader"
+  val PayloadField = "payload"
+
+  override def fields = Seq(RecordHeaderField, HttpHeaderField, PayloadField)
 
   override def field: IdentityMap[String] = IdentityMap(
     "content" -> "payload"
@@ -43,7 +46,7 @@ object Response extends EnrichFunc[ResolvedArchiveRecord, ResolvedArchiveRecord]
       val record = HttpArchiveRecord(reader.get)
 
       derivatives << ArchiveRecordField(record.header)
-      derivatives << ArchiveRecordField(record.httpHeader)
+      derivatives << ArchiveRecordField(record.httpHeader.headers)
       derivatives << ArchiveRecordField(record.payload)
 
       record.close()

@@ -29,7 +29,7 @@ trait DependentEnrichFunc[Root <: EnrichRoot[_], Source <: Enrichable[_]] extend
 
   def dependencyField: String
 
-  def source: Seq[String] = dependency.source :+ dependency.field(dependencyField)
+  override def source: Seq[String] = dependency.source :+ dependency.field(dependencyField)
 
   def on(dependency: EnrichFunc[Root, _]): DependentEnrichFunc[Root, Source] = new PipedEnrichFunc[Root, Source](this, dependency)
 

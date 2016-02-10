@@ -22,18 +22,14 @@
  * SOFTWARE.
  */
 
-package de.l3s.archivespark
+package de.l3s.archivespark.implicits
 
-import de.l3s.archivespark.enrich.EnrichRoot
-import de.l3s.archivespark.implicits.classes._
-import de.l3s.archivespark.utils.JsonConvertible
-import org.apache.spark.rdd.RDD
+import de.l3s.archivespark.cdx.{CdxRecord, ResolvedCdxRecord}
+import de.l3s.archivespark.{ArchiveRecord, ResolvedArchiveRecord}
 
-import scala.reflect.ClassTag
+object ImplicitConversions extends ImplicitConversions
 
-package object implicits extends ImplicitConversions {
-  implicit class ImplicitEnrichableRDD[Root <: EnrichRoot[_] : ClassTag](rdd: RDD[Root]) extends EnrichableRDD[Root](rdd)
-  implicit class ImplicitJsonConvertibleRDD[Record <: JsonConvertible](rdd: RDD[Record]) extends JsonConvertibleRDD[Record](rdd)
-  implicit class ImplicitResolvableRDD[Record <: ArchiveRecord : ClassTag](rdd: RDD[Record]) extends ResolvableRDD[Record](rdd)
-  implicit class ImplicitSimplifiedGetterEnrichRoot[Root <: EnrichRoot[_]](root: Root) extends SimplifiedGetterEnrichRoot[Root](root)
+class ImplicitConversions {
+  implicit def resolvedArchiveRecordToResolvedCdxRecord(record: ResolvedArchiveRecord): ResolvedCdxRecord = record.get
+  implicit def archiveRecordToCdxRecord(record: ArchiveRecord): CdxRecord = record.get
 }

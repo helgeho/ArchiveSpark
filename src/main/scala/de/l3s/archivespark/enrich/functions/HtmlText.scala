@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
+ * Copyright (c) 2015-2016 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,18 +22,24 @@
  * SOFTWARE.
  */
 
-package de.l3s.archivespark
+package de.l3s.archivespark.enrich.functions
 
-import de.l3s.archivespark.enrich.EnrichRoot
-import de.l3s.archivespark.implicits.classes._
-import de.l3s.archivespark.utils.JsonConvertible
-import org.apache.spark.rdd.RDD
+import de.l3s.archivespark.enrich.{DependentEnrichFunc, Derivatives, EnrichFunc, Enrichable}
+import de.l3s.archivespark.{ArchiveRecordField, ResolvedArchiveRecord}
+import org.jsoup.parser.Parser
+import scala.collection.JavaConverters._
 
-import scala.reflect.ClassTag
+object HtmlText extends DependentEnrichFunc[ResolvedArchiveRecord, ArchiveRecordField[String]] {
+  override def dependency: EnrichFunc[ResolvedArchiveRecord, _] = Html
+  override def dependencyField: String = "html"
 
-package object implicits extends ImplicitConversions {
-  implicit class ImplicitEnrichableRDD[Root <: EnrichRoot[_] : ClassTag](rdd: RDD[Root]) extends EnrichableRDD[Root](rdd)
-  implicit class ImplicitJsonConvertibleRDD[Record <: JsonConvertible](rdd: RDD[Record]) extends JsonConvertibleRDD[Record](rdd)
-  implicit class ImplicitResolvableRDD[Record <: ArchiveRecord : ClassTag](rdd: RDD[Record]) extends ResolvableRDD[Record](rdd)
-  implicit class ImplicitSimplifiedGetterEnrichRoot[Root <: EnrichRoot[_]](root: Root) extends SimplifiedGetterEnrichRoot[Root](root)
+  override def fields: Seq[String] = Seq("text")
+
+  override def derive(source: ArchiveRecordField[String], derivatives: Derivatives[Enrichable[_]]): Unit = {
+    val nodes = Parser.parseXmlFragment(source.get, "").asScala
+    if (nodes.nonEmpty) {
+      val el = nodes.head.asInstanceOf[org.jsoup.nodes.Element]
+      derivatives << ArchiveRecordField(el.text)
+    }
+  }
 }

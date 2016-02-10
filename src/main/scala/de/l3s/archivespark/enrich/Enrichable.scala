@@ -43,8 +43,16 @@ trait Enrichable[T] extends Serializable with Copyable[Enrichable[T]] with JsonC
     case None => excludeFromOutput = Some(value)
   }
 
+  private[enrich] var _parent: Enrichable[_] = null
+  def parent[A] = _parent.asInstanceOf[Enrichable[A]]
+
+  private[enrich] var _root: EnrichRoot[_] = null
+  def root[A] = _root.asInstanceOf[Enrichable[A]]
+
   private[enrich] var _enrichments = Map[String, Enrichable[_]]()
   def enrichments = _enrichments
+
+  def enrich(fieldName: String, enrichment: Enrichable[_]) = _enrichments += fieldName -> enrichment
 
   def apply[D : ClassTag](key: String): Option[Enrichable[D]] = {
     def find(current: Enrichable[_], path: Seq[String]): Enrichable[_] = {
