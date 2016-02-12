@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
+ * Copyright (c) 2015-2016 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,9 +24,9 @@
 
 package de.l3s.archivespark.cdx
 
-trait LocationInfo {
-  def fileLocation: String
-  def filename: String
-  def offset: Long
-  def compressedSize: Long
+import de.l3s.archivespark.utils.FilePathMap
+import org.apache.spark.broadcast.Broadcast
+
+case class BroadcastPathMapLocationInfo(compressedSize: Long, offset: Long, filename: String)(implicit var pathMap: Broadcast[FilePathMap]) extends LocationInfo {
+  lazy val fileLocation = pathMap.value.dir(filename)
 }

@@ -38,7 +38,7 @@ object CdxRecord {
       case pattern(url, timestamp, fullUrl, mimeType, statusStr, checksum, redirectUrl, meta, sizeStr, offsetStr, filename) =>
         try {
           val status = Try(statusStr.toInt).getOrElse(-1)
-          CdxRecord(url, timestamp, fullUrl, mimeType, statusStr.toInt, checksum, redirectUrl, meta, new LocationInfo(sizeStr.toLong, offsetStr.toLong, filename))
+          CdxRecord(url, timestamp, fullUrl, mimeType, statusStr.toInt, checksum, redirectUrl, meta, new LocationInfoImpl(sizeStr.toLong, offsetStr.toLong, filename))
         } catch {
           case e: Exception => null // skip, malformed
         }

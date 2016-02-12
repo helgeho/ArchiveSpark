@@ -24,10 +24,10 @@
 
 package de.l3s.archivespark
 
-import de.l3s.archivespark.cdx.{CdxRecord, ResolvedCdxRecord}
+import de.l3s.archivespark.cdx.{BroadcastPathMapLocationInfo, CdxRecord, ResolvedCdxRecord}
 import de.l3s.archivespark.rdd.{HdfsArchiveRDD, UniversalArchiveRDD}
 import de.l3s.archivespark.records.{HdfsArchiveRecord, ResolvedHdfsArchiveRecord}
-import de.l3s.archivespark.utils.{HttpArchiveRecord, HttpResponse}
+import de.l3s.archivespark.utils.{FilePathMap, HttpArchiveRecord, HttpResponse}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext}
 
@@ -63,25 +63,13 @@ object ArchiveSpark {
 
   def hdfs(cdxPath: String, warcPath: String)(implicit sc: SparkContext): HdfsArchiveRDD = HdfsArchiveRDD(cdxPath, warcPath)
 
-  def textFileWithPath(path: String)(implicit sc: SparkContext): RDD[(String, String)] = {
-    initialize(sc)
-    sc.wholeTextFiles(path, partitions).flatMap{case (filename, content) => content.split("\n").map(line => (filename, line))}
-  }
-
   def cdx(path: String)(implicit sc: SparkContext): RDD[CdxRecord] = {
     initialize(sc)
     sc.textFile(path, partitions).map(line => CdxRecord.fromString(line)).filter(cdx => cdx != null)
   }
 
   def resolvedCdx(path: String, warcPath: String)(implicit sc: SparkContext): RDD[ResolvedCdxRecord] = {
-    cdx(path).map(cdx => new ResolvedCdxRecord(cdx, warcPath, null))
-  }
-
-  def cdxWithPath(path: String)(implicit sc: SparkContext): RDD[(String, CdxRecord)] = {
-    textFileWithPath(path).map{case (p, line) => (p, CdxRecord.fromString(line))}.filter{case (_, cdx) => cdx != null}
-  }
-
-  def resolvedCdxWithPath(path: String, warcPath: String)(implicit sc: SparkContext): RDD[(String, ResolvedCdxRecord)] = {
-    cdxWithPath(path).map{case (cdxPath, cdx) => (cdxPath, new ResolvedCdxRecord(cdx, warcPath, null))}
+    implicit val filePathMap = sc.broadcast(FilePathMap(warcPath, Seq("(?i).*\\.arc\\.gz", "(?i).*\\.warc\\.gz")))
+    cdx(path).map(cdx => new ResolvedCdxRecord(cdx, new BroadcastPathMapLocationInfo(cdx.location.compressedSize, cdx.location.offset, cdx.location.filename), null))
   }
 }

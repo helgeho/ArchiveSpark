@@ -32,13 +32,10 @@ import org.apache.spark.rdd.RDD
 
 object HdfsArchiveRDD {
   def apply(cdxPath: String, warcPath: String)(implicit sc: SparkContext): HdfsArchiveRDD = {
-    new HdfsArchiveRDD(warcPath, ArchiveSpark.resolvedCdxWithPath(cdxPath, warcPath))
+    new HdfsArchiveRDD(warcPath, ArchiveSpark.resolvedCdx(cdxPath, warcPath))
   }
 }
 
-class HdfsArchiveRDD private (val warcPath: String, parent: RDD[(String, ResolvedCdxRecord)]) extends ResolvedArchiveRDD[(String, ResolvedCdxRecord)](parent) {
-  override protected def record(cdxWithPath: (String, ResolvedCdxRecord)) = {
-    val (path, cdx) = cdxWithPath
-    new ResolvedHdfsArchiveRecord(cdx, path)
-  }
+class HdfsArchiveRDD private (val warcPath: String, parent: RDD[ResolvedCdxRecord]) extends ResolvedArchiveRDD[ResolvedCdxRecord](parent) {
+  override protected def record(cdx: ResolvedCdxRecord) = new ResolvedHdfsArchiveRecord(cdx)
 }

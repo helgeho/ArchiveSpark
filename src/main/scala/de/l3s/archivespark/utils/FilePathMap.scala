@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
+ * Copyright (c) 2015-2016 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,11 +22,32 @@
  * SOFTWARE.
  */
 
-package de.l3s.archivespark.cdx
+package de.l3s.archivespark.utils
 
-trait LocationInfo {
-  def fileLocation: String
-  def filename: String
-  def offset: Long
-  def compressedSize: Long
+import org.apache.hadoop.fs.{FileSystem, Path}
+import org.apache.spark.deploy.SparkHadoopUtil
+
+import scala.util.Try
+
+case class FilePathMap(path: String, patterns: Seq[String]) {
+  lazy val dir: Map[String, String] = {
+    var map = collection.mutable.Map[String, String]()
+
+    val fs = FileSystem.newInstance(SparkHadoopUtil.get.conf)
+    try {
+      val files = fs.listFiles(new Path(path), true)
+      while (files.hasNext) {
+        val path = files.next.getPath
+        val filename = path.getName
+        if (patterns.exists(filename.matches)) {
+          if (map.contains(filename)) throw new RuntimeException("duplicate filename: " + filename)
+          map += filename -> path.getParent.toString.intern
+        }
+      }
+    } finally {
+      Try { fs.close() }
+    }
+
+    map.toMap
+  }
 }

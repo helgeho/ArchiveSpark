@@ -29,41 +29,27 @@ import java.io.InputStream
 import de.l3s.archivespark.ResolvedArchiveRecord
 import de.l3s.archivespark.cdx.ResolvedCdxRecord
 import org.apache.commons.io.input.BoundedInputStream
-import org.apache.hadoop.fs.{FileSystem, Path}
+import org.apache.hadoop.fs.{FSDataInputStream, FileSystem, Path}
 import org.apache.spark.deploy.SparkHadoopUtil
 
-class ResolvedHdfsArchiveRecord(cdx: ResolvedCdxRecord, cdxPath: String = null) extends ResolvedArchiveRecord(cdx) {
+import scala.util.Try
+
+class ResolvedHdfsArchiveRecord(cdx: ResolvedCdxRecord) extends ResolvedArchiveRecord(cdx) {
   override def access[R >: Null](action: (String, InputStream) => R): R = {
     if (cdx.location.compressedSize < 0 || cdx.location.offset < 0) null
     else {
-      val fs = FileSystem.get(SparkHadoopUtil.get.conf)
-      findArchivePath(fs, cdx.location.fileLocation, cdx.location.filename) match {
-        case None => fs.close(); null
-        case Some(path) =>
-          val stream = fs.open(path)
-          try {
-            stream.seek(cdx.location.offset)
-            action(cdx.location.filename, new BoundedInputStream(stream, cdx.location.compressedSize))
-          } catch {
-            case e: Exception => null /* something went wrong, do nothing */
-          } finally {
-            stream.close()
-            fs.close()
-          }
+      val fs = FileSystem.newInstance(SparkHadoopUtil.get.conf)
+      var stream: FSDataInputStream = null
+      try {
+        stream = fs.open(new Path(cdx.location.fileLocation, cdx.location.filename))
+        stream.seek(cdx.location.offset)
+        action(cdx.location.filename, new BoundedInputStream(stream, cdx.location.compressedSize))
+      } catch {
+        case e: Exception => null /* something went wrong, do nothing */
+      } finally {
+        if (stream != null) Try {stream.close()}
+        Try {fs.close()}
       }
     }
-  }
-
-  private def findArchivePath(fs: FileSystem, base: String, filename: String): Option[Path] = {
-    var cdxBase = if (cdxPath == null) null else new Path(cdxPath).getParent
-    var dir = new Path(base)
-    var path = new Path(dir, filename)
-    while (!fs.exists(path)) {
-      if (cdxBase == null || cdxBase.depth() == 0) return None
-      dir = new Path(dir, cdxBase.getName)
-      cdxBase = cdxBase.getParent
-      path = new Path(dir, filename)
-    }
-    Some(path)
   }
 }
