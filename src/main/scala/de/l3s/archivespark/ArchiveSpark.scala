@@ -24,12 +24,20 @@
 
 package de.l3s.archivespark
 
+import java.io.{FileInputStream, FileFilter, File}
+import java.util.zip.GZIPInputStream
+
 import de.l3s.archivespark.cdx.{BroadcastPathMapLocationInfo, CdxRecord, ResolvedCdxRecord}
 import de.l3s.archivespark.rdd.{HdfsArchiveRDD, UniversalArchiveRDD}
 import de.l3s.archivespark.records.{HdfsArchiveRecord, ResolvedHdfsArchiveRecord}
-import de.l3s.archivespark.utils.{FilePathMap, HttpArchiveRecord, HttpResponse}
+import de.l3s.archivespark.utils.{IO, FilePathMap, HttpArchiveRecord, HttpResponse}
+import org.apache.commons.io.filefilter.WildcardFileFilter
+import org.apache.hadoop.fs.Path
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext}
+
+import scala.io.Source
+import scala.util.Try
 
 object ArchiveSpark {
   private var initialized = false
@@ -62,6 +70,12 @@ object ArchiveSpark {
   def load(cdxPath: String)(implicit sc: SparkContext): UniversalArchiveRDD = UniversalArchiveRDD(cdxPath)
 
   def hdfs(cdxPath: String, warcPath: String)(implicit sc: SparkContext): HdfsArchiveRDD = HdfsArchiveRDD(cdxPath, warcPath)
+
+  def files(cdxPath: String, warcPath: String): Iterable[ResolvedArchiveRecord] = {
+    IO.lines(cdxPath).view
+      .map(line => CdxRecord.fromString(line)).filter(cdx => cdx != null).map(cdx => new ResolvedCdxRecord(cdx, warcPath, null))
+      .map(cdx => new ResolvedHdfsArchiveRecord(cdx))
+  }
 
   def cdx(path: String)(implicit sc: SparkContext): RDD[CdxRecord] = {
     initialize(sc)
