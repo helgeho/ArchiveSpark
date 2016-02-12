@@ -26,9 +26,8 @@ package de.l3s.archivespark.implicits.classes
 
 import de.l3s.archivespark._
 import de.l3s.archivespark.cdx._
+import de.l3s.archivespark.implicits._
 import org.apache.spark.rdd.RDD
-
-import implicits._
 
 import scala.reflect.ClassTag
 

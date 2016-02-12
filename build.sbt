@@ -22,6 +22,7 @@ lazy val archivespark = (project in file(".")).
         ExclusionRule(organization = "org.apache.hadoop"),
         ExclusionRule(organization = "com.google.guava")),
       "com.google.guava" % "guava" % "19.0",
+      "commons-io" % "commons-io" % "2.4",
       "org.json4s" %% "json4s-native" % "3.2.11" excludeAll ExclusionRule(organization = "org.scala-lang"),
       "org.jsoup" % "jsoup" % "1.8.3",
       "org.scalatest" %% "scalatest" % "2.2.6" % Test

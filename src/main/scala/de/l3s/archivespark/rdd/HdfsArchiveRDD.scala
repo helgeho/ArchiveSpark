@@ -24,9 +24,9 @@
 
 package de.l3s.archivespark.rdd
 
+import de.l3s.archivespark.ArchiveSpark
 import de.l3s.archivespark.cdx.ResolvedCdxRecord
 import de.l3s.archivespark.records.ResolvedHdfsArchiveRecord
-import de.l3s.archivespark.ArchiveSpark
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 

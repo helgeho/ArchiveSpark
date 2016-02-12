@@ -27,6 +27,7 @@ package de.l3s.archivespark.enrich.functions
 import de.l3s.archivespark.enrich.{DependentEnrichFunc, Derivatives, EnrichFunc, Enrichable}
 import de.l3s.archivespark.{ArchiveRecordField, ResolvedArchiveRecord}
 import org.jsoup.parser.Parser
+
 import scala.collection.JavaConverters._
 
 object HtmlText extends DependentEnrichFunc[ResolvedArchiveRecord, ArchiveRecordField[String]] {

@@ -25,7 +25,7 @@
 package de.l3s.archivespark.enrich.functions
 
 import de.l3s.archivespark.enrich.{DependentEnrichFunc, Derivatives, EnrichFunc, Enrichable}
-import de.l3s.archivespark.utils.{HttpResponse, HttpHeader, IdentityMap}
+import de.l3s.archivespark.utils.{HttpHeader, HttpResponse, IdentityMap}
 import de.l3s.archivespark.{ArchiveRecordField, ResolvedArchiveRecord}
 import org.apache.http.entity.ByteArrayEntity
 import org.apache.http.util.EntityUtils

@@ -26,8 +26,7 @@ package de.l3s.archivespark.nativescala.implicits.classes
 
 import de.l3s.archivespark.utils.JsonConvertible
 
-class JsonConvertibleRecords[Record <: JsonConvertible](records: Traversable[Record]) {
-  def toJson = records.map(r => r.toJson)
-
-  def toJsonStrings = records.map(r => r.toJsonString)
+class SparkRDDLikeTraversable[Record <: JsonConvertible](records: Traversable[Record]) {
+  def cache() = records.view.force
+  def count() = records.size
 }

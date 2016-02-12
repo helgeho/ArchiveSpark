@@ -22,23 +22,12 @@
  * SOFTWARE.
  */
 
-package de.l3s.archivespark.enrich.functions
+package de.l3s.archivespark.nativescala.implicits.classes
 
-import de.l3s.archivespark.enrich.{DependentEnrichFunc, Derivatives, EnrichFunc, Enrichable}
-import de.l3s.archivespark.utils.IdentityMap
-import de.l3s.archivespark.{IdentityArchiveRecordField, ResolvedArchiveRecord}
+import de.l3s.archivespark.utils.JsonConvertible
 
-class IdentityEnrichFunction[T]
-(override val dependency: EnrichFunc[ResolvedArchiveRecord, _], override val dependencyField: String, val fieldName: String)
-  extends DependentEnrichFunc[ResolvedArchiveRecord, Enrichable[T]] {
+class JsonConvertibleTraversable[Record <: JsonConvertible](records: Traversable[Record]) {
+  def toJson = records.map(r => r.toJson)
 
-  override def fields: Seq[String] = Seq(fieldName)
-  override def field: IdentityMap[String] = dependency.field.map.find{case (k, v) => v == dependencyField} match {
-    case Some((k, v)) => IdentityMap(k -> fieldName)
-    case None => IdentityMap()
-  }
-
-  override def derive(source: Enrichable[T], derivatives: Derivatives[Enrichable[_]]): Unit = {
-    derivatives << IdentityArchiveRecordField[T]()
-  }
+  def toJsonStrings = records.map(r => r.toJsonString)
 }

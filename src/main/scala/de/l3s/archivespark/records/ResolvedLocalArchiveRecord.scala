@@ -22,23 +22,31 @@
  * SOFTWARE.
  */
 
-package de.l3s.archivespark.enrich.functions
+package de.l3s.archivespark.records
 
-import de.l3s.archivespark.enrich.{DependentEnrichFunc, Derivatives, EnrichFunc, Enrichable}
-import de.l3s.archivespark.utils.IdentityMap
-import de.l3s.archivespark.{IdentityArchiveRecordField, ResolvedArchiveRecord}
+import java.io.{FileInputStream, InputStream}
+import java.nio.file.Paths
 
-class IdentityEnrichFunction[T]
-(override val dependency: EnrichFunc[ResolvedArchiveRecord, _], override val dependencyField: String, val fieldName: String)
-  extends DependentEnrichFunc[ResolvedArchiveRecord, Enrichable[T]] {
+import de.l3s.archivespark.ResolvedArchiveRecord
+import de.l3s.archivespark.cdx.ResolvedCdxRecord
+import org.apache.commons.io.input.BoundedInputStream
 
-  override def fields: Seq[String] = Seq(fieldName)
-  override def field: IdentityMap[String] = dependency.field.map.find{case (k, v) => v == dependencyField} match {
-    case Some((k, v)) => IdentityMap(k -> fieldName)
-    case None => IdentityMap()
-  }
+import scala.util.Try
 
-  override def derive(source: Enrichable[T], derivatives: Derivatives[Enrichable[_]]): Unit = {
-    derivatives << IdentityArchiveRecordField[T]()
+class ResolvedLocalArchiveRecord(cdx: ResolvedCdxRecord) extends ResolvedArchiveRecord(cdx) {
+  override def access[R >: Null](action: (String, InputStream) => R): R = {
+    if (cdx.location.compressedSize < 0 || cdx.location.offset < 0) null
+    else {
+      var stream: FileInputStream = null
+      try {
+        stream = new FileInputStream(Paths.get(cdx.location.fileLocation, cdx.location.filename).toString)
+        stream.skip(cdx.location.offset)
+        action(cdx.location.filename, new BoundedInputStream(stream, cdx.location.compressedSize))
+      } catch {
+        case e: Exception => null /* something went wrong, do nothing */
+      } finally {
+        if (stream != null) Try {stream.close()}
+      }
+    }
   }
 }

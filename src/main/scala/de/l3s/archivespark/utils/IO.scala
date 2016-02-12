@@ -24,20 +24,22 @@
 
 package de.l3s.archivespark.utils
 
-import java.io.{FileInputStream, File, FileFilter}
+import java.io.{File, FileFilter, FileInputStream}
 import java.util.zip.GZIPInputStream
 
 import org.apache.commons.io.filefilter.WildcardFileFilter
-import org.apache.hadoop.fs.Path
 
 import scala.io.Source
 import scala.util.Try
 
 object IO {
   def lines(globPath: String): Seq[String] = {
-    val path = new Path(globPath)
-    val fileFilter: FileFilter = new WildcardFileFilter(path.getName)
-    new File(path.getParent.toString).listFiles(fileFilter).flatMap{file =>
+    val delimiter = globPath.replace('\\', '/').lastIndexOf('/')
+    val (dir, filename) = if (delimiter < 0) (".", globPath)
+      else if (delimiter == 0) (globPath.head.toString, globPath.substring(1))
+      else (globPath.substring(0, delimiter), globPath.substring(delimiter + 1))
+    val fileFilter: FileFilter = new WildcardFileFilter(filename)
+    new File(dir).listFiles(fileFilter).flatMap{file =>
       var fileStream: FileInputStream = null
       var gzipStream: GZIPInputStream = null
       var source: Source = null

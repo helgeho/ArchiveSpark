@@ -26,13 +26,13 @@ package de.l3s.archivespark.nativescala.implicits.classes
 
 import de.l3s.archivespark.ArchiveRecordField
 import de.l3s.archivespark.enrich._
-import de.l3s.archivespark.utils.IdentityMap
 import de.l3s.archivespark.implicits._
 import de.l3s.archivespark.nativescala.implicits._
+import de.l3s.archivespark.utils.IdentityMap
 
 import scala.reflect.ClassTag
 
-class EnrichableRecords[Root <: EnrichRoot[_] : ClassTag](records: Traversable[Root]) {
+class EnrichableTraversable[Root <: EnrichRoot[_] : ClassTag](records: Traversable[Root]) {
   def enrich(f: EnrichFunc[Root, _]): Traversable[Root] = records.map(r => f.enrich(r))
 
   def mapEnrich[Source, Target](sourceField: String, target: String)(f: Source => Target): Traversable[Root] = mapEnrich(sourceField.split('.'), target, target)(f)

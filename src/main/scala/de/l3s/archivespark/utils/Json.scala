@@ -28,8 +28,6 @@ import org.json4s.DefaultFormats
 import org.json4s.native.JsonMethods._
 import org.json4s.native.Serialization._
 
-import scala.reflect.ClassTag
-
 object Json extends Serializable {
   implicit val formats = DefaultFormats
 

@@ -26,9 +26,9 @@ package de.l3s.archivespark.implicits.classes
 
 import de.l3s.archivespark.ArchiveRecordField
 import de.l3s.archivespark.enrich._
+import de.l3s.archivespark.implicits._
 import de.l3s.archivespark.utils.IdentityMap
 import org.apache.spark.rdd.RDD
-import de.l3s.archivespark.implicits._
 
 import scala.reflect.ClassTag
 
