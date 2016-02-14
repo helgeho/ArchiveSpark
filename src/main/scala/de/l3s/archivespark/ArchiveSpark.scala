@@ -64,8 +64,10 @@ object ArchiveSpark {
   def hdfs(cdxPath: String, warcPath: String)(implicit sc: SparkContext): HdfsArchiveRDD = HdfsArchiveRDD(cdxPath, warcPath)
 
   def files(cdxPath: String, warcPath: String): Iterable[ResolvedArchiveRecord] = {
-    IO.lines(cdxPath).view
-      .map(line => CdxRecord.fromString(line)).filter(cdx => cdx != null).map(cdx => new ResolvedCdxRecord(cdx, warcPath, null))
+    IO.lazyLines(cdxPath)
+      .map(line => CdxRecord.fromString(line))
+      .filter(cdx => cdx != null)
+      .map(cdx => new ResolvedCdxRecord(cdx, warcPath, null))
       .map(cdx => new ResolvedLocalArchiveRecord(cdx))
   }
 

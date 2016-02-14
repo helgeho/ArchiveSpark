@@ -34,17 +34,12 @@ import scala.util.Try
 
 object IO {
   def lines(globPath: String): Seq[String] = {
-    val delimiter = globPath.replace('\\', '/').lastIndexOf('/')
-    val (dir, filename) = if (delimiter < 0) (".", globPath)
-      else if (delimiter == 0) (globPath.head.toString, globPath.substring(1))
-      else (globPath.substring(0, delimiter), globPath.substring(delimiter + 1))
-    val fileFilter: FileFilter = new WildcardFileFilter(filename)
-    new File(dir).listFiles(fileFilter).flatMap{file =>
+    IO.paths(globPath).flatMap{file =>
       var fileStream: FileInputStream = null
       var gzipStream: GZIPInputStream = null
       var source: Source = null
       try {
-        source = if (file.getName.toLowerCase.endsWith(".gz")) {
+        source = if (file.toLowerCase.endsWith(".gz")) {
           fileStream = new FileInputStream(file)
           gzipStream = new GZIPInputStream(fileStream)
           Source.fromInputStream(gzipStream)
@@ -55,6 +50,35 @@ object IO {
         if (fileStream != null) Try {fileStream.close()}
         if (source != null) Try {source.close()}
       }
-    }.toSeq
+    }
+  }
+
+  def lazyLines(globPath: String): Seq[String] = {
+    IO.paths(globPath).view.flatMap{file =>
+      var fileStream: FileInputStream = null
+      var gzipStream: GZIPInputStream = null
+      var source: Source = null
+      try {
+        source = if (file.toLowerCase.endsWith(".gz")) {
+          fileStream = new FileInputStream(file)
+          gzipStream = new GZIPInputStream(fileStream)
+          Source.fromInputStream(gzipStream)
+        } else Source.fromFile(file)
+        source.getLines().toList
+      } finally {
+        if (gzipStream != null) Try {gzipStream.close()}
+        if (fileStream != null) Try {fileStream.close()}
+        if (source != null) Try {source.close()}
+      }
+    }
+  }
+
+  def paths(globPath: String): Seq[String] = {
+    val delimiter = globPath.replace('\\', '/').lastIndexOf('/')
+    val (dir, filename) = if (delimiter < 0) (".", globPath)
+    else if (delimiter == 0) (globPath.head.toString, globPath.substring(1))
+    else (globPath.substring(0, delimiter), globPath.substring(delimiter + 1))
+    val fileFilter: FileFilter = new WildcardFileFilter(filename)
+    new File(dir).listFiles(fileFilter).map(f => f.toString).toSeq
   }
 }
