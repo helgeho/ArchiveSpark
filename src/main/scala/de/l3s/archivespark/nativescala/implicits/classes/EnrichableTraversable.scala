@@ -32,7 +32,7 @@ import de.l3s.archivespark.utils.IdentityMap
 
 import scala.reflect.ClassTag
 
-class EnrichableTraversable[Root <: EnrichRoot[_] : ClassTag](records: Traversable[Root]) {
+class EnrichableTraversable[Root <: EnrichRoot[_]](records: Traversable[Root]) {
   def enrich(f: EnrichFunc[Root, _]): Traversable[Root] = records.map(r => f.enrich(r))
 
   def mapEnrich[Source, Target](sourceField: String, target: String)(f: Source => Target): Traversable[Root] = mapEnrich(sourceField.split('.'), target, target)(f)
@@ -66,6 +66,7 @@ class EnrichableTraversable[Root <: EnrichRoot[_] : ClassTag](records: Traversab
 
   def mapPath[T : ClassTag](path: String): Traversable[T] = records.map(r => r.get[T](path)).filter(o => o.isDefined).map(o => o.get)
 
-  def mapResult[T : ClassTag](f: EnrichFunc[Root, _]): Traversable[T] = records.enrich(f).map(r => r.value[T](f)).filter(o => o.isDefined).map(o => o.get)
-  def mapResult[T : ClassTag](f: EnrichFunc[Root, _], field: String): Traversable[T] = records.enrich(f).map(r => r.value[T](f, field)).filter(o => o.isDefined).map(o => o.get)
+  def mapValues[T : ClassTag](path: String): Traversable[T] = mapPath[T](path)
+  def mapValues[T : ClassTag](f: EnrichFunc[Root, _]): Traversable[T] = records.enrich(f).map(r => r.value[T](f)).filter(o => o.isDefined).map(o => o.get)
+  def mapValues[T : ClassTag](f: EnrichFunc[Root, _], field: String): Traversable[T] = records.enrich(f).map(r => r.value[T](f, field)).filter(o => o.isDefined).map(o => o.get)
 }

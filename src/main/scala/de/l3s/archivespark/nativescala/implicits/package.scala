@@ -31,7 +31,7 @@ import de.l3s.archivespark.utils.JsonConvertible
 import scala.reflect.ClassTag
 
 package object implicits {
-  implicit class ImplicitEnrichableTraversable[Root <: EnrichRoot[_] : ClassTag](records: Traversable[Root]) extends EnrichableTraversable[Root](records)
+  implicit class ImplicitEnrichableTraversable[Root <: EnrichRoot[_]](records: Traversable[Root]) extends EnrichableTraversable[Root](records)
   implicit class ImplicitJsonConvertibleTraversable[Record <: JsonConvertible](records: Traversable[Record]) extends JsonConvertibleTraversable[Record](records)
-  implicit class ImplicitSparkRDDLikeTraversable[Root <: EnrichRoot[_] : ClassTag](records: Traversable[Root]) extends SparkRDDLikeTraversable[Root](records)
+  implicit class ImplicitSparkRDDLikeTraversable[T](records: Traversable[T]) extends SparkRDDLikeTraversable[T](records)
 }
