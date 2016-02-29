@@ -27,12 +27,10 @@ package de.l3s.archivespark
 import de.l3s.archivespark.enrich.Enrichable
 import de.l3s.archivespark.utils.Json._
 
-class IdentityArchiveRecordField[T] private () extends Enrichable[T] {
+class IdentityArchiveRecordField[T] private () extends Enrichable[T, IdentityArchiveRecordField[T]] {
   def get: T = parent.get
 
-  override def toJson: Map[String, Any] = Map() ++ enrichments.map{ case (name, field) => (name, mapToJsonValue(field.toJson)) }.filter{ case (_, field) => field != null }
-
-  override def copy(): IdentityArchiveRecordField[T] = clone().asInstanceOf[IdentityArchiveRecordField[T]]
+  override def toJson: Map[String, Any] = Map() ++ enrichments.map{e => (e, mapToJsonValue(enrichment(e).get.toJson))}.filter{ case (_, field) => field != null }
 }
 
 object IdentityArchiveRecordField {

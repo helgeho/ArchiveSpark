@@ -28,35 +28,35 @@ import de.l3s.archivespark.ArchiveRecordField
 import de.l3s.archivespark.enrich._
 import de.l3s.archivespark.implicits._
 import de.l3s.archivespark.nativescala.implicits._
-import de.l3s.archivespark.utils.IdentityMap
+import de.l3s.archivespark.utils.{SelectorUtil, IdentityMap}
 
 import scala.reflect.ClassTag
 
-class EnrichableTraversable[Root <: EnrichRoot[_]](records: Traversable[Root]) {
+class EnrichableTraversable[Root <: EnrichRoot[_, _]](records: Traversable[Root]) {
   def enrich(f: EnrichFunc[Root, _]): Traversable[Root] = records.map(r => f.enrich(r))
 
-  def mapEnrich[Source, Target](sourceField: String, target: String)(f: Source => Target): Traversable[Root] = mapEnrich(sourceField.split('.'), target, target)(f)
-  def mapEnrich[Source, Target](sourceField: String, target: String, targetField: String)(f: Source => Target): Traversable[Root] = mapEnrich(sourceField.split('.'), target, targetField)(f)
+  def mapEnrich[Source, Target](sourceField: String, target: String)(f: Source => Target): Traversable[Root] = mapEnrich(SelectorUtil.parse(sourceField), target, target)(f)
+  def mapEnrich[Source, Target](sourceField: String, target: String, targetField: String)(f: Source => Target): Traversable[Root] = mapEnrich(SelectorUtil.parse(sourceField), target, targetField)(f)
   def mapEnrich[Source, Target](sourceField: Seq[String], target: String)(f: Source => Target): Traversable[Root] = mapEnrich(sourceField, target, target)(f)
   def mapEnrich[Source, Target](sourceField: Seq[String], target: String, targetField: String)(f: Source => Target): Traversable[Root] = {
-    val enrichFunc = new EnrichFunc[Root, ArchiveRecordField[Source]] {
+    val enrichFunc = new EnrichFunc[Root, Enrichable[Source, _]] {
       override def source: Seq[String] = sourceField
       override def fields: Seq[String] = Seq(target)
       override def field: IdentityMap[String] = IdentityMap(targetField -> target)
-      override def derive(source: ArchiveRecordField[Source], derivatives: Derivatives[Enrichable[_]]): Unit = derivatives << ArchiveRecordField(f(source.get))
+      override def derive(source: Enrichable[Source, _], derivatives: Derivatives): Unit = derivatives << ArchiveRecordField(f(source.get))
     }
     records.map(r => enrichFunc.enrich(r))
   }
 
-  def mapEnrich[Source, Target](dependencyFunc: EnrichFunc[Root, _], target: String)(f: Source => Target): Traversable[Root] = mapEnrich(dependencyFunc, dependencyFunc.fields.head, target, target)(f)
+  def mapEnrich[Source, Target](dependencyFunc: EnrichFunc[Root, _] with DefaultFieldEnrichFunc[Source], target: String)(f: Source => Target): Traversable[Root] = mapEnrich(dependencyFunc, dependencyFunc.defaultField, target, target)(f)
   def mapEnrich[Source, Target](dependencyFunc: EnrichFunc[Root, _], sourceField: String, target: String)(f: Source => Target): Traversable[Root] = mapEnrich(dependencyFunc, sourceField, target, target)(f)
   def mapEnrich[Source, Target](dependencyFunc: EnrichFunc[Root, _], sourceField: String, target: String, targetField: String)(f: Source => Target): Traversable[Root] = {
-    val enrichFunc = new DependentEnrichFunc[Root, Enrichable[Source]] {
+    val enrichFunc = new DependentEnrichFunc[Root, Enrichable[Source, _]] {
       override def dependency: EnrichFunc[Root, _] = dependencyFunc
       override def dependencyField: String = sourceField
       override def fields: Seq[String] = Seq(target)
       override def field: IdentityMap[String] = IdentityMap(targetField -> target)
-      override def derive(source: Enrichable[Source], derivatives: Derivatives[Enrichable[_]]): Unit = derivatives << ArchiveRecordField(f(source.get))
+      override def derive(source: Enrichable[Source, _], derivatives: Derivatives): Unit = derivatives << ArchiveRecordField(f(source.get))
     }
     records.map(r => enrichFunc.enrich(r))
   }
@@ -67,6 +67,6 @@ class EnrichableTraversable[Root <: EnrichRoot[_]](records: Traversable[Root]) {
   def mapPath[T : ClassTag](path: String): Traversable[T] = records.map(r => r.get[T](path)).filter(o => o.isDefined).map(o => o.get)
 
   def mapValues[T : ClassTag](path: String): Traversable[T] = mapPath[T](path)
-  def mapValues[T : ClassTag](f: EnrichFunc[Root, _]): Traversable[T] = records.enrich(f).map(r => r.value[T](f)).filter(o => o.isDefined).map(o => o.get)
+  def mapValues[T : ClassTag](f: EnrichFunc[Root, _] with DefaultFieldEnrichFunc[T]): Traversable[T] = records.enrich(f).map(r => r.value[T](f)).filter(o => o.isDefined).map(o => o.get)
   def mapValues[T : ClassTag](f: EnrichFunc[Root, _], field: String): Traversable[T] = records.enrich(f).map(r => r.value[T](f, field)).filter(o => o.isDefined).map(o => o.get)
 }

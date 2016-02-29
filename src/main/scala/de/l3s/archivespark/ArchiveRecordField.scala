@@ -24,15 +24,14 @@
 
 package de.l3s.archivespark
 
-import de.l3s.archivespark.enrich.Enrichable
+import de.l3s.archivespark.enrich.{EnrichFunc, Enrichable}
+import de.l3s.archivespark.utils.Copyable
 import de.l3s.archivespark.utils.Json._
 
-class ArchiveRecordField[T] private (val get: T) extends Enrichable[T] {
-  override def toJson: Map[String, Any] = (if (isExcludedFromOutput) Map() else Map(
+class ArchiveRecordField[T] private (val get: T) extends Enrichable[T, ArchiveRecordField[T]] {
+  def toJson: Map[String, Any] = (if (isExcludedFromOutput) Map() else Map(
       null.asInstanceOf[String] -> json(this.get)
-    )) ++ enrichments.map{ case (name, field) => (name, mapToJsonValue(field.toJson)) }.filter{ case (_, field) => field != null }
-
-  override def copy(): ArchiveRecordField[T] = clone().asInstanceOf[ArchiveRecordField[T]]
+    )) ++ enrichments.map{e => (e, mapToJsonValue(enrichment(e).get.toJson))}.filter{ case (_, field) => field != null }
 }
 
 object ArchiveRecordField {

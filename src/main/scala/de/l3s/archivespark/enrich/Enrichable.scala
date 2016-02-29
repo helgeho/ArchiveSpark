@@ -24,11 +24,11 @@
 
 package de.l3s.archivespark.enrich
 
-import de.l3s.archivespark.utils.{Copyable, JsonConvertible}
+import de.l3s.archivespark.utils.{SelfTyped, SelectorUtil, Copyable, JsonConvertible}
 
 import scala.reflect.ClassTag
 
-trait Enrichable[T] extends Serializable with Copyable[Enrichable[T]] with JsonConvertible {
+trait Enrichable[T, This <: Enrichable[_, _]] extends Serializable with Copyable[Enrichable[T, This]] with JsonConvertible with SelfTyped[This] {
   private var excludeFromOutput: Option[Boolean] = None
 
   def get: T
@@ -38,45 +38,87 @@ trait Enrichable[T] extends Serializable with Copyable[Enrichable[T]] with JsonC
     case None => false
   }
 
-  private[enrich] def excludeFromOutput(value: Boolean = true, overwrite: Boolean = true): Unit = excludeFromOutput match {
+  private def excludeFromOutput(value: Boolean = true, overwrite: Boolean = true): Unit = excludeFromOutput match {
     case Some(v) => if (overwrite) excludeFromOutput = Some(v)
     case None => excludeFromOutput = Some(value)
   }
 
-  private[enrich] var _parent: Enrichable[_] = null
-  def parent[A] = _parent.asInstanceOf[Enrichable[A]]
+  private[archivespark] var _parent: Enrichable[_, _] = null
+  def parent[A] = _parent.asInstanceOf[Enrichable[A, _]]
 
-  private[enrich] var _root: EnrichRoot[_] = null
-  def root[A] = _root.asInstanceOf[Enrichable[A]]
+  private[archivespark] var _root: EnrichRoot[_, _] = null
+  def root[A] = _root.asInstanceOf[Enrichable[A, _]]
 
-  private[enrich] var _enrichments = Map[String, Enrichable[_]]()
-  def enrichments = _enrichments
+  private var _enrichments = Map[String, Enrichable[_, _]]()
+  def enrichments = _enrichments.keySet
 
-  def enrich(fieldName: String, enrichment: Enrichable[_]) = _enrichments += fieldName -> enrichment
+  def enrichment(key: String) = _enrichments.get(key)
 
-  def apply[D : ClassTag](key: String): Option[Enrichable[D]] = {
-    def find(current: Enrichable[_], path: Seq[String]): Enrichable[_] = {
-      if (path.isEmpty || (path.length == 1 && path.head == "")) return current
+  def enrich(fieldName: String, enrichment: Enrichable[_, _]): This = {
+    val clone = copy()
+    clone._enrichments = _enrichments.updated(fieldName, enrichment)
+    clone.asInstanceOf[This]
+  }
+
+  def enrich(func: EnrichFunc[_, This], excludeFromOutput: Boolean = false): This = {
+    if (func.exists(self)) return self
+    val derivatives = new Derivatives(func.fields)
+    func.derive(self, derivatives)
+    val clone = copy()
+    for ((field, enrichment) <- derivatives.get) {
+      enrichment._root = _root
+      enrichment._parent = this
+      enrichment.excludeFromOutput(excludeFromOutput, overwrite = false)
+      clone._enrichments = _enrichments.updated(field, enrichment)
+    }
+    clone.asInstanceOf[This]
+  }
+
+  def enrich(path: Seq[String], func: EnrichFunc[_, _], excludeFromOutput: Boolean): This = {
+    if (path.isEmpty) enrich(func.asInstanceOf[EnrichFunc[_, This]], excludeFromOutput)
+    else {
+      val field = path.head
+      apply(field) match {
+        case Some(enrichable) =>
+          val enriched = enrichable.enrich(path.tail, func, excludeFromOutput).asInstanceOf[Enrichable[_, _]]
+          if (enriched == enrichable) self
+          else enrich(field, enriched)
+        case None => self
+      }
+    }
+  }
+
+  def apply[D : ClassTag](path: Seq[String]): Option[Enrichable[D, _]] = {
+    if (path.isEmpty || (path.length == 1 && path.head == "")) Some(this.asInstanceOf[Enrichable[D, This]])
+    else {
       if (path.head == "") {
-        var target = find(this, path.drop(1))
-        if (target != null) return target
-        for (e <- _enrichments.values) {
-          target = find(e, path)
-          if (target != null) return target
+        val remaining = path.tail
+        enrichment(remaining.head) match {
+          case Some(child) => child(remaining.tail)
+          case None => for (child <- _enrichments.values) {
+              val target: Option[Enrichable[D, _]] = child[D](path)
+              if (target.isDefined) return target
+            }
+            None
         }
-        null
+      } else if (path.head.matches("\\[\\d+\\]")) {
+        val index = path.head.substring(1, path.head.length - 1).toInt
+        if (index > 0) None else apply(path.tail)
+      } else if (path.head == "*") {
+        apply(path.tail)
       } else {
-        current.enrichments.get(path.head) match {
-          case Some(enrichable) => find(enrichable, path.drop(1))
-          case None => null
+        enrichment(path.head) match {
+          case Some(child) => child(path.tail)
+          case None => None
         }
       }
     }
-    val target = find(this, key.trim.split("\\."))
-    if (target == null) None else Some(target.asInstanceOf[Enrichable[D]])
   }
 
-  def get[D : ClassTag](key: String): Option[D] = apply[D](key) match {
+  def apply[D : ClassTag](key: String): Option[Enrichable[D, _]] = apply(SelectorUtil.parse(key))
+
+  def get[D : ClassTag](path: String): Option[D] = get(SelectorUtil.parse(path))
+  def get[D : ClassTag](path: Seq[String]): Option[D] = apply[D](path) match {
     case Some(enrichable) => Some(enrichable.get)
     case None => None
   }

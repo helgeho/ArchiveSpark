@@ -24,19 +24,19 @@
 
 package de.l3s.archivespark.enrich.functions
 
-import de.l3s.archivespark.enrich.{DependentEnrichFunc, Derivatives, EnrichFunc, Enrichable}
+import de.l3s.archivespark.enrich._
 import de.l3s.archivespark.{ArchiveRecordField, ResolvedArchiveRecord}
 import org.jsoup.parser.Parser
 
 import scala.collection.JavaConverters._
 
-object HtmlText extends DependentEnrichFunc[ResolvedArchiveRecord, ArchiveRecordField[String]] {
+object HtmlText extends DependentEnrichFunc[ResolvedArchiveRecord, Enrichable[String, _]] with SingleFieldEnrichFunc[String] {
   override def dependency: EnrichFunc[ResolvedArchiveRecord, _] = Html
   override def dependencyField: String = "html"
 
   override def fields: Seq[String] = Seq("text")
 
-  override def derive(source: ArchiveRecordField[String], derivatives: Derivatives[Enrichable[_]]): Unit = {
+  override def derive(source: Enrichable[String, _], derivatives: Derivatives): Unit = {
     val nodes = Parser.parseXmlFragment(source.get, "").asScala
     if (nodes.nonEmpty) {
       val el = nodes.head.asInstanceOf[org.jsoup.nodes.Element]

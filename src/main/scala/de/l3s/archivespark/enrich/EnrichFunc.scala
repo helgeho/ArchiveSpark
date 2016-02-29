@@ -24,59 +24,33 @@
 
 package de.l3s.archivespark.enrich
 
-import de.l3s.archivespark.utils.IdentityMap
+import de.l3s.archivespark.utils.{SelectorUtil, IdentityMap}
 
-trait EnrichFunc[Root <: EnrichRoot[_], Source <: Enrichable[_]] extends Serializable {
+trait EnrichFunc[Root <: EnrichRoot[_, _], Source <: Enrichable[_, _]] extends Serializable {
   def source: Seq[String] = Seq()
   def fields: Seq[String]
 
   def enrich(root: Root): Root = enrich(root, excludeFromOutput = false)
 
-  private[enrich] def enrich(root: Root, excludeFromOutput: Boolean): Root = {
-    if (exists(root)) return root
-    enrichPath(root, source, excludeFromOutput).asInstanceOf[Root]
-  }
+  def on(source: String): EnrichFunc[Root, Source] = on(SelectorUtil.parse(source))
+  def on(source: Seq[String]): EnrichFunc[Root, Source] = new PipedEnrichFunc[Root, Source](this, source)
 
-  private def enrichPath(current: Enrichable[_], path: Seq[String], excludeFromOutput: Boolean): Enrichable[_] = {
-    if (path.isEmpty) enrichSource(current.asInstanceOf[Source], excludeFromOutput)
-    else {
-      val field = path.head
-      current._enrichments.get(field) match {
-        case Some(enrichable) =>
-          val enrichedField = enrichPath(current._enrichments(field), path.tail, excludeFromOutput)
-          val clone = current.copy()
-          clone._enrichments = clone._enrichments.updated(field, enrichedField)
-          clone
-        case None => current
-      }
-    }
-  }
+  def on(source: String, index: Int): EnrichFunc[Root, Source] = on(SelectorUtil.parse(source), index)
+  def on(source: Seq[String], index: Int): EnrichFunc[Root, Source] = on(source :+ s"[$index]")
 
-  private def enrichSource(source: Source, excludeFromOutput: Boolean): Enrichable[_] = {
-    val derivatives = new Derivatives[Enrichable[_]](fields)
-    derive(source, derivatives)
-    for (enrichable <- derivatives.get.values) {
-      enrichable._root = source._root
-      enrichable._parent = source
-      enrichable.excludeFromOutput(excludeFromOutput, overwrite = false)
-    }
+  def onAll(source: String): EnrichFunc[Root, Source] = onAll(SelectorUtil.parse(source))
+  def onAll(source: Seq[String]): EnrichFunc[Root, Source] = on(source :+ "*")
 
-    val clone = source.copy()
-    clone._enrichments ++= derivatives.get
-    clone
-  }
+  protected[enrich] def enrich(root: Root, excludeFromOutput: Boolean): Root = root.enrich(source, this, excludeFromOutput).asInstanceOf[Root]
 
-  def derive(source: Source, derivatives: Derivatives[Enrichable[_]]): Unit
+  def derive(source: Source, derivatives: Derivatives): Unit
 
   def field: IdentityMap[String] = IdentityMap[String]()
 
-  def exists(root: Root): Boolean = {
-    var field: Enrichable[_] = root
-    for (key <- source) field.enrichments.get(key) match {
-      case Some(nextField) => field = nextField
-      case None => return false
-    }
-    if (!fields.forall(f => field.enrichments.contains(f))) return false
-    true
+  def exists(root: Root): Boolean = root(source) match {
+    case Some(source: Source) => exists(source)
+    case None => false
   }
+
+  def exists(source: Source): Boolean = fields.forall(f => source(f).isDefined)
 }

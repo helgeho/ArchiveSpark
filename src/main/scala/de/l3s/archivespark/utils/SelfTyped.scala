@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
+ * Copyright (c) 2015-2016 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,32 +22,8 @@
  * SOFTWARE.
  */
 
-package de.l3s.archivespark.cdx
+package de.l3s.archivespark.utils
 
-import de.l3s.archivespark.utils.JsonConvertible
-
-class ResolvedCdxRecord(original: CdxRecord, val location: LocationInfo, val parentRecord: ResolvedCdxRecord) extends JsonConvertible with Serializable {
-  def this(original: CdxRecord, locationPath: String, parentRecord: ResolvedCdxRecord = null) = {
-    this(original, LocationInfoImpl(original.location.compressedSize, original.location.offset, original.location.filename, locationPath), parentRecord)
-  }
-
-  def surtUrl = original.surtUrl
-  def timestamp = original.timestamp
-  def time = original.time
-  def originalUrl = original.originalUrl
-  def mime = original.mime
-  def status = original.status
-  def digest = original.digest
-  def redirectUrl = original.redirectUrl
-  def meta = original.meta
-
-  def toCdxString = original.toCdxString
-
-  def toJson: Map[String, Any] = {
-    if (parentRecord != null) {
-      original.toJson + ("parent" -> parentRecord.toJson)
-    } else {
-      original.toJson
-    }
-  }
+trait SelfTyped[T] {
+  protected val self: T = this.asInstanceOf[T]
 }

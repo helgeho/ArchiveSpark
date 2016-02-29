@@ -28,14 +28,13 @@ import java.io.InputStream
 
 import de.l3s.archivespark.cdx.ResolvedCdxRecord
 import de.l3s.archivespark.enrich.EnrichRoot
+import de.l3s.archivespark.utils.Copyable
 import de.l3s.archivespark.utils.Json._
 
-abstract class ResolvedArchiveRecord(override val get: ResolvedCdxRecord) extends EnrichRoot[ResolvedCdxRecord] {
+abstract class ResolvedArchiveRecord(override val get: ResolvedCdxRecord) extends EnrichRoot[ResolvedCdxRecord, ResolvedArchiveRecord] {
   def access[R >: Null](action: (String, InputStream) => R): R
 
-  override def toJson: Map[String, Any] = Map(
+  def toJson: Map[String, Any] = Map(
     "record" -> json(this.get)
-  ) ++ enrichments.map{ case (name, field) => (name, mapToJsonValue(field.toJson)) }.filter{ case (_, field) => field != null }
-
-  def copy(): ResolvedArchiveRecord = clone().asInstanceOf[ResolvedArchiveRecord]
+  ) ++ enrichments.map{e => (e, mapToJsonValue(enrichment(e).get.toJson))}.filter{ case (_, field) => field != null }
 }

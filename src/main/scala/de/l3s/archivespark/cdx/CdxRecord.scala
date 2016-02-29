@@ -38,7 +38,7 @@ object CdxRecord {
       case pattern(url, timestamp, fullUrl, mimeType, statusStr, checksum, redirectUrl, meta, sizeStr, offsetStr, filename) =>
         try {
           val status = Try(statusStr.toInt).getOrElse(-1)
-          CdxRecord(url, timestamp, fullUrl, mimeType, statusStr.toInt, checksum, redirectUrl, meta, new LocationInfoImpl(sizeStr.toLong, offsetStr.toLong, filename))
+          CdxRecord(url, timestamp, fullUrl, mimeType, status, checksum, redirectUrl, meta, new LocationInfoImpl(sizeStr.toLong, offsetStr.toLong, filename))
         } catch {
           case e: Exception => null // skip, malformed
         }
@@ -58,9 +58,9 @@ case class CdxRecord(surtUrl: String,
                      location: LocationInfo) extends JsonConvertible {
   def time = Try(CdxRecord.dateTimeFormat.parseDateTime(timestamp)).getOrElse(null)
 
-  def toSimpleString = {
+  def toCdxString = {
     val statusStr = if (status < 0) "-" else status.toString
-    s"$surtUrl\t$timestamp\t$originalUrl\t$mime\t$statusStr\t$digest\t$redirectUrl\t$meta"
+    s"$surtUrl $timestamp $originalUrl $mime $statusStr $digest $redirectUrl $meta"
   }
 
   def toJson: Map[String, Any] = Map[String, Any](

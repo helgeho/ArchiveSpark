@@ -22,15 +22,18 @@
  * SOFTWARE.
  */
 
-package de.l3s.archivespark.enrich.functions
+package de.l3s.archivespark.enrich
 
-import de.l3s.archivespark.enrich.{DependentEnrichFunc, Derivatives, EnrichFunc, Enrichable}
+import de.l3s.archivespark.IdentityArchiveRecordField
 import de.l3s.archivespark.utils.IdentityMap
-import de.l3s.archivespark.{IdentityArchiveRecordField, ResolvedArchiveRecord}
 
-class IdentityEnrichFunction[T]
-(override val dependency: EnrichFunc[ResolvedArchiveRecord, _], override val dependencyField: String, val fieldName: String)
-  extends DependentEnrichFunc[ResolvedArchiveRecord, Enrichable[T]] {
+class IdentityEnrichFunction[T, Root <: EnrichRoot[_, _]]
+(override val dependency: EnrichFunc[Root, _], override val dependencyField: String, val fieldName: String)
+  extends DependentEnrichFunc[Root, Enrichable[T, _]] with SingleFieldEnrichFunc[T] {
+
+  def this(dependency: EnrichFunc[Root, _] with DefaultFieldEnrichFunc[T], fieldName: String) {
+    this(dependency, dependency.defaultField, fieldName)
+  }
 
   override def fields: Seq[String] = Seq(fieldName)
   override def field: IdentityMap[String] = dependency.field.map.find{case (k, v) => v == dependencyField} match {
@@ -38,7 +41,7 @@ class IdentityEnrichFunction[T]
     case None => IdentityMap()
   }
 
-  override def derive(source: Enrichable[T], derivatives: Derivatives[Enrichable[_]]): Unit = {
+  override def derive(source: Enrichable[T, _], derivatives: Derivatives): Unit = {
     derivatives << IdentityArchiveRecordField[T]()
   }
 }

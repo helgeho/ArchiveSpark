@@ -22,38 +22,17 @@
  * SOFTWARE.
  */
 
-package de.l3s.archivespark.enrich.functions
+package de.l3s.archivespark.utils
 
-import de.l3s.archivespark.ArchiveRecordField
-import de.l3s.archivespark.enrich._
-import de.l3s.archivespark.utils.IdentityMap
-import org.jsoup.parser.Parser
-
-import scala.collection.JavaConverters._
-
-private object HtmlAttributeNamespace extends IdentityEnrichFunction(Html, "attributes")
-
-object HtmlAttribute {
-  def apply(name: String): HtmlAttribute = new HtmlAttribute(name)
-}
-
-class HtmlAttribute private (attribute: String) extends BoundEnrichFunc(HtmlAttributeNamespace) with SingleFieldEnrichFunc[String] {
-  override def dependencyField: String = HtmlAttributeNamespace.fieldName
-
-  override def fields: Seq[String] = Seq(attribute)
-  override def field: IdentityMap[String] = IdentityMap(
-    "value" -> attribute
-  )
-
-  override def derive(source: Enrichable[String, _], derivatives: Derivatives): Unit = {
-    val nodes = Parser.parseXmlFragment(source.get, "").asScala
-    if (nodes.nonEmpty) {
-      val el = nodes.head
-      val lc = attribute.toLowerCase
-      el.attributes().asScala.find(a => a.getKey.toLowerCase == lc) match {
-        case Some(a) => derivatives << ArchiveRecordField(a.getValue)
-        case None => // skip
-      }
+object SelectorUtil {
+  def parse(path: String) = path.split("\\.").map(_.trim).flatMap{k =>
+    var split = -1
+    if (k.endsWith("]")) split = k.lastIndexOf('[')
+    else if(k.endsWith("*")) split = k.length - 1
+    if (split < 0) Seq(k)
+    else {
+      val (a, b) = k.splitAt(split)
+      Seq(a, b).filter(s => s.nonEmpty)
     }
   }
 }

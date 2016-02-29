@@ -24,13 +24,13 @@
 
 package de.l3s.archivespark.enrich.functions
 
-import de.l3s.archivespark.enrich.{DependentEnrichFunc, Derivatives, EnrichFunc, Enrichable}
+import de.l3s.archivespark.enrich._
 import de.l3s.archivespark.utils.{HttpHeader, HttpResponse, IdentityMap}
 import de.l3s.archivespark.{ArchiveRecordField, ResolvedArchiveRecord}
 import org.apache.http.entity.ByteArrayEntity
 import org.apache.http.util.EntityUtils
 
-object StringContent extends DependentEnrichFunc[ResolvedArchiveRecord, ArchiveRecordField[Array[Byte]]] {
+object StringContent extends DependentEnrichFunc[ResolvedArchiveRecord, Enrichable[Array[Byte], _]] with SingleFieldEnrichFunc[String] {
   override def dependency: EnrichFunc[ResolvedArchiveRecord, _] = Response
   override def dependencyField: String = "content"
 
@@ -39,7 +39,7 @@ object StringContent extends DependentEnrichFunc[ResolvedArchiveRecord, ArchiveR
     "text" -> "string"
   )
 
-  override def derive(source: ArchiveRecordField[Array[Byte]], derivatives: Derivatives[Enrichable[_]]): Unit = {
+  override def derive(source: Enrichable[Array[Byte], _], derivatives: Derivatives): Unit = {
     val defaultCharset = HttpResponse.DefaultChartset
     val charset = source.parent.get(Response.HttpHeaderField) match {
       case Some(headers: Map[String, String]) => HttpHeader(headers).charset.getOrElse(defaultCharset)

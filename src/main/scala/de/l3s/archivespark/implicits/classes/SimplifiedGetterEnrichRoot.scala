@@ -24,22 +24,22 @@
 
 package de.l3s.archivespark.implicits.classes
 
-import de.l3s.archivespark.enrich.{EnrichFunc, EnrichRoot}
+import de.l3s.archivespark.enrich.{DefaultFieldEnrichFunc, EnrichFunc, EnrichRoot}
 
 import scala.reflect.ClassTag
 
-class SimplifiedGetterEnrichRoot[Root <: EnrichRoot[_]](root: EnrichRoot[_]) {
-  def value[T : ClassTag](f: EnrichFunc[Root, _]): Option[T] = {
-    var path = f.source.mkString(".")
-    if (path.length == 0) path = f.fields.head
-    else path += "." + f.fields.head
+class SimplifiedGetterEnrichRoot[Root <: EnrichRoot[_, _]](root: EnrichRoot[_, _]) {
+  def value[T : ClassTag](f: EnrichFunc[Root, _] with DefaultFieldEnrichFunc[T]): Option[T] = {
+    var path = f.source
+    if (path.isEmpty) path = Seq(f.defaultField)
+    else path :+= f.defaultField
     root.get[T](path)
   }
 
   def value[T : ClassTag](f: EnrichFunc[Root, _], field: String): Option[T] = {
-    var path = f.source.mkString(".")
-    if (path.length == 0) path = field
-    else path += "." + field
+    var path = f.source
+    if (path.isEmpty) path = Seq(field)
+    else path :+= field
     root.get[T](path)
   }
 }

@@ -24,6 +24,6 @@
 
 package de.l3s.archivespark.enrich
 
-trait EnrichRoot[T] extends Enrichable[T] {
+trait EnrichRoot[T, This <: EnrichRoot[_, _]] extends Enrichable[T, This] {
   _root = this
 }

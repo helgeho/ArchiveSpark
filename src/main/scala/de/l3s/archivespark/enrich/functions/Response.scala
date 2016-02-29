@@ -24,23 +24,25 @@
 
 package de.l3s.archivespark.enrich.functions
 
-import de.l3s.archivespark.enrich.{Derivatives, EnrichFunc, Enrichable}
+import de.l3s.archivespark.enrich.{DefaultFieldEnrichFunc, Derivatives, EnrichFunc, Enrichable}
 import de.l3s.archivespark.utils.{HttpArchiveRecord, IdentityMap}
 import de.l3s.archivespark.{ArchiveRecordField, ResolvedArchiveRecord}
 import org.archive.io.ArchiveReaderFactory
 
-object Response extends EnrichFunc[ResolvedArchiveRecord, ResolvedArchiveRecord] {
+object Response extends EnrichFunc[ResolvedArchiveRecord, ResolvedArchiveRecord] with DefaultFieldEnrichFunc[String] {
   val RecordHeaderField = "recordHeader"
   val HttpHeaderField = "httpHeader"
   val PayloadField = "payload"
 
   override def fields = Seq(RecordHeaderField, HttpHeaderField, PayloadField)
 
+  def defaultField = PayloadField
+
   override def field: IdentityMap[String] = IdentityMap(
     "content" -> "payload"
   )
 
-  override def derive(source: ResolvedArchiveRecord, derivatives: Derivatives[Enrichable[_]]): Unit = {
+  override def derive(source: ResolvedArchiveRecord, derivatives: Derivatives): Unit = {
     source.access { case (fileName, stream) =>
       val reader = ArchiveReaderFactory.get(fileName, stream, false)
       val record = HttpArchiveRecord(reader.get)

@@ -22,32 +22,13 @@
  * SOFTWARE.
  */
 
-package de.l3s.archivespark.cdx
+package de.l3s.archivespark.enrich
 
-import de.l3s.archivespark.utils.JsonConvertible
+class PipedDependentEnrichFunc[Root <: EnrichRoot[_, _], Source <: Enrichable[_, _]]
+(parent: EnrichFunc[Root, Source], override val dependency: EnrichFunc[Root, _], override val dependencyField: String)
+  extends DependentEnrichFunc[Root, Source] {
 
-class ResolvedCdxRecord(original: CdxRecord, val location: LocationInfo, val parentRecord: ResolvedCdxRecord) extends JsonConvertible with Serializable {
-  def this(original: CdxRecord, locationPath: String, parentRecord: ResolvedCdxRecord = null) = {
-    this(original, LocationInfoImpl(original.location.compressedSize, original.location.offset, original.location.filename, locationPath), parentRecord)
-  }
+  override def derive(source: Source, derivatives: Derivatives): Unit = parent.derive(source, derivatives)
 
-  def surtUrl = original.surtUrl
-  def timestamp = original.timestamp
-  def time = original.time
-  def originalUrl = original.originalUrl
-  def mime = original.mime
-  def status = original.status
-  def digest = original.digest
-  def redirectUrl = original.redirectUrl
-  def meta = original.meta
-
-  def toCdxString = original.toCdxString
-
-  def toJson: Map[String, Any] = {
-    if (parentRecord != null) {
-      original.toJson + ("parent" -> parentRecord.toJson)
-    } else {
-      original.toJson
-    }
-  }
+  override def fields: Seq[String] = parent.fields
 }

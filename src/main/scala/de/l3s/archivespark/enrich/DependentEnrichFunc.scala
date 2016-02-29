@@ -24,22 +24,23 @@
 
 package de.l3s.archivespark.enrich
 
-trait DependentEnrichFunc[Root <: EnrichRoot[_], Source <: Enrichable[_]] extends EnrichFunc[Root, Source] {
+import de.l3s.archivespark.utils.SelectorUtil
+
+trait DependentEnrichFunc[Root <: EnrichRoot[_, _], Source <: Enrichable[_, _]] extends EnrichFunc[Root, Source] {
   def dependency: EnrichFunc[Root, _]
 
   def dependencyField: String
 
-  override def source: Seq[String] = dependency.source :+ dependency.field(dependencyField)
+  override def source: Seq[String] = dependency.source ++ SelectorUtil.parse(dependencyField).map(f => dependency.field(f))
 
-  def on(dependency: EnrichFunc[Root, _]): DependentEnrichFunc[Root, Source] = new PipedEnrichFunc[Root, Source](this, dependency)
+  def on(dependency: EnrichFunc[Root, _], field: String): EnrichFunc[Root, Source] = new PipedDependentEnrichFunc[Root, Source](this, dependency, field)
+  def on(dependency: EnrichFunc[Root, _]): EnrichFunc[Root, Source] = on(dependency, dependencyField)
 
-  override private[enrich] def enrich(root: Root, excludeFromOutput: Boolean): Root = {
-    val rootWithDependency = if (dependency.exists(root)) root else dependency.enrich(root, excludeFromOutput = true)
-    super.enrich(rootWithDependency, excludeFromOutput)
-  }
+  def on(dependency: EnrichFunc[Root, _], field: String, index: Int): EnrichFunc[Root, Source] = on(dependency, field + s"[$index]")
+  def on(dependency: EnrichFunc[Root, _], index: Int): EnrichFunc[Root, Source] = on(dependency, dependencyField, index)
 
-  override def exists(root: Root): Boolean = {
-    if (!dependency.exists(root)) false
-    else super.exists(root)
-  }
+  def onAll(dependency: EnrichFunc[Root, _], field: String): EnrichFunc[Root, Source] = on(dependency, field + "*")
+  def onAll(dependency: EnrichFunc[Root, _]): EnrichFunc[Root, Source] = onAll(dependency, dependencyField)
+
+  override protected[enrich] def enrich(root: Root, excludeFromOutput: Boolean): Root = super.enrich(dependency.enrich(root, excludeFromOutput = true), excludeFromOutput)
 }

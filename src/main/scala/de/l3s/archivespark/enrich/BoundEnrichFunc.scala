@@ -24,11 +24,8 @@
 
 package de.l3s.archivespark.enrich
 
-abstract class BoundEnrichFunc[Root <: EnrichRoot[_], Source <: Enrichable[_]](bound: DependentEnrichFunc[Root, Source]) extends DependentEnrichFunc[Root, Source] {
+abstract class BoundEnrichFunc[Root <: EnrichRoot[_, _], Source <: Enrichable[_, _]](bound: DependentEnrichFunc[Root, Source]) extends DependentEnrichFunc[Root, Source] {
   override def dependency = bound
 
-  override def on(dependency: EnrichFunc[Root, _]): DependentEnrichFunc[Root, Source] = {
-    val boundPipe = new PipedEnrichFunc(bound, dependency)
-    new PipedEnrichFunc(this, boundPipe)
-  }
+  override def on(dependency: EnrichFunc[Root, _], field: String): EnrichFunc[Root, Source] = super.on(bound.on(dependency, field))
 }

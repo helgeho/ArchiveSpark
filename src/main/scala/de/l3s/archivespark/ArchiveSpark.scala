@@ -25,9 +25,10 @@
 package de.l3s.archivespark
 
 import de.l3s.archivespark.cdx.{BroadcastPathMapLocationInfo, CdxRecord, ResolvedCdxRecord}
+import de.l3s.archivespark.enrich.Enrichable
 import de.l3s.archivespark.rdd.{HdfsArchiveRDD, UniversalArchiveRDD}
 import de.l3s.archivespark.records.{HdfsArchiveRecord, ResolvedHdfsArchiveRecord, ResolvedLocalArchiveRecord}
-import de.l3s.archivespark.utils.{FilePathMap, HttpArchiveRecord, HttpResponse, IO}
+import de.l3s.archivespark.utils._
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext}
 
@@ -46,6 +47,9 @@ object ArchiveSpark {
 
   def initialize(conf: SparkConf): Unit = {
     conf.registerKryoClasses(Array(
+      classOf[Enrichable[_, _]],
+      classOf[JsonConvertible],
+      classOf[Copyable[_]],
       classOf[ResolvedCdxRecord],
       classOf[ResolvedArchiveRecord],
       classOf[ArchiveRecord],
@@ -54,6 +58,7 @@ object ArchiveSpark {
       classOf[ResolvedHdfsArchiveRecord],
       classOf[CdxRecord],
       classOf[ArchiveRecordField[_]],
+      classOf[MultiValueArchiveRecordField[_]],
       classOf[HttpResponse],
       classOf[HttpArchiveRecord]
     ))
@@ -67,8 +72,7 @@ object ArchiveSpark {
     IO.lazyLines(cdxPath)
       .map(line => CdxRecord.fromString(line))
       .filter(cdx => cdx != null)
-      .map(cdx => new ResolvedCdxRecord(cdx, warcPath, null))
-      .map(cdx => new ResolvedLocalArchiveRecord(cdx))
+      .map(cdx => new ResolvedLocalArchiveRecord(new ResolvedCdxRecord(cdx, warcPath, null)))
   }
 
   def cdx(path: String)(implicit sc: SparkContext): RDD[CdxRecord] = {

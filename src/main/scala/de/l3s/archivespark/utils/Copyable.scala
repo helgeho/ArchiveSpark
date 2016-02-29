@@ -25,5 +25,5 @@
 package de.l3s.archivespark.utils
 
 trait Copyable[T] extends Cloneable { this: T =>
-  def copy(): T
+  def copy(): T = this.clone().asInstanceOf[T]
 }

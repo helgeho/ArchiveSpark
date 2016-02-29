@@ -24,22 +24,29 @@
 
 package de.l3s.archivespark.enrich.functions
 
-import de.l3s.archivespark.ArchiveRecordField
+import de.l3s.archivespark.{MultiValueArchiveRecordField, ArchiveRecordField}
 import de.l3s.archivespark.cdx.ResolvedCdxRecord
 import de.l3s.archivespark.enrich._
 import de.l3s.archivespark.utils.IdentityMap
 import org.jsoup.Jsoup
+import scala.collection.JavaConverters._
 
-private object HtmlNamespace extends IdentityEnrichFunction[String](StringContent, "text", "html")
+private object HtmlNamespace extends IdentityEnrichFunction(StringContent, "html")
 
-object Html extends Html("body", 0, "body") {
-  def apply(selector: String, index: Int, fieldName: String): Html = new Html(selector, index, fieldName)
-  def apply(selector: String, index: Int): Html = new Html(selector, index, selector)
-  def apply(selector: String): Html = new Html(selector, 0, selector)
-  def apply(selector: String, fieldName: String): Html = new Html(selector, 0, fieldName)
+object Html extends HtmlTag("body", 0, "body") {
+  def apply(selector: String): HtmlTags = all(selector)
+  def apply(selector: String, fieldName: String): HtmlTags = all(selector, fieldName)
+  def apply(selector: String, index: Int, fieldName: String): HtmlTag = new HtmlTag(selector, index, fieldName)
+  def apply(selector: String, index: Int): HtmlTag = new HtmlTag(selector, index, selector)
+
+  def first(selector: String): HtmlTag = new HtmlTag(selector, 0, selector)
+  def first(selector: String, fieldName: String): HtmlTag = new HtmlTag(selector, 0, fieldName)
+
+  def all(selector: String): HtmlTags = new HtmlTags(selector, selector)
+  def all(selector: String, fieldName: String): HtmlTags = new HtmlTags(selector, fieldName)
 }
 
-class Html private (selector: String, index: Int, fieldName: String) extends BoundEnrichFunc(HtmlNamespace) {
+class HtmlTag (selector: String, index: Int, fieldName: String) extends BoundEnrichFunc(HtmlNamespace) with SingleFieldEnrichFunc[String] {
   override def dependencyField: String = HtmlNamespace.fieldName
 
   override def fields: Seq[String] = Seq(fieldName)
@@ -47,10 +54,26 @@ class Html private (selector: String, index: Int, fieldName: String) extends Bou
     "html" -> fieldName
   )
 
-  override def derive(source: Enrichable[String], derivatives: Derivatives[Enrichable[_]]): Unit = {
+  override def derive(source: Enrichable[String, _], derivatives: Derivatives): Unit = {
     val url = source.root[ResolvedCdxRecord].get.originalUrl
     val doc = Jsoup.parse(source.get, url)
     val elements = doc.select(selector)
     if (elements.size() > index) derivatives << ArchiveRecordField(elements.get(index).toString)
+  }
+}
+
+class HtmlTags (selector: String, fieldName: String) extends BoundEnrichFunc(HtmlNamespace) with SingleFieldEnrichFunc[Seq[String]] {
+  override def dependencyField: String = HtmlNamespace.fieldName
+
+  override def fields: Seq[String] = Seq(fieldName)
+  override def field: IdentityMap[String] = IdentityMap(
+    "html" -> fieldName
+  )
+
+  override def derive(source: Enrichable[String, _], derivatives: Derivatives): Unit = {
+    val url = source.root[ResolvedCdxRecord].get.originalUrl
+    val doc = Jsoup.parse(source.get, url)
+    val elements = doc.select(selector)
+    derivatives << MultiValueArchiveRecordField(elements.iterator.asScala.toSeq.map(e => e.toString))
   }
 }
