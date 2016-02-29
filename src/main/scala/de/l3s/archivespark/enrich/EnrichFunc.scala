@@ -38,8 +38,15 @@ trait EnrichFunc[Root <: EnrichRoot[_, _], Source <: Enrichable[_, _]] extends S
   def on(source: String, index: Int): EnrichFunc[Root, Source] = on(SelectorUtil.parse(source), index)
   def on(source: Seq[String], index: Int): EnrichFunc[Root, Source] = on(source :+ s"[$index]")
 
-  def onAll(source: String): EnrichFunc[Root, Source] = onAll(SelectorUtil.parse(source))
-  def onAll(source: Seq[String]): EnrichFunc[Root, Source] = on(source :+ "*")
+  def onEach(source: String): EnrichFunc[Root, Source] = onEach(SelectorUtil.parse(source))
+  def onEach(source: Seq[String]): EnrichFunc[Root, Source] = on(source :+ "*")
+
+  def of(source: String): EnrichFunc[Root, Source] = on(source)
+  def of(source: Seq[String]): EnrichFunc[Root, Source] = on(source)
+  def of(source: String, index: Int): EnrichFunc[Root, Source] = on(source, index)
+  def of(source: Seq[String], index: Int): EnrichFunc[Root, Source] = on(source, index)
+  def ofEach(source: String): EnrichFunc[Root, Source] = onEach(source)
+  def ofEach(source: Seq[String]): EnrichFunc[Root, Source] = onEach(source)
 
   protected[enrich] def enrich(root: Root, excludeFromOutput: Boolean): Root = root.enrich(source, this, excludeFromOutput).asInstanceOf[Root]
 

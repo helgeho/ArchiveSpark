@@ -39,8 +39,15 @@ trait DependentEnrichFunc[Root <: EnrichRoot[_, _], Source <: Enrichable[_, _]] 
   def on(dependency: EnrichFunc[Root, _], field: String, index: Int): EnrichFunc[Root, Source] = on(dependency, field + s"[$index]")
   def on(dependency: EnrichFunc[Root, _], index: Int): EnrichFunc[Root, Source] = on(dependency, dependencyField, index)
 
-  def onAll(dependency: EnrichFunc[Root, _], field: String): EnrichFunc[Root, Source] = on(dependency, field + "*")
-  def onAll(dependency: EnrichFunc[Root, _]): EnrichFunc[Root, Source] = onAll(dependency, dependencyField)
+  def onEach(dependency: EnrichFunc[Root, _], field: String): EnrichFunc[Root, Source] = on(dependency, field + "*")
+  def onEach(dependency: EnrichFunc[Root, _]): EnrichFunc[Root, Source] = onEach(dependency, dependencyField)
+
+  def of(dependency: EnrichFunc[Root, _], field: String): EnrichFunc[Root, Source] = on(dependency, field)
+  def of(dependency: EnrichFunc[Root, _]): EnrichFunc[Root, Source] = on(dependency)
+  def of(dependency: EnrichFunc[Root, _], field: String, index: Int): EnrichFunc[Root, Source] = of(dependency, field, index)
+  def of(dependency: EnrichFunc[Root, _], index: Int): EnrichFunc[Root, Source] = of(dependency, index)
+  def ofEach(dependency: EnrichFunc[Root, _], field: String): EnrichFunc[Root, Source] = onEach(dependency, field)
+  def ofEach(dependency: EnrichFunc[Root, _]): EnrichFunc[Root, Source] = onEach(dependency)
 
   override protected[enrich] def enrich(root: Root, excludeFromOutput: Boolean): Root = super.enrich(dependency.enrich(root, excludeFromOutput = true), excludeFromOutput)
 }
