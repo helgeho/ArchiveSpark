@@ -48,7 +48,7 @@ class EnrichableRDD[Root <: EnrichRoot[_, _] : ClassTag](rdd: RDD[Root]) {
     rdd.map(r => enrichFunc.enrich(r))
   }
 
-  def mapEnrich[Source, Target](dependencyFunc: EnrichFunc[Root, _] with DefaultFieldEnrichFunc[Source], target: String)(f: Source => Target): RDD[Root] = mapEnrich(dependencyFunc, dependencyFunc.defaultField, target, target)(f)
+  def mapEnrich[Source, Target](dependencyFunc: DefaultFieldEnrichFunc[Root, _, Source], target: String)(f: Source => Target): RDD[Root] = mapEnrich(dependencyFunc, dependencyFunc.defaultField, target, target)(f)
   def mapEnrich[Source, Target](dependencyFunc: EnrichFunc[Root, _], sourceField: String, target: String)(f: Source => Target): RDD[Root] = mapEnrich(dependencyFunc, sourceField, target, target)(f)
   def mapEnrich[Source, Target](dependencyFunc: EnrichFunc[Root, _], sourceField: String, target: String, targetField: String)(f: Source => Target): RDD[Root] = {
     val enrichFunc = new DependentEnrichFunc[Root, Enrichable[Source, _]] {
@@ -67,6 +67,6 @@ class EnrichableRDD[Root <: EnrichRoot[_, _] : ClassTag](rdd: RDD[Root]) {
   def mapPath[T : ClassTag](path: String): RDD[T] = rdd.map(r => r.get[T](path)).filter(o => o.isDefined).map(o => o.get)
 
   def mapValues[T : ClassTag](path: String): RDD[T] = mapPath(path)
-  def mapValues[T : ClassTag](f: EnrichFunc[Root, _] with DefaultFieldEnrichFunc[T]): RDD[T] = rdd.enrich(f).map(r => r.value[T](f)).filter(o => o.isDefined).map(o => o.get)
+  def mapValues[T : ClassTag](f: DefaultFieldEnrichFunc[Root, _, T]): RDD[T] = rdd.enrich(f).map(r => r.value[T](f)).filter(o => o.isDefined).map(o => o.get)
   def mapValues[T : ClassTag](f: EnrichFunc[Root, _], field: String): RDD[T] = rdd.enrich(f).map(r => r.value[T](f, field)).filter(o => o.isDefined).map(o => o.get)
 }

@@ -24,7 +24,7 @@
 
 package de.l3s.archivespark.enrich.functions
 
-import de.l3s.archivespark.{MultiValueArchiveRecordField, ArchiveRecordField}
+import de.l3s.archivespark.{ResolvedArchiveRecord, MultiValueArchiveRecordField, ArchiveRecordField}
 import de.l3s.archivespark.cdx.ResolvedCdxRecord
 import de.l3s.archivespark.enrich._
 import de.l3s.archivespark.utils.IdentityMap
@@ -46,7 +46,8 @@ object Html extends HtmlTag("body", 0, "body") {
   def all(selector: String, fieldName: String): HtmlTags = new HtmlTags(selector, fieldName)
 }
 
-class HtmlTag (selector: String, index: Int, fieldName: String) extends BoundEnrichFunc(HtmlNamespace) with SingleFieldEnrichFunc[String] {
+class HtmlTag (selector: String, index: Int, fieldName: String) extends BoundEnrichFunc(HtmlNamespace)
+  with DefaultFieldDependentEnrichFunc[ResolvedArchiveRecord, Enrichable[String, _], String] with SingleFieldEnrichFunc[String] {
   override def dependencyField: String = HtmlNamespace.fieldName
 
   override def fields: Seq[String] = Seq(fieldName)
@@ -62,7 +63,8 @@ class HtmlTag (selector: String, index: Int, fieldName: String) extends BoundEnr
   }
 }
 
-class HtmlTags (selector: String, fieldName: String) extends BoundEnrichFunc(HtmlNamespace) with SingleFieldEnrichFunc[Seq[String]] {
+class HtmlTags (selector: String, fieldName: String) extends BoundEnrichFunc(HtmlNamespace)
+  with DefaultFieldDependentEnrichFunc[ResolvedArchiveRecord, Enrichable[String, _], Seq[String]] with SingleFieldEnrichFunc[Seq[String]] {
   override def dependencyField: String = HtmlNamespace.fieldName
 
   override def fields: Seq[String] = Seq(fieldName)
@@ -74,6 +76,6 @@ class HtmlTags (selector: String, fieldName: String) extends BoundEnrichFunc(Htm
     val url = source.root[ResolvedCdxRecord].get.originalUrl
     val doc = Jsoup.parse(source.get, url)
     val elements = doc.select(selector)
-    derivatives << MultiValueArchiveRecordField(elements.iterator.asScala.toSeq.map(e => e.toString))
+    derivatives << MultiValueArchiveRecordField(elements.iterator.asScala.toList.map(e => e.toString))
   }
 }

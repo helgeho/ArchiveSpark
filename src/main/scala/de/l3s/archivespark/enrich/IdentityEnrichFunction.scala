@@ -31,7 +31,7 @@ class IdentityEnrichFunction[T, Root <: EnrichRoot[_, _]]
 (override val dependency: EnrichFunc[Root, _], override val dependencyField: String, val fieldName: String)
   extends DependentEnrichFunc[Root, Enrichable[T, _]] with SingleFieldEnrichFunc[T] {
 
-  def this(dependency: EnrichFunc[Root, _] with DefaultFieldEnrichFunc[T], fieldName: String) {
+  def this(dependency: DefaultFieldEnrichFunc[Root, _, T], fieldName: String) {
     this(dependency, dependency.defaultField, fieldName)
   }
 

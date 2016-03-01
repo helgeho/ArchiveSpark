@@ -24,7 +24,7 @@
 
 package de.l3s.archivespark.enrich.functions
 
-import de.l3s.archivespark.ArchiveRecordField
+import de.l3s.archivespark.{ResolvedArchiveRecord, ArchiveRecordField}
 import de.l3s.archivespark.enrich._
 import de.l3s.archivespark.utils.IdentityMap
 import org.jsoup.parser.Parser
@@ -37,7 +37,8 @@ object HtmlAttribute {
   def apply(name: String): HtmlAttribute = new HtmlAttribute(name)
 }
 
-class HtmlAttribute private (attribute: String) extends BoundEnrichFunc(HtmlAttributeNamespace) with SingleFieldEnrichFunc[String] {
+class HtmlAttribute private (attribute: String) extends BoundEnrichFunc(HtmlAttributeNamespace)
+  with DefaultFieldDependentEnrichFunc[ResolvedArchiveRecord, Enrichable[String, _], String] with SingleFieldEnrichFunc[String] {
   override def dependencyField: String = HtmlAttributeNamespace.fieldName
 
   override def fields: Seq[String] = Seq(attribute)

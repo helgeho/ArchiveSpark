@@ -29,7 +29,7 @@ import de.l3s.archivespark.enrich.{DefaultFieldEnrichFunc, EnrichFunc, EnrichRoo
 import scala.reflect.ClassTag
 
 class SimplifiedGetterEnrichRoot[Root <: EnrichRoot[_, _]](root: EnrichRoot[_, _]) {
-  def value[T : ClassTag](f: EnrichFunc[Root, _] with DefaultFieldEnrichFunc[T]): Option[T] = {
+  def value[T : ClassTag](f: DefaultFieldEnrichFunc[Root, _, T]): Option[T] = {
     var path = f.source
     if (path.isEmpty) path = Seq(f.defaultField)
     else path :+= f.defaultField

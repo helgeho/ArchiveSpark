@@ -50,6 +50,7 @@ object ArchiveSpark {
       classOf[Enrichable[_, _]],
       classOf[JsonConvertible],
       classOf[Copyable[_]],
+      classOf[SelfTyped[_]],
       classOf[ResolvedCdxRecord],
       classOf[ResolvedArchiveRecord],
       classOf[ArchiveRecord],

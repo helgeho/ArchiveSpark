@@ -69,7 +69,7 @@ trait Enrichable[T, This <: Enrichable[_, _]] extends Serializable with Copyable
       enrichment._root = _root
       enrichment._parent = this
       enrichment.excludeFromOutput(excludeFromOutput, overwrite = false)
-      clone._enrichments = _enrichments.updated(field, enrichment)
+      clone._enrichments = clone._enrichments.updated(field, enrichment)
     }
     clone.asInstanceOf[This]
   }

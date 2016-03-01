@@ -29,7 +29,7 @@ import de.l3s.archivespark.utils.{HttpArchiveRecord, IdentityMap}
 import de.l3s.archivespark.{ArchiveRecordField, ResolvedArchiveRecord}
 import org.archive.io.ArchiveReaderFactory
 
-object Response extends EnrichFunc[ResolvedArchiveRecord, ResolvedArchiveRecord] with DefaultFieldEnrichFunc[String] {
+object Response extends DefaultFieldEnrichFunc[ResolvedArchiveRecord, ResolvedArchiveRecord, String] {
   val RecordHeaderField = "recordHeader"
   val HttpHeaderField = "httpHeader"
   val PayloadField = "payload"

@@ -24,7 +24,23 @@
 
 package de.l3s.archivespark.enrich
 
-trait DefaultFieldEnrichFunc[T] {
-  def fields: Seq[String]
+import de.l3s.archivespark.utils.SelectorUtil
+
+trait DefaultFieldEnrichFunc[Root <: EnrichRoot[_, _], Source <: Enrichable[_, _], DefaultFieldType] extends EnrichFunc[Root, Source] {
   def defaultField: String
+
+  override def on(source: Seq[String]): DefaultFieldEnrichFunc[Root, Source, DefaultFieldType] = new PipedEnrichFuncWithDefaultField[Root, Source, DefaultFieldType](this, source)
+
+  override def on(source: String): DefaultFieldEnrichFunc[Root, Source, DefaultFieldType] = on(SelectorUtil.parse(source))
+  override def on(source: String, index: Int): DefaultFieldEnrichFunc[Root, Source, DefaultFieldType] = on(SelectorUtil.parse(source), index)
+  override def on(source: Seq[String], index: Int): DefaultFieldEnrichFunc[Root, Source, DefaultFieldType] = on(source :+ s"[$index]")
+  override def onEach(source: String): DefaultFieldEnrichFunc[Root, Source, DefaultFieldType] = onEach(SelectorUtil.parse(source))
+  override def onEach(source: Seq[String]): DefaultFieldEnrichFunc[Root, Source, DefaultFieldType] = on(source :+ "*")
+
+  override def of(source: String): DefaultFieldEnrichFunc[Root, Source, DefaultFieldType] = on(source)
+  override def of(source: Seq[String]): DefaultFieldEnrichFunc[Root, Source, DefaultFieldType] = on(source)
+  override def of(source: String, index: Int): DefaultFieldEnrichFunc[Root, Source, DefaultFieldType] = on(source, index)
+  override def of(source: Seq[String], index: Int): DefaultFieldEnrichFunc[Root, Source, DefaultFieldType] = on(source, index)
+  override def ofEach(source: String): DefaultFieldEnrichFunc[Root, Source, DefaultFieldType] = onEach(source)
+  override def ofEach(source: Seq[String]): DefaultFieldEnrichFunc[Root, Source, DefaultFieldType] = onEach(source)
 }

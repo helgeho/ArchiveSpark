@@ -25,5 +25,5 @@
 package de.l3s.archivespark.utils
 
 trait SelfTyped[T] {
-  protected val self: T = this.asInstanceOf[T]
+  protected def self: T = this.asInstanceOf[T]
 }

@@ -32,3 +32,9 @@ class PipedDependentEnrichFunc[Root <: EnrichRoot[_, _], Source <: Enrichable[_,
 
   override def fields: Seq[String] = parent.fields
 }
+
+class PipedDependentEnrichFuncWithDefaultField[Root <: EnrichRoot[_, _], Source <: Enrichable[_, _], T]
+(parent: DefaultFieldEnrichFunc[Root, Source, T], override val dependency: EnrichFunc[Root, _], override val dependencyField: String)
+  extends PipedDependentEnrichFunc[Root, Source](parent, dependency, dependencyField) with DefaultFieldDependentEnrichFunc[Root, Source, T] {
+  override def defaultField: String = parent.defaultField
+}

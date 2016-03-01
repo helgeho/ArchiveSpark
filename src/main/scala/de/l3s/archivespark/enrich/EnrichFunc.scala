@@ -32,8 +32,8 @@ trait EnrichFunc[Root <: EnrichRoot[_, _], Source <: Enrichable[_, _]] extends S
 
   def enrich(root: Root): Root = enrich(root, excludeFromOutput = false)
 
-  def on(source: String): EnrichFunc[Root, Source] = on(SelectorUtil.parse(source))
   def on(source: Seq[String]): EnrichFunc[Root, Source] = new PipedEnrichFunc[Root, Source](this, source)
+  def on(source: String): EnrichFunc[Root, Source] = on(SelectorUtil.parse(source))
 
   def on(source: String, index: Int): EnrichFunc[Root, Source] = on(SelectorUtil.parse(source), index)
   def on(source: Seq[String], index: Int): EnrichFunc[Root, Source] = on(source :+ s"[$index]")
@@ -55,7 +55,7 @@ trait EnrichFunc[Root <: EnrichRoot[_, _], Source <: Enrichable[_, _]] extends S
   def field: IdentityMap[String] = IdentityMap[String]()
 
   def exists(root: Root): Boolean = root(source) match {
-    case Some(source: Source) => exists(source)
+    case Some(source) => exists(source.asInstanceOf[Source])
     case None => false
   }
 
