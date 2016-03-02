@@ -24,6 +24,6 @@
 
 package de.l3s.archivespark.enrich
 
-trait SingleFieldEnrichFunc[T] { this: EnrichFunc[_, _] =>
+trait SingleFieldEnrichFunc { this: EnrichFunc[_, _] =>
   def defaultField: String = this.fields.head
 }

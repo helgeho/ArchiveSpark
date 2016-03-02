@@ -31,7 +31,7 @@ import org.jsoup.parser.Parser
 import scala.collection.JavaConverters._
 
 object HtmlText extends DependentEnrichFunc[ResolvedArchiveRecord, Enrichable[String, _]]
-  with DefaultFieldDependentEnrichFunc[ResolvedArchiveRecord, Enrichable[String, _], String] with SingleFieldEnrichFunc[String] {
+  with DefaultFieldDependentEnrichFunc[ResolvedArchiveRecord, Enrichable[String, _], String] with SingleFieldEnrichFunc {
   override def dependency: EnrichFunc[ResolvedArchiveRecord, _] = Html
   override def dependencyField: String = "html"
 

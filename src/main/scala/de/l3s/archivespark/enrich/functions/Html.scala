@@ -46,10 +46,8 @@ object Html extends HtmlTag("body", 0, "body") {
   def all(selector: String, fieldName: String): HtmlTags = new HtmlTags(selector, fieldName)
 }
 
-class HtmlTag (selector: String, index: Int, fieldName: String) extends BoundEnrichFunc(HtmlNamespace)
-  with DefaultFieldDependentEnrichFunc[ResolvedArchiveRecord, Enrichable[String, _], String] with SingleFieldEnrichFunc[String] {
-  override def dependencyField: String = HtmlNamespace.fieldName
-
+class HtmlTag (selector: String, index: Int, fieldName: String) extends DefaultFieldBoundEnrichFunc[ResolvedArchiveRecord, Enrichable[String, _], String](HtmlNamespace)
+  with SingleFieldEnrichFunc {
   override def fields: Seq[String] = Seq(fieldName)
   override def field: IdentityMap[String] = IdentityMap(
     "html" -> fieldName
@@ -63,10 +61,8 @@ class HtmlTag (selector: String, index: Int, fieldName: String) extends BoundEnr
   }
 }
 
-class HtmlTags (selector: String, fieldName: String) extends BoundEnrichFunc(HtmlNamespace)
-  with DefaultFieldDependentEnrichFunc[ResolvedArchiveRecord, Enrichable[String, _], Seq[String]] with SingleFieldEnrichFunc[Seq[String]] {
-  override def dependencyField: String = HtmlNamespace.fieldName
-
+class HtmlTags (selector: String, fieldName: String) extends DefaultFieldBoundEnrichFunc[ResolvedArchiveRecord, Enrichable[String, _], Seq[String]](HtmlNamespace)
+  with SingleFieldEnrichFunc {
   override def fields: Seq[String] = Seq(fieldName)
   override def field: IdentityMap[String] = IdentityMap(
     "html" -> fieldName

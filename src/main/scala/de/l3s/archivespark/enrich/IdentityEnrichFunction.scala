@@ -29,7 +29,7 @@ import de.l3s.archivespark.utils.IdentityMap
 
 class IdentityEnrichFunction[T, Root <: EnrichRoot[_, _]]
 (override val dependency: EnrichFunc[Root, _], override val dependencyField: String, val fieldName: String)
-  extends DependentEnrichFunc[Root, Enrichable[T, _]] with SingleFieldEnrichFunc[T] {
+  extends DefaultFieldDependentEnrichFunc[Root, Enrichable[T, _], T] with SingleFieldEnrichFunc {
 
   def this(dependency: DefaultFieldEnrichFunc[Root, _, T], fieldName: String) {
     this(dependency, dependency.defaultField, fieldName)

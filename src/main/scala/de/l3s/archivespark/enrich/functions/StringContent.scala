@@ -30,7 +30,7 @@ import de.l3s.archivespark.{ArchiveRecordField, ResolvedArchiveRecord}
 import org.apache.http.entity.ByteArrayEntity
 import org.apache.http.util.EntityUtils
 
-object StringContent extends DefaultFieldDependentEnrichFunc[ResolvedArchiveRecord, Enrichable[Array[Byte], _], String] with SingleFieldEnrichFunc[String] {
+object StringContent extends DefaultFieldDependentEnrichFunc[ResolvedArchiveRecord, Enrichable[Array[Byte], _], String] with SingleFieldEnrichFunc {
   override def dependency: EnrichFunc[ResolvedArchiveRecord, _] = Response
   override def dependencyField: String = "content"
 

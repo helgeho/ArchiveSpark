@@ -37,10 +37,8 @@ object HtmlAttribute {
   def apply(name: String): HtmlAttribute = new HtmlAttribute(name)
 }
 
-class HtmlAttribute private (attribute: String) extends BoundEnrichFunc(HtmlAttributeNamespace)
-  with DefaultFieldDependentEnrichFunc[ResolvedArchiveRecord, Enrichable[String, _], String] with SingleFieldEnrichFunc[String] {
-  override def dependencyField: String = HtmlAttributeNamespace.fieldName
-
+class HtmlAttribute private (attribute: String) extends DefaultFieldBoundEnrichFunc[ResolvedArchiveRecord, Enrichable[String, _], String](HtmlAttributeNamespace)
+  with SingleFieldEnrichFunc {
   override def fields: Seq[String] = Seq(attribute)
   override def field: IdentityMap[String] = IdentityMap(
     "value" -> attribute
