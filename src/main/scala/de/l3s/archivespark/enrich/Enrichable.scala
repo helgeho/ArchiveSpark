@@ -38,7 +38,7 @@ trait Enrichable[T, This <: Enrichable[_, _]] extends Serializable with Copyable
     case None => false
   }
 
-  private def excludeFromOutput(value: Boolean = true, overwrite: Boolean = true): Unit = excludeFromOutput match {
+  protected[archivespark] def excludeFromOutput(value: Boolean = true, overwrite: Boolean = true): Unit = excludeFromOutput match {
     case Some(v) => if (overwrite) excludeFromOutput = Some(v)
     case None => excludeFromOutput = Some(value)
   }

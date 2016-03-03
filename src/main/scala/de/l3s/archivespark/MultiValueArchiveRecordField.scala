@@ -10,6 +10,11 @@ import scala.reflect.ClassTag
 class MultiValueArchiveRecordField[T] (val children: Seq[Enrichable[T, _]]) extends Enrichable[Seq[T], MultiValueArchiveRecordField[T]] {
   def get: Seq[T] = children.map(e => e.get)
 
+  override protected[archivespark] def excludeFromOutput(value: Boolean, overwrite: Boolean): Unit = {
+    for (child <- children) child.excludeFromOutput(value, overwrite)
+    super.excludeFromOutput(value, overwrite)
+  }
+
   override def enrich(path: Seq[String], func: EnrichFunc[_, _], excludeFromOutput: Boolean): MultiValueArchiveRecordField[T] = {
     if (path.nonEmpty && path.head == "*") {
       var hasEnriched = false
