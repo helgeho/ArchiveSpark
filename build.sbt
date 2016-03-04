@@ -25,6 +25,9 @@ lazy val archivespark = (project in file(".")).
       "commons-io" % "commons-io" % "2.4",
       "org.json4s" %% "json4s-native" % "3.2.11" excludeAll ExclusionRule(organization = "org.scala-lang"),
       "org.jsoup" % "jsoup" % "1.8.3",
+      "com.gravity" % "goose" % "2.1.23" % "provided",
+      "com.google.protobuf" % "protobuf-java" % "2.6.1",
+      "edu.stanford.nlp" % "stanford-corenlp" % "3.6.0",
       "org.scalatest" %% "scalatest" % "2.2.6" % Test
     ),
     resolvers ++= Seq(

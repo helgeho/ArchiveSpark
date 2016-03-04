@@ -30,5 +30,5 @@ abstract class BoundEnrichFunc[Root <: EnrichRoot[_, _], Source <: Enrichable[_,
   override def dependency = bound
   override def dependencyField = field
 
-  override def on(dependency: EnrichFunc[Root, _], field: String): EnrichFunc[Root, Source] = super.on(bound.on(dependency, field), dependencyField)
+  override def on(dependency: EnrichFunc[Root, _], field: String): EnrichFunc[Root, Source] = super.on(bound.on(dependency, field), field)
 }

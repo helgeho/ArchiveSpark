@@ -24,24 +24,27 @@
 
 package de.l3s.archivespark.enrich.functions
 
+import de.l3s.archivespark.cdx.ResolvedCdxRecord
+import de.l3s.archivespark.utils.IdentityMap
+import de.l3s.archivespark.{MultiValueArchiveRecordField, ArchiveRecordField, ResolvedArchiveRecord}
 import de.l3s.archivespark.enrich._
-import de.l3s.archivespark.{ArchiveRecordField, ResolvedArchiveRecord}
-import org.jsoup.parser.Parser
 
-import scala.collection.JavaConverters._
+private object GooseNamespace extends IdentityEnrichFunction(StringContent, "goose")
 
-object HtmlText extends DefaultFieldDependentEnrichFunc[ResolvedArchiveRecord, Enrichable[String, _], String]
-  with SingleFieldEnrichFunc {
-  override def dependency: EnrichFunc[ResolvedArchiveRecord, _] = Html
-  override def dependencyField: String = Html.defaultField
-
-  override def fields: Seq[String] = Seq("text")
+object Goose extends BoundEnrichFunc[ResolvedArchiveRecord, Enrichable[String, _]](GooseNamespace) {
+  override def fields = Seq("title", "date", "text", "image", "metaDesc", "metaTags", "videos")
 
   override def derive(source: Enrichable[String, _], derivatives: Derivatives): Unit = {
-    val nodes = Parser.parseXmlFragment(source.get, "").asScala
-    if (nodes.nonEmpty) {
-      val el = nodes.head.asInstanceOf[org.jsoup.nodes.Element]
-      derivatives << ArchiveRecordField(el.text)
-    }
+    val url = source.root[ResolvedCdxRecord].get.originalUrl
+    val goose = new com.gravity.goose.Goose(new com.gravity.goose.Configuration)
+    val article = goose.extractContent(url, source.get)
+
+    derivatives << ArchiveRecordField(article.title)
+    derivatives << ArchiveRecordField(Option(article.publishDate).map(_.toString).getOrElse(""))
+    derivatives << ArchiveRecordField(article.cleanedArticleText)
+    derivatives << ArchiveRecordField(article.topImage.imageSrc)
+    derivatives << ArchiveRecordField(article.metaDescription)
+    derivatives << ArchiveRecordField(article.metaKeywords)
+    derivatives << MultiValueArchiveRecordField(article.movies.map(e => e.toString))
   }
 }
