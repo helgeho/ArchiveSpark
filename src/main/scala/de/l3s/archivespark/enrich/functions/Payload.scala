@@ -45,7 +45,7 @@ class Payload private(http: Boolean = true) extends DefaultFieldEnrichFunc[Resol
       if (record != null) {
         derivatives << ArchiveRecordField(record.header)
         if (http) {
-          derivatives << ArchiveRecordField(record.httpResponse.header)
+          derivatives << ArchiveRecordField(record.httpResponse.header.headers)
           derivatives << ArchiveRecordField(record.httpResponse.payload)
         } else {
           derivatives << ArchiveRecordField(record.payload)

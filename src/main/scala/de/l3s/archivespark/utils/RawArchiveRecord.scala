@@ -66,5 +66,5 @@ class RawArchiveRecord private (val record: ArchiveRecord) {
     }
   }
 
-  def httpResponse: HttpResponse = HttpResponse(payload)
+  lazy val httpResponse: HttpResponse = HttpResponse(payload)
 }
