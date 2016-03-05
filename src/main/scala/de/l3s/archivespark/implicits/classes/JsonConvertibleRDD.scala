@@ -37,5 +37,5 @@ class JsonConvertibleRDD[Record <: JsonConvertible](rdd: RDD[Record]) {
 
   def saveAsJson(path: String) = if (path.endsWith(".gz")) toJsonStrings.saveAsTextFile(path, classOf[GzipCodec]) else toJsonStrings.saveAsTextFile(path)
 
-  def saveToEs(resource: String) = EsSpark.saveJsonToEs(rdd.map(r => r.toJsonString), resource)
+  def saveToEs(resource: String) = EsSpark.saveJsonToEs(rdd.map(r => r.toJsonString(pretty = false)), resource)
 }
