@@ -24,19 +24,19 @@
 
 package de.l3s.archivespark.enrich.functions
 
+import com.gravity.goose.Configuration
 import de.l3s.archivespark.cdx.ResolvedCdxRecord
-import de.l3s.archivespark.utils.IdentityMap
 import de.l3s.archivespark.{MultiValueArchiveRecordField, ArchiveRecordField, ResolvedArchiveRecord}
 import de.l3s.archivespark.enrich._
 
 private object GooseNamespace extends IdentityEnrichFunction(StringContent, "goose")
 
-object Goose extends BoundEnrichFunc[ResolvedArchiveRecord, Enrichable[String, _]](GooseNamespace) {
+class Goose private (config: Configuration) extends BoundEnrichFunc[ResolvedArchiveRecord, Enrichable[String, _]](GooseNamespace) {
   override def fields = Seq("title", "date", "text", "image", "metaDesc", "metaTags", "videos")
 
   override def derive(source: Enrichable[String, _], derivatives: Derivatives): Unit = {
     val url = source.root[ResolvedCdxRecord].get.originalUrl
-    val goose = new com.gravity.goose.Goose(new com.gravity.goose.Configuration)
+    val goose = new com.gravity.goose.Goose(config)
     val article = goose.extractContent(url, source.get)
 
     derivatives << ArchiveRecordField(article.title)
@@ -47,4 +47,9 @@ object Goose extends BoundEnrichFunc[ResolvedArchiveRecord, Enrichable[String, _
     derivatives << ArchiveRecordField(article.metaKeywords)
     derivatives << MultiValueArchiveRecordField(article.movies.map(e => e.toString))
   }
+}
+
+object Goose extends Goose(new Configuration) {
+  def newConfig = new Configuration
+  def apply(config: Configuration) = new Goose(config)
 }
