@@ -24,40 +24,47 @@
 
 package de.l3s.archivespark.utils
 
-import java.io.ByteArrayOutputStream
+import java.io.{InputStream, ByteArrayOutputStream}
 
 import org.apache.http.entity.ByteArrayEntity
 import org.apache.http.util.EntityUtils
-import org.archive.io.ArchiveRecord
+import org.archive.io.arc.ARCReaderFactory
+import org.archive.io.warc.WARCReaderFactory
+import org.archive.io.{ArchiveReader, ArchiveReaderFactory, ArchiveRecord}
 
 import scala.collection.JavaConverters._
+import scala.util.Try
 
-object HttpArchiveRecord {
-  def apply(record: ArchiveRecord): HttpArchiveRecord = new HttpArchiveRecord(record)
+object RawArchiveRecord {
+  def apply(filename: String, stream: InputStream): RawArchiveRecord = {
+    var reader: ArchiveReader = null
+    var record: RawArchiveRecord = null
+    try {
+      val isArc = ARCReaderFactory.isARCSuffix(filename)
+      reader = if (isArc) ARCReaderFactory.get(filename, stream, false) else WARCReaderFactory.get(filename, stream, false)
+      record = new RawArchiveRecord(reader.get)
+    } finally {
+      if (reader != null) Try{reader.close()}
+    }
+    record
+  }
 }
 
-class HttpArchiveRecord (val record: ArchiveRecord) {
-  lazy val header = {
+class RawArchiveRecord private (val record: ArchiveRecord) {
+  val header = {
     val header = record.getHeader
     header.getHeaderFields.asScala.mapValues(o => o.toString).toMap
   }
 
-  lazy val httpResponse: HttpResponse = {
-    var recordOutput: ByteArrayOutputStream = null
+  val payload: Array[Byte] = {
+    var recordOutput: ByteArrayOutputStream = new ByteArrayOutputStream()
     try {
-      recordOutput = new ByteArrayOutputStream()
       record.dump(recordOutput)
-      HttpResponse(recordOutput.toByteArray)
+      recordOutput.toByteArray
     } finally {
-      if (recordOutput != null) recordOutput.close()
+      recordOutput.close()
     }
   }
 
-  lazy val httpHeader = httpResponse.header
-
-  lazy val payload = httpResponse.payload
-
-  lazy val stringContent = EntityUtils.toString(new ByteArrayEntity(payload)).trim
-
-  def close() = record.close()
+  def httpResponse: HttpResponse = HttpResponse(payload)
 }

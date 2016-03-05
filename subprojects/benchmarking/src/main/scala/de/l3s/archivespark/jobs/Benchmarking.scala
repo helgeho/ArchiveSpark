@@ -28,7 +28,7 @@ import java.util.Calendar
 
 import de.l3s.archivespark.enrich.functions._
 import de.l3s.archivespark.implicits._
-import de.l3s.archivespark.utils.{HttpArchiveRecord, HttpResponse}
+import de.l3s.archivespark.utils.{RawArchiveRecord, HttpResponse}
 import de.l3s.archivespark.{ArchiveSpark, ResolvedArchiveRecord}
 import de1.l3s.archivesparkb.benchmarking.{Benchmark, BenchmarkLogger}
 import de1.l3s.archivesparkb.benchmarking.warcbase.{WarcBase, WarcRecord}
@@ -91,7 +91,7 @@ object Benchmarking {
     }.log(logValues)
   }
 
-  def benchmarkHbase(name: String)(rdd: => RDD[HttpArchiveRecord])(implicit sc: SparkContext, logger: BenchmarkLogger) = {
+  def benchmarkHbase(name: String)(rdd: => RDD[RawArchiveRecord])(implicit sc: SparkContext, logger: BenchmarkLogger) = {
     Benchmark.time(name, hbaseId, times) {
       rdd.map(r => r.stringContent.length).sum()
     }.log(logValues)

@@ -27,11 +27,15 @@ package de.l3s.archivespark.implicits.classes
 import de.l3s.archivespark.utils.JsonConvertible
 import org.apache.hadoop.io.compress.GzipCodec
 import org.apache.spark.rdd.RDD
+import org.elasticsearch.spark.rdd.EsSpark
 
 class JsonConvertibleRDD[Record <: JsonConvertible](rdd: RDD[Record]) {
   def toJson = rdd.map(r => r.toJson)
 
   def toJsonStrings = rdd.map(r => r.toJsonString)
+  def toJsonStrings(pretty: Boolean = true) = rdd.map(r => r.toJsonString(pretty))
 
   def saveAsJson(path: String) = if (path.endsWith(".gz")) toJsonStrings.saveAsTextFile(path, classOf[GzipCodec]) else toJsonStrings.saveAsTextFile(path)
+
+  def saveToEs(resource: String) = EsSpark.saveJsonToEs(rdd.map(r => r.toJsonString), resource)
 }

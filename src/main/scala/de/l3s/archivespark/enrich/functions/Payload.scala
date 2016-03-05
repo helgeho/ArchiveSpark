@@ -24,17 +24,14 @@
 
 package de.l3s.archivespark.enrich.functions
 
-import de.l3s.archivespark.enrich.{DefaultFieldEnrichFunc, Derivatives, EnrichFunc, Enrichable}
-import de.l3s.archivespark.utils.{HttpArchiveRecord, IdentityMap}
+import de.l3s.archivespark.enrich.{DefaultFieldEnrichFunc, Derivatives}
+import de.l3s.archivespark.utils.{RawArchiveRecord, IdentityMap}
 import de.l3s.archivespark.{ArchiveRecordField, ResolvedArchiveRecord}
-import org.archive.io.ArchiveReaderFactory
 
-object Response extends DefaultFieldEnrichFunc[ResolvedArchiveRecord, ResolvedArchiveRecord, String] {
-  val RecordHeaderField = "recordHeader"
-  val HttpHeaderField = "httpHeader"
-  val PayloadField = "payload"
+class Payload private(http: Boolean = true) extends DefaultFieldEnrichFunc[ResolvedArchiveRecord, ResolvedArchiveRecord, String] {
+  import Payload._
 
-  override def fields = Seq(RecordHeaderField, HttpHeaderField, PayloadField)
+  override def fields = if (http) Seq(RecordHeaderField, HttpHeaderField, PayloadField) else Seq(RecordHeaderField, PayloadField)
 
   def defaultField = PayloadField
 
@@ -44,14 +41,24 @@ object Response extends DefaultFieldEnrichFunc[ResolvedArchiveRecord, ResolvedAr
 
   override def derive(source: ResolvedArchiveRecord, derivatives: Derivatives): Unit = {
     source.access { case (fileName, stream) =>
-      val reader = ArchiveReaderFactory.get(fileName, stream, false)
-      val record = HttpArchiveRecord(reader.get)
-
-      derivatives << ArchiveRecordField(record.header)
-      derivatives << ArchiveRecordField(record.httpHeader.headers)
-      derivatives << ArchiveRecordField(record.payload)
-
-      record.close()
+      val record = RawArchiveRecord(fileName, stream)
+      if (record != null) {
+        derivatives << ArchiveRecordField(record.header)
+        if (http) {
+          derivatives << ArchiveRecordField(record.httpResponse.header)
+          derivatives << ArchiveRecordField(record.httpResponse.payload)
+        } else {
+          derivatives << ArchiveRecordField(record.payload)
+        }
+      }
     }
   }
+}
+
+object Payload extends Payload(http = true) {
+  val RecordHeaderField = "recordHeader"
+  val HttpHeaderField = "httpHeader"
+  val PayloadField = "payload"
+
+  def apply(http: Boolean = true) = new Payload(http)
 }

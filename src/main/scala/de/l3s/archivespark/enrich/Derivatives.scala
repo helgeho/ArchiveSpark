@@ -30,7 +30,7 @@ class Derivatives(val fields: Seq[String]) {
 
   def get: Map[String, Enrichable[_, _]] = map
 
-  def <<[T <: Enrichable[_, T]](value: T) = {
+  def <<[T <: Enrichable[_, _]](value: Enrichable[_, T]) = {
     map += fields(nextField) -> value
     nextField += 1
   }

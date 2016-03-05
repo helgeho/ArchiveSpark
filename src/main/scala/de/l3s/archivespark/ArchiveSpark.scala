@@ -61,7 +61,7 @@ object ArchiveSpark {
       classOf[ArchiveRecordField[_]],
       classOf[MultiValueArchiveRecordField[_]],
       classOf[HttpResponse],
-      classOf[HttpArchiveRecord]
+      classOf[RawArchiveRecord]
     ))
   }
 
@@ -82,7 +82,7 @@ object ArchiveSpark {
   }
 
   def resolvedCdx(path: String, warcPath: String)(implicit sc: SparkContext): RDD[ResolvedCdxRecord] = {
-    implicit val filePathMap = sc.broadcast(FilePathMap(warcPath, Seq("(?i).*\\.arc\\.gz", "(?i).*\\.warc\\.gz")))
+    implicit val filePathMap = sc.broadcast(FilePathMap(warcPath, Seq("(?i).*\\.arc\\.gz", "(?i).*\\.warc\\.gz", "(?i).*\\.wat\\.gz")))
     cdx(path).map(cdx => new ResolvedCdxRecord(cdx, new BroadcastPathMapLocationInfo(cdx.location.compressedSize, cdx.location.offset, cdx.location.filename), null))
   }
 }

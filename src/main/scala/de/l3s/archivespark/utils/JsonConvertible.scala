@@ -30,4 +30,6 @@ trait JsonConvertible {
   def toJson: Map[String, Any]
 
   def toJsonString: String = mapToJson(toJson)
+
+  def toJsonString(pretty: Boolean = true): String = mapToJson(toJson, pretty)
 }

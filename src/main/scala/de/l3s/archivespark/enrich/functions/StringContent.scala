@@ -31,7 +31,7 @@ import org.apache.http.entity.ByteArrayEntity
 import org.apache.http.util.EntityUtils
 
 object StringContent extends DefaultFieldDependentEnrichFunc[ResolvedArchiveRecord, Enrichable[Array[Byte], _], String] with SingleFieldEnrichFunc {
-  override def dependency: EnrichFunc[ResolvedArchiveRecord, _] = Response
+  override def dependency: EnrichFunc[ResolvedArchiveRecord, _] = Payload
   override def dependencyField: String = "content"
 
   override def fields: Seq[String] = Seq("string")
@@ -41,7 +41,7 @@ object StringContent extends DefaultFieldDependentEnrichFunc[ResolvedArchiveReco
 
   override def derive(source: Enrichable[Array[Byte], _], derivatives: Derivatives): Unit = {
     val defaultCharset = HttpResponse.DefaultChartset
-    val charset = source.parent.get[Map[String, String]](Response.HttpHeaderField) match {
+    val charset = source.parent.get[Map[String, String]](Payload.HttpHeaderField) match {
       case Some(headers) => HttpHeader(headers).charset.getOrElse(defaultCharset)
       case None => defaultCharset
     }

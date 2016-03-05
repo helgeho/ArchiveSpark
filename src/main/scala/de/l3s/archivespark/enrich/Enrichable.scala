@@ -24,6 +24,7 @@
 
 package de.l3s.archivespark.enrich
 
+import de.l3s.archivespark.utils.Json._
 import de.l3s.archivespark.utils.{SelfTyped, SelectorUtil, Copyable, JsonConvertible}
 
 import scala.reflect.ClassTag
@@ -43,11 +44,11 @@ trait Enrichable[T, This <: Enrichable[_, _]] extends Serializable with Copyable
     case None => excludeFromOutput = Some(value)
   }
 
-  private[archivespark] var _parent: Enrichable[_, _] = null
+  protected[archivespark] var _parent: Enrichable[_, _] = null
   def parent[A] = _parent.asInstanceOf[Enrichable[A, _]]
 
-  private[archivespark] var _root: EnrichRoot[_, _] = null
-  def root[A] = _root.asInstanceOf[Enrichable[A, _]]
+  protected[archivespark] var _root: EnrichRoot[_, _] = null
+  def root[A] = _root.asInstanceOf[EnrichRoot[A, _]]
 
   private var _enrichments = Map[String, Enrichable[_, _]]()
   def enrichments = _enrichments.keySet
@@ -58,6 +59,11 @@ trait Enrichable[T, This <: Enrichable[_, _]] extends Serializable with Copyable
     val clone = copy()
     clone._enrichments = _enrichments.updated(fieldName, enrichment)
     clone.asInstanceOf[This]
+  }
+
+  def enrichValue[Value](fieldName: String, value: Value): This = {
+    val enrichable = new EnrichableImpl[Value, Enrichable[_, _]](value, self, _root)
+    enrich(fieldName, enrichable)
   }
 
   def enrich(func: EnrichFunc[_, This], excludeFromOutput: Boolean = false): This = {

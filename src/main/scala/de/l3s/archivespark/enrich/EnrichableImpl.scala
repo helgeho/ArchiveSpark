@@ -24,11 +24,13 @@
 
 package de.l3s.archivespark.enrich
 
-abstract class BoundEnrichFunc[Root <: EnrichRoot[_, _], Source <: Enrichable[_, _]](bound: DependentEnrichFunc[Root, _], field: String = null) extends DependentEnrichFunc[Root, Source] {
-  def this(bound: DefaultFieldDependentEnrichFunc[Root, _, _]) = this(bound, bound.defaultField)
+import de.l3s.archivespark.utils.Json._
 
-  override def dependency = bound
-  override def dependencyField = field
+class EnrichableImpl[T, This <: Enrichable[_, _]](override val get: T, parent: Enrichable[_, _] = null, root: EnrichRoot[_, _] = null) extends Enrichable[T, This] {
+  _parent = parent
+  _root = root
 
-  override def on(dependency: EnrichFunc[Root, _], field: String): EnrichFunc[Root, Source] = super.on(bound.on(dependency, field), dependencyField)
+  def toJson: Map[String, Any] = (if (isExcludedFromOutput) Map() else Map(
+    null.asInstanceOf[String] -> json(this.get)
+  )) ++ enrichments.map{e => (e, mapToJsonValue(enrichment(e).get.toJson))}.filter{ case (_, field) => field != null }
 }

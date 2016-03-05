@@ -1,3 +1,4 @@
+import sbt.ExclusionRule
 import sbt.Keys._
 
 lazy val commonSettings = Seq(
@@ -28,6 +29,11 @@ lazy val archivespark = (project in file(".")).
       "com.gravity" % "goose" % "2.1.23" % "provided",
       "com.google.protobuf" % "protobuf-java" % "2.6.1",
       "edu.stanford.nlp" % "stanford-corenlp" % "3.6.0",
+      "org.elasticsearch" %% "elasticsearch-spark" % "2.2.0" % "provided" excludeAll(
+        ExclusionRule(organization = "org.apache.hadoop"),
+        ExclusionRule(organization = "com.google.guava"),
+        ExclusionRule(organization = "org.scala-lang"),
+        ExclusionRule(organization = "org.slf4j")),
       "org.scalatest" %% "scalatest" % "2.2.6" % Test
     ),
     resolvers ++= Seq(
