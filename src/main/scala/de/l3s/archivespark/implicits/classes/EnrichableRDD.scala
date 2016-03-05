@@ -33,7 +33,10 @@ import org.apache.spark.rdd.RDD
 import scala.reflect.ClassTag
 
 class EnrichableRDD[Root <: EnrichRoot[_, _] : ClassTag](rdd: RDD[Root]) {
-  def enrich(f: EnrichFunc[Root, _]): RDD[Root] = rdd.map(r => f.enrich(r))
+  def enrich(func: => EnrichFunc[Root, _]): RDD[Root] = rdd.mapPartitions { records =>
+    val f = func
+    records.map(r => f.enrich(r))
+  }
 
   def mapEnrich[Source, Target](sourceField: String, target: String)(f: Source => Target): RDD[Root] = mapEnrich(SelectorUtil.parse(sourceField), target, target)(f)
   def mapEnrich[Source, Target](sourceField: String, target: String, targetField: String)(f: Source => Target): RDD[Root] = mapEnrich(SelectorUtil.parse(sourceField), target, targetField)(f)
