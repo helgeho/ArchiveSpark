@@ -31,7 +31,7 @@ import de.l3s.archivespark.enrich._
 
 private object GooseNamespace extends IdentityEnrichFunction(StringContent, "goose")
 
-class Goose private (config: Configuration) extends BoundEnrichFunc[ResolvedArchiveRecord, Enrichable[String, _]](GooseNamespace) {
+class Goose private (val config: Configuration) extends BoundEnrichFunc[ResolvedArchiveRecord, Enrichable[String, _]](GooseNamespace) {
   override def fields = Seq("title", "date", "text", "image", "metaDesc", "metaTags", "videos")
 
   override def derive(source: Enrichable[String, _], derivatives: Derivatives): Unit = {
@@ -49,7 +49,15 @@ class Goose private (config: Configuration) extends BoundEnrichFunc[ResolvedArch
   }
 }
 
-object Goose extends Goose(new Configuration) {
-  def newConfig = new Configuration
+object Goose extends Goose({
+    val config = new Configuration
+    config.enableImageFetching = false
+    config
+  }) {
+  def newConfig = {
+    val config = new Configuration
+    config.enableImageFetching = false
+    config
+  }
   def apply(config: Configuration) = new Goose(config)
 }
