@@ -28,7 +28,9 @@ import java.util.Properties
 
 import de.l3s.archivespark.{MultiValueArchiveRecordField, ResolvedArchiveRecord}
 import de.l3s.archivespark.enrich._
-import edu.stanford.nlp.simple._
+import edu.stanford.nlp.ling.CoreAnnotations._
+import edu.stanford.nlp.pipeline.{Annotation, StanfordCoreNLP}
+//import edu.stanford.nlp.simple._
 import scala.collection.JavaConverters._
 
 private object EntitiesNamespace extends IdentityEnrichFunction(HtmlText, "entities")
@@ -41,9 +43,20 @@ class Entities private (properties: Properties, tagFieldMapping: Seq[(String, St
   override def fields = tagFieldMapping.map{case (tag, field) => field}
 
   override def derive(source: Enrichable[String, _], derivatives: Derivatives): Unit = {
-    val doc = new Document(source.get)
-    val sentences = doc.sentences(properties).asScala
-    for ((tag, _) <- tagFieldMapping) derivatives << MultiValueArchiveRecordField(sentences.flatMap(s => s.mentions(tag).asScala).toSet.toSeq)
+    val pipeline = new StanfordCoreNLP(properties)
+    val doc = new Annotation(source.get)
+    pipeline.annotate(doc)
+    val sentences = doc.get(classOf[SentencesAnnotation]).asScala
+    val mentions = sentences.flatMap(sentence => sentence.get(classOf[TokensAnnotation]).asScala.map{token =>
+      val word = token.get(classOf[TextAnnotation])
+      val ne = token.get(classOf[NamedEntityTagAnnotation])
+      (ne, word)
+    }).groupBy{case (ne, word) => ne.toLowerCase}.mapValues(items => items.map{case (ne, word) => word}.toSet)
+    for ((tag, _) <- tagFieldMapping) derivatives << MultiValueArchiveRecordField(mentions.getOrElse(tag.toLowerCase, Set()).toSeq)
+
+//    val doc = new Document(source.get)/*
+//    val sentences = doc.sentences(properties).asScala
+//    for ((tag, _) <- tagFieldMapping) derivatives << MultiValueArchiveRecordField(sentences.flatMap(s => s.mentions(tag).asScala).toSet.toSeq)*/
   }
 }
 
@@ -56,7 +69,7 @@ object EntitiesConstants {
   )
 
   val DefaultProps = new Properties() {{
-    setProperty("annotators", "")
+    setProperty("annotators", "tokenize, ssplit, pos, lemma, ner")
     setProperty("tokenize.class", "PTBTokenizer")
     setProperty("tokenize.language", "en")
   }}
