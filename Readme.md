@@ -2,6 +2,9 @@
 
 An Apache Spark framework that facilitates access to Web Archives, enables easy data extraction as well as derivation.
 
+ArchiveSpark has been accepted as a full paper at [JCDL 2016](http://www.jcdl2016.org). If you use ArchiveSpark in your work, please cite this paper:
+*Helge Holzmann, Vinay Goel, Avishek Anand. ArchiveSpark: Efficient Web Archive Access, Extraction and Derivation. In Proceedings of the Joint Conference on Digital Libraries, Newark, New Jersey, USA, 2016 (to appear).*
+
 ### Build
 
 At the moment we do not provide binaries. In order to use ArchiveSpark, please compile it yourself using the SBT assembly plugin:
