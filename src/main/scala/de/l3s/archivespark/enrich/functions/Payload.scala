@@ -28,7 +28,7 @@ import de.l3s.archivespark.enrich.{DefaultFieldEnrichFunc, Derivatives}
 import de.l3s.archivespark.utils.{RawArchiveRecord, IdentityMap}
 import de.l3s.archivespark.{ArchiveRecordField, ResolvedArchiveRecord}
 
-class Payload private(http: Boolean = true) extends DefaultFieldEnrichFunc[ResolvedArchiveRecord, ResolvedArchiveRecord, String] {
+class Payload private(http: Boolean = true) extends DefaultFieldEnrichFunc[ResolvedArchiveRecord, ResolvedArchiveRecord, Array[Byte]] {
   import Payload._
 
   override def fields = if (http) Seq(RecordHeaderField, HttpHeaderField, PayloadField) else Seq(RecordHeaderField, PayloadField)
