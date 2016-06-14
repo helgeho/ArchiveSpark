@@ -5,9 +5,44 @@ An Apache Spark framework that facilitates access to Web Archives, enables easy 
 ArchiveSpark has been accepted as a full paper at [JCDL 2016](http://www.jcdl2016.org). If you use ArchiveSpark in your work, please cite this paper:
 *Helge Holzmann, Vinay Goel, Avishek Anand. ArchiveSpark: Efficient Web Archive Access, Extraction and Derivation. In Proceedings of the Joint Conference on Digital Libraries, Newark, New Jersey, USA, 2016 (to appear).*
 
+More information can be found in the slides presented at the [WebSci`16 Hackathon](http://www.websci16.org/hackathon):
+http://www.slideshare.net/HelgeHolzmann/archivespark-introduction-websci-2016-hackathon
+
+### Usage
+
+We recommend to use ArchiveSpark interactively in a [Jupyter](http://jupyter.org) notebook. To install Jupyter locally or on your Spark/Hadoop cluster, please follow the official [instructions](https://jupyter.readthedocs.io/en/latest/install.html). In order to use Jupyter with ArchiveSpark we provide a pre-packaged kernel, based on [Apache Toree](https://github.com/apache/incubator-toree): [http://L3S.de/~holzmann/archivespark-kernel.tar.gz](http://L3S.de/~holzmann/archivespark-kernel.tar.gz)
+
+The kernel is only compatible with Spark 1.6.1. If you only have an older version installed, please download 1.6.1 from the [Spark download page](https://spark.apache.org/downloads.html) and unpack it to your local home directory. Once you have Jupyter as well as Spark available, please follow the instructions below to configure it for the use with ArchiveSpark:
+
+1. Create a kernels directory if it does not exist yet: `mkdir -p ~/.ipython/kernels`
+2. Unpack the ArchiveSpark/Toree to your kernels dir: `tar -zxf archivespark-kernel.tar.gz -C ~/.ipython/kernels`
+3. Edit the kernel configuration file `~/.ipython/kernels/archivespark/kernel.json` to customize it according to your environment (e.g., `vim ~/.ipython/kernels/archivespark/kernel.json`):
+ * replace `USERNAME` in line 5 after `"argv": [` with your local username
+ * set `SPARK_HOME` to the path of your Spark 1.6.1 installation
+ * change `HADOOP_CONF_DIR` and the specified `SPARK_OPTS` if needed
+4. Now you are all set to run jupyter: `jupyter notebook`
+
+The first cell in your notebook should include the required imports:
+```scala
+import de.l3s.archivespark.ArchiveSpark
+import de.l3s.archivespark.enrich.functions._
+import de.l3s.archivespark.nativescala.implicits._
+import de.l3s.archivespark.implicits._
+```
+
+In the next cell you can load your Web archive collection and start working:
+```scala
+val rdd = ArchiveSpark.hdfs("/cdx/path/*.cdx", "/path/to/warc/and/arc")(sc)
+```
+
+Example Jupyter notebooks can be found under [`notebooks`](notebooks). To understand the full stack from functional programming with Scala, how to work with Spark and to get started with ArchiveSpark, we suggest to read our tutorial notebook, that was presented in the hands-on session at the [WebSci'16 Hackathon](http://www.websci16.org/hackathon): [Example notebook](https://github.com/helgeho/ArchiveSpark/blob/master/notebooks/WebSciHackathonHandsOn.ipynb#ArchiveSpark)
+
+Besides Jupyter, there are several ways to use ArchiveSpark. For instance, you can use it as a library / API to access Web archives in your Java/Scala Spark projects, submitted with `spark-submit` or run interactively using `spark-shell`.
+For more information on how to use [Apache Spark](http://spark.apache.org), please read the [documentation](http://spark.apache.org/docs/1.6.1).
+
 ### Build
 
-At the moment we do not provide binaries. In order to use ArchiveSpark, please compile it yourself using the SBT assembly plugin:
+To build the ArchiveSpark JAR files from source use the SBT assembly plugin:
 
 1. `sbt assemblyPackageDependency`
 2. `sbt assembly`
@@ -15,37 +50,22 @@ At the moment we do not provide binaries. In order to use ArchiveSpark, please c
 These commands will create two JAR files under `target/scala-2.10`, one for ArchiveSpark and one for the required dependencies.
 Please include these files in your project to use ArchiveSpark or add them to your JVM classpath.
 
-### Usage
-
-There are multiple ways to use ArchiveSpark, among others: you can create a Java/Scala project to write your jobs and run it using `spark-submit` or use it interactively with `spark-shell`.
-For more information on how to use [Apache Spark](http://spark.apache.org), please read the [documentation](http://spark.apache.org/docs/1.5.2).
- 
-ArchiveSpark is also compatible with [Jupyter](http://jupyter.org). We recommend to use [Apache Toree](https://github.com/apache/incubator-toree) as kernel for ArchiveSpark with Jupyter.
-Example Jupyter notebooks can be found under [`notebooks`](notebooks).
-
 #### Getting started
 
-First of all, a SparkContext needs to be implicitely available.
-If a SparkContext already exists, e.g., in a `sc` variable when using `spark-shell`, you will need to make it implicit:
-
-```scala
-implicit val sparkContext = sc
-```
-
-Otherwise, create your own SparkContext as follows:
+First of all, a SparkContext needs to be available. If a SparkContext has not been created yet, e.g., in a `sc` variable when using Jupter (see above) or `spark-shell`, you will need to create your own:
 
 ```scala
 val appName = "ArchiveSpark"
 val master = "yarn-client"
  
 val conf = new SparkConf().setAppName(appName).setMaster(master)
-implicit val sc = new SparkContext(conf)
+val sc = new SparkContext(conf)
 ```
 
 Now you can load your Archive RDD using one of the convenience methods provided by the `ArchiveSpark` object, for instance from CDX and (W)ARC files stored on HDFS:
 
 ```scala
-val rdd = ArchiveSpark.hdfs("/cdx/path/*.cdx", "/path/to/warc/and/arc")
+val rdd = ArchiveSpark.hdfs("/cdx/path/*.cdx", "/path/to/warc/and/arc")(sc)
 ```
 
 Before you apply any enrichments we recommend to apply as much filters as possible based on the meta data, like URL, time or mime type:
