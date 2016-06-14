@@ -37,6 +37,8 @@ val rdd = ArchiveSpark.hdfs("/cdx/path/*.cdx", "/path/to/warc/and/arc")(sc)
 
 Example Jupyter notebooks can be found under [`notebooks`](notebooks). To understand the full stack from functional programming with Scala, how to work with Spark and to get started with ArchiveSpark, we suggest to read our tutorial notebook, that was presented in the hands-on session at the [WebSci'16 Hackathon](http://www.websci16.org/hackathon): [Example notebook](https://github.com/helgeho/ArchiveSpark/blob/master/notebooks/WebSciHackathonHandsOn.ipynb#ArchiveSpark)
 
+For some enrich functions, such as [Entities](https://github.com/helgeho/ArchiveSpark/blob/master/src/main/scala/de/l3s/archivespark/enrich/functions/Entities.scala) and [Goose](https://github.com/helgeho/ArchiveSpark/blob/master/src/main/scala/de/l3s/archivespark/enrich/functions/Goose.scala), additional libraries are required. Please simply put the needed JAR files into `~/.ipython/kernels/archivespark/lib`. For `Entities` you will need to put the [Stanford CoreNLP](http://stanfordnlp.github.io/CoreNLP/) lib and models, for `Goose` you can get the corresponding JAR file from [Maven](http://mvnrepository.com/artifact/com.gravity/goose) or build it from [sources](https://github.com/GravityLabs/goose).
+
 Besides Jupyter, there are several ways to use ArchiveSpark. For instance, you can use it as a library / API to access Web archives in your Java/Scala Spark projects, submitted with `spark-submit` or run interactively using `spark-shell`.
 For more information on how to use [Apache Spark](http://spark.apache.org), please read the [documentation](http://spark.apache.org/docs/1.6.1).
 
