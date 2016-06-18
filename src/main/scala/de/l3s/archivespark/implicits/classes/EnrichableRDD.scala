@@ -67,12 +67,12 @@ class EnrichableRDD[Root <: EnrichRoot[_, _] : ClassTag](rdd: RDD[Root]) {
   def filterExists(path: String): RDD[Root] = rdd.filter(r => r(path).isDefined)
   def filterExists(f: EnrichFunc[Root, _]): RDD[Root] = rdd.filter(r => f.exists(r))
 
-  def mapPath[T : ClassTag](path: String): RDD[T] = rdd.map(r => r.get[T](path)).filter(o => o.isDefined).map(o => o.get)
+  def mapPath[T : ClassTag](path: String): RDD[T] = rdd.map(r => r.get[T](path)).filter(_.isDefined).map(_.get)
 
   def mapValues[T : ClassTag](path: String): RDD[T] = mapPath(path)
 
-  def mapValues[T : ClassTag](f: DefaultFieldEnrichFunc[Root, _, T]): RDD[T] = rdd.enrich(f).map(r => r.value[T](f)).filter(o => o.isDefined).map(o => o.get)
-  def mapValues[T : ClassTag](f: EnrichFunc[Root, _], field: String): RDD[T] = rdd.enrich(f).map(r => r.value[T](f, field)).filter(o => o.isDefined).map(o => o.get)
-  def mapMultiValues[T : ClassTag](f: DefaultFieldEnrichFunc[Root, _, T]): RDD[Array[T]] = rdd.enrich(f).map(r => r.values[T](f)).filter(o => o.isDefined).map(o => o.get)
-  def mapMultiValues[T : ClassTag](f: EnrichFunc[Root, _], field: String): RDD[Array[T]] = rdd.enrich(f).map(r => r.values[T](f, field)).filter(o => o.isDefined).map(o => o.get)
+  def mapValues[T : ClassTag](f: DefaultFieldEnrichFunc[Root, _, T]): RDD[T] = rdd.enrich(f).map(_.value[T](f)).filter(_.isDefined).map(_.get)
+  def mapValues[T : ClassTag](f: EnrichFunc[Root, _], field: String): RDD[T] = rdd.enrich(f).map(_.value[T](f, field)).filter(_.isDefined).map(_.get)
+  def mapMultiValues[T : ClassTag](f: DefaultFieldEnrichFunc[Root, _, T]): RDD[Seq[T]] = rdd.enrich(f).map(_.values[T](f)).filter(_.isDefined).map(_.get)
+  def mapMultiValues[T : ClassTag](f: EnrichFunc[Root, _], field: String): RDD[Seq[T]] = rdd.enrich(f).map(_.values[T](f, field)).filter(_.isDefined).map(_.get)
 }

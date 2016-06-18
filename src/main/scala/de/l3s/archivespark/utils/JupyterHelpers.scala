@@ -61,8 +61,8 @@ object JupyterHelpers {
     """)
   }
 
-  def peek[T <: JsonConvertible](rdd: RDD[T]) = {
+  def peek[T <: JsonConvertible](rdd: RDD[T], showToLevel: Int = 1) = {
     val json = rdd.take(1).headOption.map(_.toJsonString(false)).getOrElse("")
-    printJson(json)
+    printJson(json, showToLevel)
   }
 }
