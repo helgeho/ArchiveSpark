@@ -29,9 +29,13 @@ import org.apache.spark.rdd.RDD
 import scala.util.Random
 
 object JupyterHelpers {
-  def printHtml(html: String) = Left(Map("text/html" -> html))
+  private var renderJsonInitialized = false
 
-  def init() = {
+  def printHtml(html: String) = Left(Map("text/html" -> html))
+  def printText(text: String) = Left(Map("text/plain" -> text))
+
+  def initRenderJson() = {
+    renderJsonInitialized = true
     printHtml("""
       <script type="text/javascript" src="https://rawgit.com/caldwell/renderjson/master/renderjson.js"></script>
       <style type="text/css">
@@ -46,7 +50,7 @@ object JupyterHelpers {
     """)
   }
 
-  def printJson(json: String, showToLevel: Int = 1) = {
+  def renderJson(json: String, showToLevel: Int = 1) = {
     val id = Random.nextInt(Int.MaxValue)
     printHtml(s"""
       <div id="$id"></div>
@@ -62,7 +66,11 @@ object JupyterHelpers {
   }
 
   def peek[T <: JsonConvertible](rdd: RDD[T], showToLevel: Int = 1) = {
-    val json = rdd.take(1).headOption.map(_.toJsonString(false)).getOrElse("")
-    printJson(json, showToLevel)
+    if (renderJsonInitialized) {
+      val json = rdd.take(1).headOption.map(_.toJsonString(false)).getOrElse("")
+      renderJson(json, showToLevel)
+    } else {
+      printText(rdd.take(1).headOption.map(_.toJsonString(true)).getOrElse(""))
+    }
   }
 }
