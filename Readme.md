@@ -12,6 +12,8 @@ http://www.slideshare.net/HelgeHolzmann/archivespark-introduction-websci-2016-ha
 
 We recommend to use ArchiveSpark interactively in a [Jupyter](http://jupyter.org) notebook. To install Jupyter locally or on your Spark/Hadoop cluster, please follow the official [instructions](https://jupyter.readthedocs.io/en/latest/install.html). In order to use Jupyter with ArchiveSpark we provide a pre-packaged kernel, based on [Apache Toree](https://github.com/apache/incubator-toree): [http://L3S.de/~holzmann/archivespark-kernel.tar.gz](http://L3S.de/~holzmann/archivespark-kernel.tar.gz)
 
+Alternatively, a Docker image [ibnesayeed/archivespark](https://hub.docker.com/r/ibnesayeed/archivespark/) is provided for quick getting started without the need of installation and configuration.
+
 The kernel is only compatible with Spark 1.6.1. If you only have an older version installed, please download 1.6.1 from the [Spark download page](https://spark.apache.org/downloads.html) and unpack it to your local home directory. Once you have Jupyter as well as Spark available, please follow the instructions below to configure it for the use with ArchiveSpark:
 
 1. Create a kernels directory if it does not exist yet: `mkdir -p ~/.ipython/kernels`
@@ -59,7 +61,7 @@ First of all, a SparkContext needs to be available. If a SparkContext has not be
 ```scala
 val appName = "ArchiveSpark"
 val master = "yarn-client"
- 
+
 val conf = new SparkConf().setAppName(appName).setMaster(master)
 val sc = new SparkContext(conf)
 ```
