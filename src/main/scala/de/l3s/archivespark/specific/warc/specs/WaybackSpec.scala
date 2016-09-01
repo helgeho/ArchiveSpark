@@ -33,7 +33,7 @@ import org.apache.spark.rdd.RDD
 
 import scala.io.Source
 
-class WaybackSpec private (url: String, matchPrefix: Boolean, from: Long, to: Long, blocksPerPage: Int, pages: Int) extends DataSpec[String, WaybackRecord] {
+class WaybackSpec private (url: String, matchPrefix: Boolean, from: Long, to: Long, blocksPerPage: Int, pages: Int, maxPartitions: Int) extends DataSpec[String, WaybackRecord] {
   val CdxServerUrl = "http://web.archive.org/cdx/search/cdx?url=$url&matchType=$prefix&pageSize=$blocks&page=$page"
 
   private def cdxServerUrl(page: Int): String = {
@@ -47,7 +47,7 @@ class WaybackSpec private (url: String, matchPrefix: Boolean, from: Long, to: Lo
   }
 
   override def load(sc: SparkContext, minPartitions: Int): RDD[String] = {
-    sc.parallelize(0 until pages, minPartitions).flatMap{page =>
+    sc.parallelize(0 until pages, if (maxPartitions == 0) minPartitions else maxPartitions.min(minPartitions)).flatMap{page =>
       try {
         Source.fromURL(cdxServerUrl(page)).getLines()
       } catch {
@@ -64,7 +64,7 @@ class WaybackSpec private (url: String, matchPrefix: Boolean, from: Long, to: Lo
 }
 
 object WaybackSpec {
-  def apply(url: String, matchPrefix: Boolean = false, from: Long = 0, to: Long = 0, blocksPerPage: Int = 5, pages: Int = 50) = {
-    new WaybackSpec(url, matchPrefix, from, to, blocksPerPage, pages)
+  def apply(url: String, matchPrefix: Boolean = false, from: Long = 0, to: Long = 0, blocksPerPage: Int = 5, pages: Int = 50, maxPartitions: Int = 0) = {
+    new WaybackSpec(url, matchPrefix, from, to, blocksPerPage, pages, maxPartitions)
   }
 }

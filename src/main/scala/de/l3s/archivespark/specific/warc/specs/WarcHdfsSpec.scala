@@ -43,4 +43,5 @@ class WarcHdfsSpec private (cdxPath: String, warcPath: String) extends WarcHdfsS
 
 object WarcHdfsSpec {
   def apply(cdxPath: String, warcPath: String) = new WarcHdfsSpec(cdxPath, warcPath)
+  def apply(path: String) = new WarcHdfsSpec(path, path)
 }
