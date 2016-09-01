@@ -32,7 +32,7 @@ import de.l3s.archivespark.http.{HttpClient, HttpRecord}
 
 class WaybackRecord(cdx: CdxRecord) extends DataEnrichRoot[CdxRecord, HttpRecord](cdx) with ByteContentLoad {
   override def access[R >: Null](action: HttpRecord => R): R = {
-    HttpClient.get("http://web.archive.org/web/" + cdx.timestamp + "/" + cdx.originalUrl) match {
+    HttpClient.get("http://web.archive.org/web/" + cdx.timestamp + "id_/" + cdx.originalUrl) match {
       case Some(record) => action(record)
       case None => null
     }
