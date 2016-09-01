@@ -24,14 +24,14 @@
 
 package de.l3s.archivespark.implicits.classes
 
-import de.l3s.archivespark.enrich.{DefaultFieldEnrichFunc, EnrichFunc, EnrichRoot}
+import de.l3s.archivespark.enrich.{DefaultField, EnrichFunc, EnrichRoot}
 import de.l3s.archivespark.utils.SelectorUtil
 
 import scala.reflect.ClassTag
 
-class SimplifiedGetterEnrichRoot[Root <: EnrichRoot[_, _]](root: EnrichRoot[_, _]) {
-  def value[T : ClassTag](f: DefaultFieldEnrichFunc[Root, _, T]): Option[T] = root.get[T](f.source ++ SelectorUtil.parse(f.defaultField))
-  def value[T : ClassTag](f: EnrichFunc[Root, _], field: String): Option[T] = root.get[T](f.source ++ SelectorUtil.parse(field))
-  def values[T : ClassTag](f: DefaultFieldEnrichFunc[Root, _, T]): Option[Seq[T]] = root.get[Seq[T]](f.source ++ SelectorUtil.parse(f.defaultField))
-  def values[T : ClassTag](f: EnrichFunc[Root, _], field: String): Option[Seq[T]] = root.get[Seq[T]](f.source ++ SelectorUtil.parse(field))
+class SimplifiedGetterEnrichRoot[Root <: EnrichRoot](root: Root) {
+  def value[SpecificRoot >: Root <: EnrichRoot, T : ClassTag](f: EnrichFunc[SpecificRoot, _] with DefaultField[T]): Option[T] = root.get[T](f.source ++ SelectorUtil.parse(f.defaultField))
+  def value[SpecificRoot >: Root <: EnrichRoot, T : ClassTag](f: EnrichFunc[SpecificRoot, _], field: String): Option[T] = root.get[T](f.source ++ SelectorUtil.parse(field))
+  def values[SpecificRoot >: Root <: EnrichRoot, T : ClassTag](f: EnrichFunc[SpecificRoot, _] with DefaultField[T]): Option[Seq[T]] = root.get[Seq[T]](f.source ++ SelectorUtil.parse(f.defaultField))
+  def values[SpecificRoot >: Root <: EnrichRoot, T : ClassTag](f: EnrichFunc[SpecificRoot, _], field: String): Option[Seq[T]] = root.get[Seq[T]](f.source ++ SelectorUtil.parse(field))
 }

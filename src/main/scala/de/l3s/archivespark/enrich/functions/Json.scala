@@ -24,38 +24,21 @@
 
 package de.l3s.archivespark.enrich.functions
 
-import de.l3s.archivespark.ResolvedArchiveRecord
 import de.l3s.archivespark.enrich._
 
-private object JsonNamespace extends IdentityEnrichFunction(StringContent, "json")
+import scala.util.Try
 
-class Json private (path: Seq[String], fieldName: String) extends BoundEnrichFunc[ResolvedArchiveRecord, Enrichable[String, _]](JsonNamespace)
-  with SingleFieldEnrichFunc {
+private object JsonNamespace extends IdentityEnrichFunction(Root[String], "json")
+
+class Json private (path: Seq[String], fieldName: String) extends BoundEnrichFunc[TypedEnrichRoot[String], String](JsonNamespace) with SingleField[Any] {
   override def fields = Seq(fieldName)
 
-  private def mapToEnrichable(jsonMap: Map[String, Any], parent: Enrichable[_, _]): Enrichable[_, Enrichable[_, _]] = {
-    val json = de.l3s.archivespark.utils.Json.mapToJson(jsonMap)
-    var enrichable = new EnrichableImpl[String, Enrichable[_, _]](json, parent, parent.root).asInstanceOf[Enrichable[_, Enrichable[_, _]]]
-    enrichable.excludeFromOutput(value = true)
-    for ((key, value) <- jsonMap) {
-      enrichable = value match {
-        case valueMap: Map[String, Any] => enrichable.enrich(key, mapToEnrichable(valueMap, enrichable)).asInstanceOf[Enrichable[_, Enrichable[_, _]]]
-        case _ => enrichable.enrichValue(key, value).asInstanceOf[Enrichable[_, Enrichable[_, _]]]
-      }
+  override def derive(source: TypedEnrichable[String], derivatives: Derivatives): Unit = {
+    var jsonSource = Try{de.l3s.archivespark.utils.Json.jsonToMap(source.get)}
+    for (key <- path if jsonSource.isSuccess) {
+      jsonSource = jsonSource.map(_(key).asInstanceOf[Map[String, Any]])
     }
-    enrichable
-  }
-
-  override def derive(source: Enrichable[String, _], derivatives: Derivatives): Unit = {
-    var jsonSource = de.l3s.archivespark.utils.Json.jsonToMap(source.get)
-    for (key <- path) {
-      val next = jsonSource.getOrElse(key, null)
-      jsonSource = next match {
-        case nextSource: Map[String, Any] => nextSource
-        case _ => null
-      }
-    }
-    if (jsonSource != null) derivatives << mapToEnrichable(jsonSource, source)
+    if (jsonSource.isSuccess) derivatives.setNext(de.l3s.archivespark.utils.Json.mapToEnrichable(jsonSource.get, source))
   }
 }
 

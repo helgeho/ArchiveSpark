@@ -24,14 +24,20 @@
 
 package de.l3s.archivespark.enrich
 
-class Derivatives(val fields: Seq[String]) {
+class Derivatives(val fields: Seq[String], var aliases: Map[String, String] = Map()) {
   private var nextField = 0
-  private var map = Map[String, Enrichable[_, _]]()
+  private var map = Map[String, Enrichable]()
 
-  def get: Map[String, Enrichable[_, _]] = map
+  def get: Map[String, Enrichable] = map
 
-  def <<[T <: Enrichable[_, _]](value: Enrichable[_, T]) = {
-    map += fields(nextField) -> value
+  def <<[T](value: T) = setNext(SingleValueEnrichable(value))
+
+  def setNext(enrichable: Enrichable) = {
+    map += fields(nextField) -> enrichable
     nextField += 1
+  }
+
+  def set(field: String, enrichable: Enrichable) = {
+    map += field -> enrichable
   }
 }

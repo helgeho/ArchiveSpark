@@ -24,55 +24,82 @@
 
 package de.l3s.archivespark.implicits.classes
 
-import de.l3s.archivespark.ArchiveRecordField
+import de.l3s.archivespark.ArchiveSpark
 import de.l3s.archivespark.enrich._
 import de.l3s.archivespark.implicits._
-import de.l3s.archivespark.utils.{SelectorUtil, IdentityMap}
+import de.l3s.archivespark.utils.SelectorUtil
 import org.apache.spark.rdd.RDD
 
 import scala.reflect.ClassTag
+import scala.util.Try
 
-class EnrichableRDD[Root <: EnrichRoot[_, _] : ClassTag](rdd: RDD[Root]) {
-  def enrich(func: => EnrichFunc[Root, _]): RDD[Root] = rdd.mapPartitions { records =>
+class EnrichableRDD[Root <: EnrichRoot : ClassTag](rdd: RDD[Root]) {
+  def enrich[SpecificRoot >: Root <: EnrichRoot](func: => EnrichFunc[SpecificRoot, _]): RDD[Root] = rdd.mapPartitions { records =>
     val f = func
-    records.map(r => f.enrich(r))
+    records.map(r => f.enrich(r).asInstanceOf[Root])
   }
 
   def mapEnrich[Source, Target](sourceField: String, target: String)(f: Source => Target): RDD[Root] = mapEnrich(SelectorUtil.parse(sourceField), target, target)(f)
-  def mapEnrich[Source, Target](sourceField: String, target: String, targetField: String)(f: Source => Target): RDD[Root] = mapEnrich(SelectorUtil.parse(sourceField), target, targetField)(f)
+  def mapEnrich[Source, Target](sourceField: String, target: String, alias: String)(f: Source => Target): RDD[Root] = mapEnrich(SelectorUtil.parse(sourceField), target, alias)(f)
   def mapEnrich[Source, Target](sourceField: Seq[String], target: String)(f: Source => Target): RDD[Root] = mapEnrich(sourceField, target, target)(f)
-  def mapEnrich[Source, Target](sourceField: Seq[String], target: String, targetField: String)(f: Source => Target): RDD[Root] = {
-    val enrichFunc = new EnrichFunc[Root, Enrichable[Source, _]] {
+  def mapEnrich[Source, Target](sourceField: Seq[String], target: String, alias: String)(f: Source => Target): RDD[Root] = {
+    val enrichFunc = new EnrichFunc[Root, Source] {
       override def source: Seq[String] = sourceField
       override def fields: Seq[String] = Seq(target)
-      override def field: IdentityMap[String] = IdentityMap(targetField -> target)
-      override def derive(source: Enrichable[Source, _], derivatives: Derivatives): Unit = derivatives << ArchiveRecordField(f(source.get))
+      override def aliases = Map(alias -> target)
+      override def derive(source: TypedEnrichable[Source], derivatives: Derivatives): Unit = derivatives << f(source.get)
     }
     rdd.map(r => enrichFunc.enrich(r))
   }
 
-  def mapEnrich[Source, Target](dependencyFunc: DefaultFieldEnrichFunc[Root, _, Source], target: String)(f: Source => Target): RDD[Root] = mapEnrich(dependencyFunc, dependencyFunc.defaultField, target, target)(f)
-  def mapEnrich[Source, Target](dependencyFunc: EnrichFunc[Root, _], sourceField: String, target: String)(f: Source => Target): RDD[Root] = mapEnrich(dependencyFunc, sourceField, target, target)(f)
-  def mapEnrich[Source, Target](dependencyFunc: EnrichFunc[Root, _], sourceField: String, target: String, targetField: String)(f: Source => Target): RDD[Root] = {
-    val enrichFunc = new DependentEnrichFunc[Root, Enrichable[Source, _]] {
-      override def dependency: EnrichFunc[Root, _] = dependencyFunc
+  def mapEnrich[SpecificRoot >: Root <: EnrichRoot, Source, Target](dependencyFunc: EnrichFunc[SpecificRoot, _] with DefaultField[Source], target: String)(f: Source => Target): RDD[Root] = mapEnrich(dependencyFunc, dependencyFunc.defaultField, target, target)(f)
+  def mapEnrich[SpecificRoot >: Root <: EnrichRoot, Source, Target](dependencyFunc: EnrichFunc[SpecificRoot, _], sourceField: String, target: String)(f: Source => Target): RDD[Root] = mapEnrich(dependencyFunc, sourceField, target, target)(f)
+  def mapEnrich[SpecificRoot >: Root <: EnrichRoot, Source, Target](dependencyFunc: EnrichFunc[SpecificRoot, _], sourceField: String, target: String, alias: String)(f: Source => Target): RDD[Root] = {
+    val enrichFunc = new DependentEnrichFunc[SpecificRoot, Source] {
+      override def dependency: EnrichFunc[SpecificRoot, _] = dependencyFunc
       override def dependencyField: String = sourceField
       override def fields: Seq[String] = Seq(target)
-      override def field: IdentityMap[String] = IdentityMap(targetField -> target)
-      override def derive(source: Enrichable[Source, _], derivatives: Derivatives): Unit = derivatives << ArchiveRecordField(f(source.get))
+      override def aliases = Map(alias -> target)
+      override def derive(source: TypedEnrichable[Source], derivatives: Derivatives): Unit = derivatives << f(source.get)
     }
-    rdd.map(r => enrichFunc.enrich(r))
+    rdd.map(r => enrichFunc.enrich(r).asInstanceOf[Root])
   }
 
   def filterExists(path: String): RDD[Root] = rdd.filter(r => r(path).isDefined)
-  def filterExists(f: EnrichFunc[Root, _]): RDD[Root] = rdd.filter(r => f.exists(r))
+  def filterExists[SpecificRoot >: Root <: EnrichRoot](f: EnrichFunc[SpecificRoot, _]): RDD[Root] = rdd.filter(r => f.isEnriched(r))
+
+  def filterNoException(): RDD[Root] = rdd.filter(r => r.lastException.isDefined)
+  def lastException: Option[Exception] = Try{rdd.filter(r => r.lastException.isDefined).take(1).head.lastException.get}.toOption
+
+  def filterValue[Source : ClassTag](field: String)(filter: Option[Source] => Boolean): RDD[Root] = {
+    rdd.filter(r => filter(r.get[Source](field)))
+  }
+  def filterValue[SpecificRoot >: Root <: EnrichRoot, Source : ClassTag](f: EnrichFunc[SpecificRoot, _], field: String)(filter: Option[Source] => Boolean): RDD[Root] = {
+    rdd.filter(r => filter(r.value[SpecificRoot, Source](f, field)))
+  }
+  def filterValue[SpecificRoot >: Root <: EnrichRoot, Source : ClassTag](f: EnrichFunc[SpecificRoot, _] with DefaultField[Source])(filter: Option[Source] => Boolean): RDD[Root] = {
+    filterValue(f, f.defaultField)(filter)
+  }
+
+  def distinctValue[T : ClassTag](value: Root => T)(distinct: (Root, Root) => Root): RDD[Root] = {
+    rdd.map(r => (value(r), r)).reduceByKey(distinct, ArchiveSpark.partitions(rdd.sparkContext)).values
+  }
+  def distinctValue[Source : ClassTag](field: String)(distinct: (Root, Root) => Root): RDD[Root] = {
+    rdd.map(r => (r.get[Source](field), r)).reduceByKey(distinct, ArchiveSpark.partitions(rdd.sparkContext)).values
+  }
+  def distinctValue[SpecificRoot >: Root <: EnrichRoot, Source : ClassTag](f: EnrichFunc[SpecificRoot, _], field: String)(distinct: (Root, Root) => Root): RDD[Root] = {
+    rdd.map(r => (r.value[SpecificRoot, Source](f, field), r)).reduceByKey(distinct, ArchiveSpark.partitions(rdd.sparkContext)).values
+  }
+  def distinctValue[SpecificRoot >: Root <: EnrichRoot, Source : ClassTag](f: EnrichFunc[SpecificRoot, _] with DefaultField[Source])(distinct: (Root, Root) => Root): RDD[Root] = {
+    rdd.map(r => (r.value[SpecificRoot, Source](f, f.defaultField), r)).reduceByKey(distinct, ArchiveSpark.partitions(rdd.sparkContext)).values
+  }
 
   def mapPath[T : ClassTag](path: String): RDD[T] = rdd.map(r => r.get[T](path)).filter(_.isDefined).map(_.get)
 
   def mapValues[T : ClassTag](path: String): RDD[T] = mapPath(path)
 
-  def mapValues[T : ClassTag](f: DefaultFieldEnrichFunc[Root, _, T]): RDD[T] = rdd.enrich(f).map(_.value[T](f)).filter(_.isDefined).map(_.get)
-  def mapValues[T : ClassTag](f: EnrichFunc[Root, _], field: String): RDD[T] = rdd.enrich(f).map(_.value[T](f, field)).filter(_.isDefined).map(_.get)
-  def mapMultiValues[T : ClassTag](f: DefaultFieldEnrichFunc[Root, _, T]): RDD[Seq[T]] = rdd.enrich(f).map(_.values[T](f)).filter(_.isDefined).map(_.get)
-  def mapMultiValues[T : ClassTag](f: EnrichFunc[Root, _], field: String): RDD[Seq[T]] = rdd.enrich(f).map(_.values[T](f, field)).filter(_.isDefined).map(_.get)
+  def mapValues[SpecificRoot >: Root <: EnrichRoot, T : ClassTag](f: EnrichFunc[SpecificRoot, _] with DefaultField[T]): RDD[T] = rdd.enrich(f).map(_.value[SpecificRoot, T](f)).filter(_.isDefined).map(_.get)
+  def mapValues[SpecificRoot >: Root <: EnrichRoot, T : ClassTag](f: EnrichFunc[SpecificRoot, _], field: String): RDD[T] = rdd.enrich(f).map(_.value[SpecificRoot, T](f, field)).filter(_.isDefined).map(_.get)
+  def mapMultiValues[SpecificRoot >: Root <: EnrichRoot, T : ClassTag](f: EnrichFunc[SpecificRoot, _] with DefaultField[T]): RDD[Seq[T]] = rdd.enrich(f).map(_.values[SpecificRoot, T](f)).filter(_.isDefined).map(_.get)
+  def mapMultiValues[SpecificRoot >: Root <: EnrichRoot, T : ClassTag](f: EnrichFunc[SpecificRoot, _], field: String): RDD[Seq[T]] = rdd.enrich(f).map(_.values[SpecificRoot, T](f, field)).filter(_.isDefined).map(_.get)
 }

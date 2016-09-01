@@ -24,9 +24,8 @@
 
 package de.l3s.archivespark.enrich.functions
 
-import de.l3s.archivespark.{ResolvedArchiveRecord, ArchiveRecordField}
 import de.l3s.archivespark.enrich._
-import de.l3s.archivespark.utils.IdentityMap
+import de.l3s.archivespark.enrich.dataloads.ByteContentLoad
 import org.jsoup.parser.Parser
 
 import scala.collection.JavaConverters._
@@ -37,20 +36,17 @@ object HtmlAttribute {
   def apply(name: String): HtmlAttribute = new HtmlAttribute(name)
 }
 
-class HtmlAttribute private (attribute: String) extends DefaultFieldBoundEnrichFunc[ResolvedArchiveRecord, Enrichable[String, _], String](HtmlAttributeNamespace)
-  with SingleFieldEnrichFunc {
+class HtmlAttribute private (attribute: String) extends DefaultFieldBoundEnrichFunc[EnrichRoot with ByteContentLoad, String, String](HtmlAttributeNamespace) with SingleField[String] {
   override def fields: Seq[String] = Seq(attribute)
-  override def field: IdentityMap[String] = IdentityMap(
-    "value" -> attribute
-  )
+  override def aliases = Map("value" -> attribute)
 
-  override def derive(source: Enrichable[String, _], derivatives: Derivatives): Unit = {
+  override def derive(source: TypedEnrichable[String], derivatives: Derivatives): Unit = {
     val nodes = Parser.parseXmlFragment(source.get, "").asScala
     if (nodes.nonEmpty) {
       val el = nodes.head
       val lc = attribute.toLowerCase
       el.attributes().asScala.find(a => a.getKey.toLowerCase == lc) match {
-        case Some(a) => derivatives << ArchiveRecordField(a.getValue)
+        case Some(a) => derivatives << a.getValue
         case None => // skip
       }
     }

@@ -25,27 +25,26 @@
 package de.l3s.archivespark.enrich.functions
 
 import de.l3s.archivespark.enrich._
-import de.l3s.archivespark.utils.{HttpHeader, HttpResponse, IdentityMap}
-import de.l3s.archivespark.{ArchiveRecordField, ResolvedArchiveRecord}
+import de.l3s.archivespark.enrich.dataloads.ByteContentLoad
+import de.l3s.archivespark.http.HttpHeader
 import org.apache.http.entity.ByteArrayEntity
 import org.apache.http.util.EntityUtils
 
-object StringContent extends DefaultFieldDependentEnrichFunc[ResolvedArchiveRecord, Enrichable[Array[Byte], _], String] with SingleFieldEnrichFunc {
-  override def dependency: EnrichFunc[ResolvedArchiveRecord, _] = Payload
-  override def dependencyField: String = "content"
+object StringContent extends DefaultFieldDependentEnrichFunc[EnrichRoot with ByteContentLoad, Array[Byte], String] with SingleField[String] {
+  val DefaultChartset = "UTF-8"
 
-  override def fields: Seq[String] = Seq("string")
-  override def field: IdentityMap[String] = IdentityMap(
-    "text" -> "string"
-  )
+  override def dependency = DataLoad(ByteContentLoad.Field)
+  override def dependencyField = ByteContentLoad.Field
 
-  override def derive(source: Enrichable[Array[Byte], _], derivatives: Derivatives): Unit = {
-    val defaultCharset = HttpResponse.DefaultChartset
-    val charset = source.parent.get[Map[String, String]](Payload.HttpHeaderField) match {
-      case Some(headers) => HttpHeader(headers).charset.getOrElse(defaultCharset)
-      case None => defaultCharset
+  override def fields = Seq("string")
+  override def aliases = Map("text" -> "string")
+
+  override def derive(source: TypedEnrichable[Array[Byte]], derivatives: Derivatives): Unit = {
+    val charset = source.parent.get[Map[String, String]](HttpPayload.HeaderField) match {
+      case Some(headers) => HttpHeader(headers).charset.getOrElse(DefaultChartset)
+      case None => DefaultChartset
     }
     val entity = new ByteArrayEntity(source.get)
-    derivatives << ArchiveRecordField(EntityUtils.toString(entity, charset).trim)
+    derivatives << EntityUtils.toString(entity, charset).trim
   }
 }

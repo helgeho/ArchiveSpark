@@ -24,87 +24,109 @@
 
 package de.l3s.archivespark.enrich
 
-import de.l3s.archivespark.utils.Json._
-import de.l3s.archivespark.utils.{SelfTyped, SelectorUtil, Copyable, JsonConvertible}
+import de.l3s.archivespark.utils.{Copyable, JsonConvertible, SelectorUtil}
 
 import scala.reflect.ClassTag
 
-trait Enrichable[T, This <: Enrichable[_, _]] extends Serializable with Copyable[Enrichable[T, This]] with JsonConvertible with SelfTyped[This] {
-  private var excludeFromOutput: Option[Boolean] = None
-
+trait TypedEnrichable[+T] extends Enrichable {
   def get: T
+}
 
+trait Enrichable extends Serializable with Copyable[Enrichable] with JsonConvertible { this: TypedEnrichable[_] =>
+  def get: Any
+  def typed[T]: TypedEnrichable[T] = this.asInstanceOf[TypedEnrichable[T]]
+
+  private var excludeFromOutput: Option[Boolean] = None
   def isExcludedFromOutput: Boolean = excludeFromOutput match {
     case Some(value) => value
     case None => false
   }
 
-  protected[archivespark] def excludeFromOutput(value: Boolean = true, overwrite: Boolean = true): Unit = excludeFromOutput match {
+  private var _lastException: Option[Exception] = None
+  def lastException = _lastException
+
+  private[archivespark] def excludeFromOutput(value: Boolean = true, overwrite: Boolean = true): Unit = excludeFromOutput match {
     case Some(v) => if (overwrite) excludeFromOutput = Some(v)
     case None => excludeFromOutput = Some(value)
   }
 
-  protected[archivespark] var _parent: Enrichable[_, _] = null
-  def parent[A] = _parent.asInstanceOf[Enrichable[A, _]]
+  private[enrich] var _parent: Enrichable = null
+  def parent[A] = _parent.asInstanceOf[TypedEnrichable[A]]
 
-  protected[archivespark] var _root: EnrichRoot[_, _] = null
-  def root[A] = _root.asInstanceOf[EnrichRoot[A, _]]
+  private[enrich] var _root: EnrichRoot = null
+  def root[A] = _root.asInstanceOf[TypedEnrichRoot[A]]
 
-  private var _enrichments = Map[String, Enrichable[_, _]]()
+  private var _enrichments = Map[String, Enrichable]()
   def enrichments = _enrichments.keySet
 
-  def enrichment(key: String) = _enrichments.get(key)
-
-  def enrich(fieldName: String, enrichment: Enrichable[_, _]): This = {
+  private var _aliases = Map[String, String]()
+  def field(key: String): Option[String] = enrichment(key).map(_ => _aliases.getOrElse(key, key))
+  def setAlias(fieldName: String, alias: String): Enrichable = {
     val clone = copy()
-    clone._enrichments = _enrichments.updated(fieldName, enrichment)
-    clone.asInstanceOf[This]
+    clone._aliases += alias -> fieldName
+    clone
   }
 
-  def enrichValue[Value](fieldName: String, value: Value): This = {
-    val enrichable = new EnrichableImpl[Value, Enrichable[_, _]](value, self, _root)
+  def enrichment(key: String) = _enrichments.get(_aliases.getOrElse(key, key))
+
+  def enrich(fieldName: String, enrichment: Enrichable): Enrichable = {
+    val clone = copy()
+    clone._lastException = enrichment._lastException
+    clone._enrichments = _enrichments.updated(fieldName, enrichment)
+    clone._aliases -= fieldName
+    clone
+  }
+
+  def enrichValue[Value](fieldName: String, value: Value): Enrichable = {
+    val enrichable = SingleValueEnrichable[Value](value, this, _root)
     enrich(fieldName, enrichable)
   }
 
-  def enrich(func: EnrichFunc[_, This], excludeFromOutput: Boolean = false): This = {
-    if (func.exists(self)) return self
-    val derivatives = new Derivatives(func.fields)
-    func.derive(self, derivatives)
+  private[enrich] def enrich[D](func: EnrichFunc[_, D], excludeFromOutput: Boolean = false): Enrichable = {
+    if (func.exists(this)) return this
+    val derivatives = new Derivatives(func.fields, func.aliases)
     val clone = copy()
+    try {
+      func.derive(this.asInstanceOf[TypedEnrichable[D]], derivatives)
+    } catch {
+      case exception: Exception => clone._lastException = Some(exception)
+    }
+    clone._aliases ++= derivatives.aliases
     for ((field, enrichment) <- derivatives.get) {
       enrichment._root = _root
       enrichment._parent = this
       enrichment.excludeFromOutput(excludeFromOutput, overwrite = false)
       clone._enrichments = clone._enrichments.updated(field, enrichment)
+      clone._aliases -= field
     }
-    clone.asInstanceOf[This]
+    clone
   }
 
-  def enrich(path: Seq[String], func: EnrichFunc[_, _], excludeFromOutput: Boolean): This = {
-    if (path.isEmpty) enrich(func.asInstanceOf[EnrichFunc[_, This]], excludeFromOutput)
+  private[enrich] def enrich[D](path: Seq[String], func: EnrichFunc[_, D], excludeFromOutput: Boolean): Enrichable = {
+    if (path.isEmpty) enrich(func, excludeFromOutput)
     else {
-      val field = path.head
+      val field = _aliases.getOrElse(path.head, path.head)
       apply(field) match {
         case Some(enrichable) =>
-          val enriched = enrichable.enrich(path.tail, func, excludeFromOutput).asInstanceOf[Enrichable[_, _]]
-          if (enriched == enrichable) self
+          val enriched = enrichable.enrich(path.tail, func, excludeFromOutput)
+          if (enriched == enrichable) this
           else enrich(field, enriched)
-        case None => self
+        case None => this
       }
     }
   }
 
-  def apply[D : ClassTag](path: Seq[String]): Option[Enrichable[D, _]] = {
-    if (path.isEmpty || (path.length == 1 && path.head == "")) Some(this.asInstanceOf[Enrichable[D, This]])
+  def apply[D : ClassTag](path: Seq[String]): Option[TypedEnrichable[D]] = {
+    if (path.isEmpty || (path.length == 1 && path.head == "")) Some(this.asInstanceOf[TypedEnrichable[D]])
     else {
       if (path.head == "") {
         val remaining = path.tail
         enrichment(remaining.head) match {
           case Some(child) => child(remaining.tail)
           case None => for (child <- _enrichments.values) {
-              val target: Option[Enrichable[D, _]] = child[D](path)
-              if (target.isDefined) return target
-            }
+            val target: Option[TypedEnrichable[D]] = child[D](path)
+            if (target.isDefined) return target
+          }
             None
         }
       } else if (path.head.matches("\\[\\d+\\]")) {
@@ -121,7 +143,7 @@ trait Enrichable[T, This <: Enrichable[_, _]] extends Serializable with Copyable
     }
   }
 
-  def apply[D : ClassTag](key: String): Option[Enrichable[D, _]] = apply(SelectorUtil.parse(key))
+  def apply[D : ClassTag](key: String): Option[TypedEnrichable[D]] = apply(SelectorUtil.parse(key))
 
   def get[D : ClassTag](path: String): Option[D] = get(SelectorUtil.parse(path))
   def get[D : ClassTag](path: Seq[String]): Option[D] = apply[D](path) match {

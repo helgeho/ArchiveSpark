@@ -24,11 +24,11 @@
 
 package de.l3s.archivespark.enrich.functions
 
-import de.l3s.archivespark.{ResolvedArchiveRecord, MultiValueArchiveRecordField, ArchiveRecordField}
-import de.l3s.archivespark.cdx.ResolvedCdxRecord
 import de.l3s.archivespark.enrich._
-import de.l3s.archivespark.utils.IdentityMap
+import de.l3s.archivespark.enrich.dataloads.ByteContentLoad
+import de.l3s.archivespark.specific.warc.CdxRecord
 import org.jsoup.Jsoup
+
 import scala.collection.JavaConverters._
 
 private object HtmlNamespace extends IdentityEnrichFunction(StringContent, "html")
@@ -46,32 +46,26 @@ object Html extends HtmlTag("body", 0, "body") {
   def all(selector: String, fieldName: String): HtmlTags = new HtmlTags(selector, fieldName)
 }
 
-class HtmlTag (selector: String, index: Int, fieldName: String) extends DefaultFieldBoundEnrichFunc[ResolvedArchiveRecord, Enrichable[String, _], String](HtmlNamespace)
-  with SingleFieldEnrichFunc {
+class HtmlTag (selector: String, index: Int, fieldName: String) extends DefaultFieldBoundEnrichFunc[EnrichRoot with ByteContentLoad, String, String](HtmlNamespace) with SingleField[String] {
   override def fields: Seq[String] = Seq(fieldName)
-  override def field: IdentityMap[String] = IdentityMap(
-    "html" -> fieldName
-  )
+  override def aliases = Map("html" -> fieldName)
 
-  override def derive(source: Enrichable[String, _], derivatives: Derivatives): Unit = {
-    val url = source.root[ResolvedCdxRecord].get.originalUrl
+  override def derive(source: TypedEnrichable[String], derivatives: Derivatives): Unit = {
+    val url = source.root[CdxRecord].get.originalUrl
     val doc = Jsoup.parse(source.get, url)
     val elements = doc.select(selector)
-    if (elements.size() > index) derivatives << ArchiveRecordField(elements.get(index).toString)
+    if (elements.size() > index) derivatives << elements.get(index).toString
   }
 }
 
-class HtmlTags (selector: String, fieldName: String) extends DefaultFieldBoundEnrichFunc[ResolvedArchiveRecord, Enrichable[String, _], Seq[String]](HtmlNamespace)
-  with SingleFieldEnrichFunc {
+class HtmlTags (selector: String, fieldName: String) extends DefaultFieldBoundEnrichFunc[EnrichRoot with ByteContentLoad, String, Seq[String]](HtmlNamespace) with SingleField[Seq[String]] {
   override def fields: Seq[String] = Seq(fieldName)
-  override def field: IdentityMap[String] = IdentityMap(
-    "html" -> fieldName
-  )
+  override def aliases = Map("html" -> fieldName)
 
-  override def derive(source: Enrichable[String, _], derivatives: Derivatives): Unit = {
-    val url = source.root[ResolvedCdxRecord].get.originalUrl
+  override def derive(source: TypedEnrichable[String], derivatives: Derivatives): Unit = {
+    val url = source.root[CdxRecord].get.originalUrl
     val doc = Jsoup.parse(source.get, url)
     val elements = doc.select(selector)
-    derivatives << MultiValueArchiveRecordField(elements.iterator.asScala.toList.map(e => e.toString))
+    derivatives.setNext(MultiValueEnrichable(elements.iterator.asScala.toList.map(e => e.toString)))
   }
 }

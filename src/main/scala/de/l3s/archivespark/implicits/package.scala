@@ -31,9 +31,8 @@ import org.apache.spark.rdd.RDD
 
 import scala.reflect.ClassTag
 
-package object implicits extends ImplicitConversions {
-  implicit class ImplicitEnrichableRDD[Root <: EnrichRoot[_, _] : ClassTag](rdd: RDD[Root]) extends EnrichableRDD[Root](rdd)
+package object implicits {
+  implicit class ImplicitEnrichableRDD[Root <: EnrichRoot : ClassTag](rdd: RDD[Root]) extends EnrichableRDD[Root](rdd)
   implicit class ImplicitJsonConvertibleRDD[Record <: JsonConvertible](rdd: RDD[Record]) extends JsonConvertibleRDD[Record](rdd)
-  implicit class ImplicitResolvableRDD[Record <: ArchiveRecord : ClassTag](rdd: RDD[Record]) extends ResolvableRDD[Record](rdd)
-  implicit class ImplicitSimplifiedGetterEnrichRoot[Root <: EnrichRoot[_, _]](root: Root) extends SimplifiedGetterEnrichRoot[Root](root)
+  implicit class ImplicitSimplifiedGetterEnrichRoot[Root <: EnrichRoot](root: Root) extends SimplifiedGetterEnrichRoot[Root](root)
 }

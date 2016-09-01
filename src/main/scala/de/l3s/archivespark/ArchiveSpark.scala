@@ -24,20 +24,26 @@
 
 package de.l3s.archivespark
 
-import de.l3s.archivespark.cdx.{BroadcastPathMapLocationInfo, CdxRecord, ResolvedCdxRecord}
-import de.l3s.archivespark.enrich.Enrichable
-import de.l3s.archivespark.rdd.{HdfsArchiveRDD, UniversalArchiveRDD}
-import de.l3s.archivespark.records.{HdfsArchiveRecord, ResolvedHdfsArchiveRecord, ResolvedLocalArchiveRecord}
+import de.l3s.archivespark.dataspecs.DataSpec
+import de.l3s.archivespark.dataspecs.access._
+import de.l3s.archivespark.enrich._
+import de.l3s.archivespark.enrich.dataloads.DataLoadBase
+import de.l3s.archivespark.http.HttpResponse
 import de.l3s.archivespark.utils._
+import de.l3s.archivespark.specific.warc.specs.{CdxHdfsSpec, WarcHdfsSpec}
+import de.l3s.archivespark.specific.warc.{CdxRecord, RawArchiveRecord, WarcRecord}
+import org.apache.hadoop.fs.Path
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext}
+
+import scala.reflect.ClassTag
 
 object ArchiveSpark {
   private var initialized = false
 
   var parallelism = 0
 
-  def partitions(implicit sc: SparkContext) = if (parallelism > 0) parallelism else sc.defaultParallelism
+  def partitions(sc: SparkContext) = if (parallelism > 0) parallelism else sc.defaultParallelism
 
   def initialize(sc: SparkContext): Unit = {
     if (initialized) return
@@ -47,45 +53,48 @@ object ArchiveSpark {
 
   def initialize(conf: SparkConf): Unit = {
     conf.registerKryoClasses(Array(
-      classOf[Enrichable[_, _]],
+      classOf[DataSpec[_, _]],
+      classOf[DataAccessor[_]],
+      classOf[CloseableDataAccessor[_]],
+      classOf[HdfsLocationInfo],
+      classOf[HdfsStreamAccessor],
+      classOf[HdfsTextAccessor],
+      classOf[HttpTextAccessor],
+      classOf[DataLoadBase],
+      classOf[Enrichable],
+      classOf[EnrichRoot],
+      classOf[EnrichFunc[_, _]],
       classOf[JsonConvertible],
       classOf[Copyable[_]],
-      classOf[SelfTyped[_]],
-      classOf[ResolvedCdxRecord],
-      classOf[ResolvedArchiveRecord],
-      classOf[ArchiveRecord],
-      classOf[HdfsArchiveRecord],
-      classOf[UniversalArchiveRDD],
-      classOf[ResolvedHdfsArchiveRecord],
-      classOf[CdxRecord],
-      classOf[ArchiveRecordField[_]],
-      classOf[MultiValueArchiveRecordField[_]],
-      classOf[HttpResponse],
-      classOf[RawArchiveRecord]
+      classOf[SingleValueEnrichable[_]],
+      classOf[MultiValueEnrichable[_]]
     ))
   }
 
-  def load(cdxPath: String)(implicit sc: SparkContext): UniversalArchiveRDD = UniversalArchiveRDD(cdxPath)
-
-  def hdfs(cdxPath: String, warcPath: String)(implicit sc: SparkContext): HdfsArchiveRDD = HdfsArchiveRDD(cdxPath, warcPath)
-
-  def files(cdxPath: String, warcPath: String): Iterable[ResolvedArchiveRecord] = {
-    IO.lazyLines(cdxPath)
-      .map(line => CdxRecord.fromString(line))
-      .filter(cdx => cdx != null)
-      .map(cdx => new ResolvedLocalArchiveRecord(new ResolvedCdxRecord(cdx, warcPath, null)))
-  }
-
-  def cdx(path: String)(implicit sc: SparkContext): RDD[CdxRecord] = {
-    initialize(sc)
-    sc.textFile(path, partitions).map(line => CdxRecord.fromString(line)).filter(cdx => cdx != null)
-  }
-
-  def resolvedCdx(path: String, warcPath: String)(implicit sc: SparkContext): RDD[ResolvedCdxRecord] = {
-    implicit val filePathMap = sc.broadcast(FilePathMap(warcPath, Seq("(?i).*\\.arc\\.gz", "(?i).*\\.warc\\.gz", "(?i).*\\.wat\\.gz")))
-    cdx(path).map { cdx =>
-      val filename = cdx.location.filename.split('/').reverse.head
-      new ResolvedCdxRecord(cdx, new BroadcastPathMapLocationInfo(cdx.location.compressedSize, cdx.location.offset, filename), null)
+  def load[Raw, Parsed : ClassTag](sc: SparkContext, spec: DataSpec[Raw, Parsed]): RDD[Parsed] = {
+    spec.initialize(sc)
+    val raw = spec.load(sc, partitions(sc))
+    val specBc = sc.broadcast(spec)
+    raw.mapPartitions{records =>
+      val spec = specBc.value
+      records.flatMap { record =>
+        spec.parse(record)
+      }
     }
   }
+
+  def hdfs(cdxPath: String, warcPath: String)(implicit sc: SparkContext): RDD[WarcRecord] = load(sc, WarcHdfsSpec(cdxPath, warcPath))
+
+  def files(cdxPath: String, warcPath: String): Seq[WarcRecord] = {
+    IO.lazyLines(cdxPath)
+      .flatMap(CdxRecord.fromString)
+      .map { cdx =>
+        val offset = cdx.additionalFields.head.toLong
+        val filename = cdx.additionalFields(1)
+        val locationInfo = new HdfsLocationInfo(new Path(warcPath, filename), offset, cdx.compressedSize)
+        new WarcRecord(cdx, filename, new HdfsStreamAccessor(locationInfo))
+      }
+  }
+
+  def cdx(path: String)(implicit sc: SparkContext): RDD[CdxRecord] = load(sc, CdxHdfsSpec(path))
 }

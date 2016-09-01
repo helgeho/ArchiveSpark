@@ -1,5 +1,3 @@
-package de.l3s.archivespark.jobs
-
 /*
  * The MIT License (MIT)
  *
@@ -24,10 +22,12 @@ package de.l3s.archivespark.jobs
  * SOFTWARE.
  */
 
+package de.l3s.archivespark.jobs
+
 import de.l3s.archivespark.ArchiveSpark
-import de.l3s.archivespark.enrich.functions._
+import de.l3s.archivespark.enrich.functions.StringContent
 import de.l3s.archivespark.implicits._
-import org.apache.spark._
+import org.apache.spark.{SparkConf, SparkContext}
 
 object Start {
   def main(args: Array[String]): Unit = {
@@ -38,9 +38,9 @@ object Start {
     val filteredRdd = rdd.filter(r => r.surtUrl.startsWith("de,entspannungs-shop"))
     val enriched = filteredRdd.enrich(StringContent)
 
-//    val mapEnriched = enriched.mapEnrich[Array[Byte], String]("record.reponse.payload", "string") { payload =>
-//      payload.toString
-//    }
+    val mapEnriched = enriched.mapEnrich[Array[Byte], String]("record.reponse.payload", "string") { payload =>
+      payload.toString
+    }
 
 //    val dependencyMapEnriched = mapEnriched.mapEnrich[String, String](StringContent, "firstToken") { str =>
 //      str.split(' ').head

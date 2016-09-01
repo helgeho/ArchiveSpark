@@ -24,40 +24,22 @@
 
 package de.l3s.archivespark.enrich
 
-import de.l3s.archivespark.utils.{SelectorUtil, IdentityMap}
-
-trait EnrichFunc[Root <: EnrichRoot[_, _], Source <: Enrichable[_, _]] extends Serializable {
-  def source: Seq[String] = Seq()
+trait EnrichFunc[Root <: EnrichRoot, Source] extends Serializable {
+  def source: Seq[String]
   def fields: Seq[String]
 
   def enrich(root: Root): Root = enrich(root, excludeFromOutput = false)
 
-  def on(source: Seq[String]): EnrichFunc[Root, Source] = new PipedEnrichFunc[Root, Source](this, source)
-  def on(source: String): EnrichFunc[Root, Source] = on(SelectorUtil.parse(source))
+  private[enrich] def enrich(root: Root, excludeFromOutput: Boolean): Root = root.enrich(source, this, excludeFromOutput).asInstanceOf[Root]
 
-  def on(source: String, index: Int): EnrichFunc[Root, Source] = on(SelectorUtil.parse(source), index)
-  def on(source: Seq[String], index: Int): EnrichFunc[Root, Source] = on(source :+ s"[$index]")
+  protected[enrich] def derive(source: TypedEnrichable[Source], derivatives: Derivatives): Unit
 
-  def onEach(source: String): EnrichFunc[Root, Source] = onEach(SelectorUtil.parse(source))
-  def onEach(source: Seq[String]): EnrichFunc[Root, Source] = on(source :+ "*")
+  def aliases: Map[String, String] = Map()
 
-  def of(source: String): EnrichFunc[Root, Source] = on(source)
-  def of(source: Seq[String]): EnrichFunc[Root, Source] = on(source)
-  def of(source: String, index: Int): EnrichFunc[Root, Source] = on(source, index)
-  def of(source: Seq[String], index: Int): EnrichFunc[Root, Source] = on(source, index)
-  def ofEach(source: String): EnrichFunc[Root, Source] = onEach(source)
-  def ofEach(source: Seq[String]): EnrichFunc[Root, Source] = onEach(source)
-
-  protected[enrich] def enrich(root: Root, excludeFromOutput: Boolean): Root = root.enrich(source, this, excludeFromOutput).asInstanceOf[Root]
-
-  def derive(source: Source, derivatives: Derivatives): Unit
-
-  def field: IdentityMap[String] = IdentityMap[String]()
-
-  def exists(root: Root): Boolean = root(source) match {
-    case Some(source) => exists(source.asInstanceOf[Source])
+  def isEnriched(root: Root): Boolean = root(source) match {
+    case Some(source) => exists(source)
     case None => false
   }
 
-  def exists(source: Source): Boolean = fields.forall(f => source(f).isDefined)
+  def exists(source: Enrichable): Boolean = fields.forall(f => source.enrichment(f).isDefined)
 }

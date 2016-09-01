@@ -24,49 +24,75 @@
 
 package de.l3s.archivespark.nativescala.implicits.classes
 
-import de.l3s.archivespark.ArchiveRecordField
 import de.l3s.archivespark.enrich._
 import de.l3s.archivespark.implicits._
 import de.l3s.archivespark.nativescala.implicits._
-import de.l3s.archivespark.utils.{SelectorUtil, IdentityMap}
+import de.l3s.archivespark.utils.SelectorUtil
+import org.apache.spark.rdd.RDD
 
 import scala.reflect.ClassTag
 
-class EnrichableTraversable[Root <: EnrichRoot[_, _]](records: Traversable[Root]) {
-  def enrich(f: EnrichFunc[Root, _]): Traversable[Root] = records.map(r => f.enrich(r))
+class EnrichableTraversable[Root <: EnrichRoot : ClassTag](records: Traversable[Root]) {
+  def enrich[SpecificRoot >: Root <: EnrichRoot](f: EnrichFunc[SpecificRoot, _]): Traversable[Root] = records.map(r => f.enrich(r).asInstanceOf[Root])
 
   def mapEnrich[Source, Target](sourceField: String, target: String)(f: Source => Target): Traversable[Root] = mapEnrich(SelectorUtil.parse(sourceField), target, target)(f)
-  def mapEnrich[Source, Target](sourceField: String, target: String, targetField: String)(f: Source => Target): Traversable[Root] = mapEnrich(SelectorUtil.parse(sourceField), target, targetField)(f)
+  def mapEnrich[Source, Target](sourceField: String, target: String, alias: String)(f: Source => Target): Traversable[Root] = mapEnrich(SelectorUtil.parse(sourceField), target, alias)(f)
   def mapEnrich[Source, Target](sourceField: Seq[String], target: String)(f: Source => Target): Traversable[Root] = mapEnrich(sourceField, target, target)(f)
-  def mapEnrich[Source, Target](sourceField: Seq[String], target: String, targetField: String)(f: Source => Target): Traversable[Root] = {
-    val enrichFunc = new EnrichFunc[Root, Enrichable[Source, _]] {
+  def mapEnrich[Source, Target](sourceField: Seq[String], target: String, alias: String)(f: Source => Target): Traversable[Root] = {
+    val enrichFunc = new EnrichFunc[Root, Source] {
       override def source: Seq[String] = sourceField
       override def fields: Seq[String] = Seq(target)
-      override def field: IdentityMap[String] = IdentityMap(targetField -> target)
-      override def derive(source: Enrichable[Source, _], derivatives: Derivatives): Unit = derivatives << ArchiveRecordField(f(source.get))
+      override def aliases = Map(alias -> target)
+      override def derive(source: TypedEnrichable[Source], derivatives: Derivatives): Unit = derivatives << f(source.get)
     }
     records.map(r => enrichFunc.enrich(r))
   }
 
-  def mapEnrich[Source, Target](dependencyFunc: DefaultFieldEnrichFunc[Root, _, Source], target: String)(f: Source => Target): Traversable[Root] = mapEnrich(dependencyFunc, dependencyFunc.defaultField, target, target)(f)
-  def mapEnrich[Source, Target](dependencyFunc: EnrichFunc[Root, _], sourceField: String, target: String)(f: Source => Target): Traversable[Root] = mapEnrich(dependencyFunc, sourceField, target, target)(f)
-  def mapEnrich[Source, Target](dependencyFunc: EnrichFunc[Root, _], sourceField: String, target: String, targetField: String)(f: Source => Target): Traversable[Root] = {
-    val enrichFunc = new DependentEnrichFunc[Root, Enrichable[Source, _]] {
-      override def dependency: EnrichFunc[Root, _] = dependencyFunc
+  def mapEnrich[SpecificRoot >: Root <: EnrichRoot, Source, Target](dependencyFunc: EnrichFunc[SpecificRoot, _] with DefaultField[Source], target: String)(f: Source => Target): Traversable[Root] = mapEnrich(dependencyFunc, dependencyFunc.defaultField, target, target)(f)
+  def mapEnrich[SpecificRoot >: Root <: EnrichRoot, Source, Target](dependencyFunc: EnrichFunc[SpecificRoot, _], sourceField: String, target: String)(f: Source => Target): Traversable[Root] = mapEnrich(dependencyFunc, sourceField, target, target)(f)
+  def mapEnrich[SpecificRoot >: Root <: EnrichRoot, Source, Target](dependencyFunc: EnrichFunc[SpecificRoot, _], sourceField: String, target: String, alias: String)(f: Source => Target): Traversable[Root] = {
+    val enrichFunc = new DependentEnrichFunc[SpecificRoot, Source] {
+      override def dependency: EnrichFunc[SpecificRoot, _] = dependencyFunc
       override def dependencyField: String = sourceField
       override def fields: Seq[String] = Seq(target)
-      override def field: IdentityMap[String] = IdentityMap(targetField -> target)
-      override def derive(source: Enrichable[Source, _], derivatives: Derivatives): Unit = derivatives << ArchiveRecordField(f(source.get))
+      override def aliases = Map(alias -> target)
+      override def derive(source: TypedEnrichable[Source], derivatives: Derivatives): Unit = derivatives << f(source.get)
     }
-    records.map(r => enrichFunc.enrich(r))
+    records.map(r => enrichFunc.enrich(r).asInstanceOf[Root])
   }
 
   def filterExists(path: String): Traversable[Root] = records.filter(r => r[Nothing](path).isDefined)
-  def filterExists(f: EnrichFunc[Root, _]): Traversable[Root] = records.filter(r => f.exists(r))
+  def filterExists[SpecificRoot >: Root <: EnrichRoot](f: EnrichFunc[SpecificRoot, _]): Traversable[Root] = records.filter(r => f.isEnriched(r))
+
+  def filterValue[Source : ClassTag](field: String)(filter: Option[Source] => Boolean): Traversable[Root] = {
+    records.filter(r => filter(r.get[Source](field)))
+  }
+  def filterValue[SpecificRoot >: Root <: EnrichRoot, Source : ClassTag](f: EnrichFunc[SpecificRoot, _], field: String)(filter: Option[Source] => Boolean): Traversable[Root] = {
+    records.filter(r => filter(r.value[SpecificRoot, Source](f, field)))
+  }
+  def filterValue[SpecificRoot >: Root <: EnrichRoot, Source : ClassTag](f: EnrichFunc[SpecificRoot, _] with DefaultField[Source])(filter: Option[Source] => Boolean): Traversable[Root] = {
+    filterValue(f, f.defaultField)(filter)
+  }
+
+  def distinctValue[T](value: Root => T)(distinct: (Root, Root) => Root): Traversable[Root] = {
+    records.groupBy(r => value(r)).mapValues(_.reduce(distinct)).values
+  }
+  def distinctValue[Source : ClassTag](field: String)(distinct: (Root, Root) => Root): Traversable[Root] = {
+    records.groupBy(r => r.get[Source](field)).mapValues(_.reduce(distinct)).values
+  }
+  def distinctValue[SpecificRoot >: Root <: EnrichRoot, Source : ClassTag](f: EnrichFunc[SpecificRoot, _], field: String)(distinct: (Root, Root) => Root): Traversable[Root] = {
+    records.groupBy(r => r.value[SpecificRoot, Source](f, field)).mapValues(_.reduce(distinct)).values
+  }
+  def distinctValue[SpecificRoot >: Root <: EnrichRoot, Source : ClassTag](f: EnrichFunc[SpecificRoot, _] with DefaultField[Source])(distinct: (Root, Root) => Root): Traversable[Root] = {
+    records.groupBy(r => r.value[SpecificRoot, Source](f, f.defaultField)).mapValues(_.reduce(distinct)).values
+  }
 
   def mapPath[T : ClassTag](path: String): Traversable[T] = records.map(r => r.get[T](path)).filter(o => o.isDefined).map(o => o.get)
 
   def mapValues[T : ClassTag](path: String): Traversable[T] = mapPath[T](path)
-  def mapValues[T : ClassTag](f: DefaultFieldEnrichFunc[Root, _, T]): Traversable[T] = records.enrich(f).map(r => r.value[T](f)).filter(o => o.isDefined).map(o => o.get)
-  def mapValues[T : ClassTag](f: EnrichFunc[Root, _], field: String): Traversable[T] = records.enrich(f).map(r => r.value[T](f, field)).filter(o => o.isDefined).map(o => o.get)
+
+  def mapValues[SpecificRoot >: Root <: EnrichRoot, T : ClassTag](f: EnrichFunc[SpecificRoot, _] with DefaultField[T]): Traversable[T] = records.enrich(f).map(_.value[SpecificRoot, T](f)).filter(_.isDefined).map(_.get)
+  def mapValues[SpecificRoot >: Root <: EnrichRoot, T : ClassTag](f: EnrichFunc[SpecificRoot, _], field: String): Traversable[T] = records.enrich(f).map(_.value[SpecificRoot, T](f, field)).filter(_.isDefined).map(_.get)
+  def mapMultiValues[SpecificRoot >: Root <: EnrichRoot, T : ClassTag](f: EnrichFunc[SpecificRoot, _] with DefaultField[T]): Traversable[Seq[T]] = records.enrich(f).map(_.values[SpecificRoot, T](f)).filter(_.isDefined).map(_.get)
+  def mapMultiValues[SpecificRoot >: Root <: EnrichRoot, T : ClassTag](f: EnrichFunc[SpecificRoot, _], field: String): Traversable[Seq[T]] = records.enrich(f).map(_.values[SpecificRoot, T](f, field)).filter(_.isDefined).map(_.get)
 }

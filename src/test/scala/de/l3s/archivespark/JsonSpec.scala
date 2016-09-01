@@ -24,7 +24,7 @@
 
 package de.l3s.archivespark
 
-import de.l3s.archivespark.utils.Json
+import de.l3s.archivespark.enrich.SingleValueEnrichable
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers._
 
@@ -33,14 +33,15 @@ class JsonSpec extends FlatSpec {
     val map = Map("a" -> 1, "b" -> 2, "c" -> 3)
     val json = """{"a":1,"b":2,"c":3}"""
 
-    val field = ArchiveRecordField(map)
+    val field = SingleValueEnrichable(map)
+    field.toJsonString(pretty = false) shouldEqual json
   }
 
   "JSON of a byte array" should "be a string representation with length" in {
     val bytes = Array[Byte](1,2,3,4,5)
     val json = "\"bytes(length: 5)\""
 
-    val field = ArchiveRecordField(bytes)
+    val field = SingleValueEnrichable(bytes)
     field.toJsonString shouldEqual json
   }
 }

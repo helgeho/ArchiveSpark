@@ -30,7 +30,7 @@ import org.apache.spark.deploy.SparkHadoopUtil
 import scala.util.Try
 
 case class FilePathMap(path: String, patterns: Seq[String]) {
-  lazy val dir: Map[String, String] = {
+  val dir: Map[String, String] = {
     var map = collection.mutable.Map[String, String]()
 
     val fs = FileSystem.newInstance(SparkHadoopUtil.get.conf)

@@ -24,9 +24,12 @@
 
 package de.l3s.archivespark.utils
 
+import de.l3s.archivespark.enrich.{Enrichable, SingleValueEnrichable}
 import org.json4s.DefaultFormats
 import org.json4s.native.JsonMethods._
 import org.json4s.native.Serialization._
+
+import scala.util.{Success, Try}
 
 object Json extends Serializable {
   implicit val formats = DefaultFormats
@@ -48,5 +51,18 @@ object Json extends Serializable {
     case bytes: Array[Byte] => s"bytes(length: ${bytes.length})"
     case iterable: Iterable[_] => iterable.map(e => json(e))
     case _ => obj
+  }
+
+  def mapToEnrichable(jsonMap: Map[String, Any], parent: Enrichable): Enrichable = {
+    val json = de.l3s.archivespark.utils.Json.mapToJson(jsonMap)
+    var enrichable: Enrichable = SingleValueEnrichable[String](json, parent, if (parent != null) parent.root else null)
+    enrichable.excludeFromOutput()
+    for ((key, value) <- jsonMap) {
+      enrichable = Try{value.asInstanceOf[Map[String, Any]]} match {
+        case Success(valueMap) => enrichable.enrich(key, mapToEnrichable(valueMap, enrichable))
+        case _ => enrichable.enrichValue(key, value)
+      }
+    }
+    enrichable
   }
 }

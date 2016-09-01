@@ -24,6 +24,16 @@
 
 package de.l3s.archivespark.enrich
 
-trait EnrichRoot[T, This <: EnrichRoot[_, _]] extends Enrichable[T, This] {
+import de.l3s.archivespark.utils.Json._
+
+trait TypedEnrichRoot[+Meta] extends EnrichRoot with TypedEnrichable[Meta]
+
+trait EnrichRoot extends Enrichable { this: TypedEnrichRoot[_] =>
   _root = this
+
+  def metaKey: String = "record"
+
+  def toJson: Map[String, Any] = Map(
+    metaKey -> json(this.get)
+  ) ++ enrichments.map{e => (e, mapToJsonValue(enrichment(e).get.toJson))}.filter{ case (_, field) => field != null }
 }

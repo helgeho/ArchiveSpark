@@ -28,10 +28,11 @@ import java.util.Calendar
 
 import de.l3s.archivespark.enrich.functions._
 import de.l3s.archivespark.implicits._
-import de.l3s.archivespark.utils.{RawArchiveRecord, HttpResponse}
-import de.l3s.archivespark.{ArchiveSpark, ResolvedArchiveRecord}
-import de1.l3s.archivesparkb.benchmarking.{Benchmark, BenchmarkLogger}
-import de1.l3s.archivesparkb.benchmarking.warcbase.{WarcBase, WarcRecord}
+import de.l3s.archivespark.ArchiveSpark
+import de.l3s.archivespark.benchmarking.{Benchmark, BenchmarkLogger}
+import de.l3s.archivespark.benchmarking.warcbase.{WarcBase, WarcRecord}
+import de.l3s.archivespark.http.HttpResponse
+import de.l3s.archivespark.specific.warc.RawArchiveRecord
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat
 import org.apache.spark._

@@ -24,17 +24,14 @@
 
 package de.l3s.archivespark.enrich
 
-class PipedEnrichFunc[Root <: EnrichRoot[_, _], Source <: Enrichable[_, _]]
-(parent: EnrichFunc[Root, Source], override val source: Seq[String])
-  extends EnrichFunc[Root, Source] {
-
-  override def derive(source: Source, derivatives: Derivatives): Unit = parent.derive(source, derivatives)
+class PipedEnrichFunc[Source] private[enrich] (parent: EnrichFunc[_, Source], override val source: Seq[String]) extends EnrichFunc[EnrichRoot, Source] {
+  override def derive(source: TypedEnrichable[Source], derivatives: Derivatives): Unit = parent.derive(source, derivatives)
 
   override def fields: Seq[String] = parent.fields
 }
 
-class PipedEnrichFuncWithDefaultField[Root <: EnrichRoot[_, _], Source <: Enrichable[_, _], T]
-(parent: DefaultFieldEnrichFunc[Root, Source, T], override val source: Seq[String])
-  extends PipedEnrichFunc[Root, Source](parent, source) with DefaultFieldEnrichFunc[Root, Source, T] {
+class PipedEnrichFuncWithDefaultField[Source, T] private[enrich] (parent: EnrichFunc[_, Source] with DefaultField[T], override val source: Seq[String])
+  extends PipedEnrichFunc[Source](parent, source) with EnrichFunc[EnrichRoot, Source] with DefaultField[T] {
+
   override def defaultField: String = parent.defaultField
 }

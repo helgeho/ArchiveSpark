@@ -25,27 +25,27 @@
 package de.l3s.archivespark.enrich.functions
 
 import com.gravity.goose.Configuration
-import de.l3s.archivespark.cdx.ResolvedCdxRecord
-import de.l3s.archivespark.{MultiValueArchiveRecordField, ArchiveRecordField, ResolvedArchiveRecord}
 import de.l3s.archivespark.enrich._
+import de.l3s.archivespark.enrich.dataloads.ByteContentLoad
+import de.l3s.archivespark.specific.warc.WarcRecord
 
 private object GooseNamespace extends IdentityEnrichFunction(StringContent, "goose")
 
-class Goose private (val config: Configuration) extends BoundEnrichFunc[ResolvedArchiveRecord, Enrichable[String, _]](GooseNamespace) {
+class Goose private (val config: Configuration) extends BoundEnrichFunc[EnrichRoot with ByteContentLoad, String](GooseNamespace) {
   override def fields = Seq("title", "date", "text", "image", "metaDesc", "metaTags", "videos")
 
-  override def derive(source: Enrichable[String, _], derivatives: Derivatives): Unit = {
-    val url = source.root[ResolvedCdxRecord].get.originalUrl
+  override def derive(source: TypedEnrichable[String], derivatives: Derivatives): Unit = {
+    val url = source.root[WarcRecord].get.originalUrl
     val goose = new com.gravity.goose.Goose(config)
     val article = goose.extractContent(url, source.get)
 
-    derivatives << ArchiveRecordField(article.title)
-    derivatives << ArchiveRecordField(Option(article.publishDate).map(_.toString).getOrElse(""))
-    derivatives << ArchiveRecordField(article.cleanedArticleText)
-    derivatives << ArchiveRecordField(article.topImage.imageSrc)
-    derivatives << ArchiveRecordField(article.metaDescription)
-    derivatives << ArchiveRecordField(article.metaKeywords)
-    derivatives << MultiValueArchiveRecordField(article.movies.map(e => e.toString))
+    derivatives << article.title
+    derivatives << Option(article.publishDate).map(_.toString).getOrElse("")
+    derivatives << article.cleanedArticleText
+    derivatives << article.topImage.imageSrc
+    derivatives << article.metaDescription
+    derivatives << article.metaKeywords
+    derivatives.setNext(MultiValueEnrichable(article.movies.map(e => e.toString)))
   }
 }
 

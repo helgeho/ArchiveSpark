@@ -26,8 +26,8 @@ package de.l3s.archivespark.enrich.functions
 
 import java.util.Properties
 
-import de.l3s.archivespark.{MultiValueArchiveRecordField, ResolvedArchiveRecord}
 import de.l3s.archivespark.enrich._
+import de.l3s.archivespark.enrich.dataloads.ByteContentLoad
 import edu.stanford.nlp.ling.CoreAnnotations._
 import edu.stanford.nlp.pipeline.{Annotation, StanfordCoreNLP}
 //import edu.stanford.nlp.simple._
@@ -38,11 +38,10 @@ private object EntitiesNamespace extends IdentityEnrichFunction(HtmlText, "entit
 /*
 In order to use this enrich function, please make sure have Stanford CoreNLP model file in your classpath.
  */
-class Entities private (properties: Properties, tagFieldMapping: Seq[(String, String)]) extends DefaultFieldBoundEnrichFunc[ResolvedArchiveRecord, Enrichable[String, _], Seq[String]](EntitiesNamespace)
-  with SingleFieldEnrichFunc {
+class Entities private (properties: Properties, tagFieldMapping: Seq[(String, String)]) extends DefaultFieldBoundEnrichFunc[EnrichRoot with ByteContentLoad, String, Seq[String]](EntitiesNamespace) with SingleField[Seq[String]] {
   override def fields = tagFieldMapping.map{case (tag, field) => field}
 
-  override def derive(source: Enrichable[String, _], derivatives: Derivatives): Unit = {
+  override def derive(source: TypedEnrichable[String], derivatives: Derivatives): Unit = {
     val pipeline = new StanfordCoreNLP(properties)
     val doc = new Annotation(source.get)
     pipeline.annotate(doc)
@@ -52,7 +51,7 @@ class Entities private (properties: Properties, tagFieldMapping: Seq[(String, St
       val ne = token.get(classOf[NamedEntityTagAnnotation])
       (ne, word)
     }).groupBy{case (ne, word) => ne.toLowerCase}.mapValues(items => items.map{case (ne, word) => word}.toSet)
-    for ((tag, _) <- tagFieldMapping) derivatives << MultiValueArchiveRecordField(mentions.getOrElse(tag.toLowerCase, Set()).toSeq)
+    for ((tag, _) <- tagFieldMapping) derivatives.setNext(MultiValueEnrichable(mentions.getOrElse(tag.toLowerCase, Set()).toSeq))
 
 //    val doc = new Document(source.get)/*
 //    val sentences = doc.sentences(properties).asScala
