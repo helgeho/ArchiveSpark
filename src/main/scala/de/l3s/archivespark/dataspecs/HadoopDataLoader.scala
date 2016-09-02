@@ -29,9 +29,9 @@ import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 
 trait HadoopDataLoader[Format <: InputFormat[Key, Value], Key, Value] { this: DataSpec[(Key, Value), _] =>
-  def path: String
+  def dataPath: String
   def format: Class[Format]
   def keyClass: Class[Key]
   def valueClass: Class[Value]
-  def load(sc: SparkContext, minPartitions: Int): RDD[(Key, Value)] = sc.newAPIHadoopFile(path, format, keyClass, valueClass, sc.hadoopConfiguration)
+  def load(sc: SparkContext, minPartitions: Int): RDD[(Key, Value)] = sc.newAPIHadoopFile(dataPath, format, keyClass, valueClass, sc.hadoopConfiguration)
 }

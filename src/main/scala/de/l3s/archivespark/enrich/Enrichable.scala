@@ -67,7 +67,7 @@ trait Enrichable extends Serializable with Copyable[Enrichable] with JsonConvert
     clone
   }
 
-  def enrichment(key: String) = _enrichments.get(_aliases.getOrElse(key, key))
+  def enrichment[D : ClassTag](key: String) = _enrichments.get(_aliases.getOrElse(key, key)).map(_.asInstanceOf[TypedEnrichable[D]])
 
   def enrich(fieldName: String, enrichment: Enrichable): Enrichable = {
     val clone = copy()

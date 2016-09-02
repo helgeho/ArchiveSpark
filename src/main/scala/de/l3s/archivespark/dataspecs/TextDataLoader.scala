@@ -27,6 +27,6 @@ import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 
 trait TextDataLoader { this: DataSpec[String, _] =>
-  def path: String
-  def load(sc: SparkContext, minPartitions: Int): RDD[String] = sc.textFile(path)
+  def dataPath: String
+  def load(sc: SparkContext, minPartitions: Int): RDD[String] = sc.textFile(dataPath)
 }

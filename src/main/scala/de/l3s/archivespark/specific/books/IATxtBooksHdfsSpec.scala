@@ -26,21 +26,21 @@ package de.l3s.archivespark.specific.books
 
 import de.l3s.archivespark.dataspecs.{DataSpec, TextFileDataLoader}
 
-class IATextBooksHdfsSpec private (metaPath: String) extends DataSpec[(String, String), TextBookRecord] with TextFileDataLoader {
+class IATxtBooksHdfsSpec private(metaPath: String) extends DataSpec[(String, String), TxtBookRecord] with TextFileDataLoader {
   val DetailsUrlMetaField = "identifier-access"
 
-  override def path: String = metaPath
+  override def dataPath: String = metaPath
 
-  override def parse(data: (String, String)): Option[TextBookRecord] = {
+  override def parse(data: (String, String)): Option[TxtBookRecord] = {
     val (filename, text) = data
     BookMetaData.fromXml(text).flatMap { meta =>
       meta.raw.getOrElse(DetailsUrlMetaField, Seq()).headOption.map { url =>
-        new TextBookRecord(meta, new IATextBookAccessor(url))
+        new TxtBookRecord(meta, new IATxtBookAccessor(url))
       }
     }
   }
 }
 
-object IATextBooksHdfsSpec {
-  def apply(metaPath: String): IATextBooksHdfsSpec = new IATextBooksHdfsSpec(metaPath)
+object IATxtBooksHdfsSpec {
+  def apply(metaPath: String): IATxtBooksHdfsSpec = new IATxtBooksHdfsSpec(metaPath)
 }

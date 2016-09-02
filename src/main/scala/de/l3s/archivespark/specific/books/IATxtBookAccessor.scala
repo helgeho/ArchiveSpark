@@ -33,7 +33,7 @@ import scala.collection.JavaConverters._
 import scala.io.Source
 import scala.util.Try
 
-class IATextBookAccessor(detailsUrl: String) extends DataAccessor[String] {
+class IATxtBookAccessor(detailsUrl: String) extends DataAccessor[String] {
   override def get: Option[String] = {
     val url = new URL(detailsUrl.replace("/details/", "/download/"))
     val txtFile = Jsoup.parse(url, 0).select("a").iterator.asScala.map(_.attr("href")).find(_.endsWith("txt"))

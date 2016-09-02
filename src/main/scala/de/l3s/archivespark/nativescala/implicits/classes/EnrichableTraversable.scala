@@ -28,7 +28,6 @@ import de.l3s.archivespark.enrich._
 import de.l3s.archivespark.implicits._
 import de.l3s.archivespark.nativescala.implicits._
 import de.l3s.archivespark.utils.SelectorUtil
-import org.apache.spark.rdd.RDD
 
 import scala.reflect.ClassTag
 
@@ -64,33 +63,52 @@ class EnrichableTraversable[Root <: EnrichRoot : ClassTag](records: Traversable[
   def filterExists(path: String): Traversable[Root] = records.filter(r => r[Nothing](path).isDefined)
   def filterExists[SpecificRoot >: Root <: EnrichRoot](f: EnrichFunc[SpecificRoot, _]): Traversable[Root] = records.filter(r => f.isEnriched(r))
 
-  def filterValue[Source : ClassTag](field: String)(filter: Option[Source] => Boolean): Traversable[Root] = {
-    records.filter(r => filter(r.get[Source](field)))
-  }
+  def filterValue[Source : ClassTag](field: Seq[String])(filter: Option[Source] => Boolean): Traversable[Root] = records.filter(r => filter(r.get[Source](field)))
+  def filterValue[Source : ClassTag](field: String)(filter: Option[Source] => Boolean): Traversable[Root] = filterValue(SelectorUtil.parse(field))(filter)
   def filterValue[SpecificRoot >: Root <: EnrichRoot, Source : ClassTag](f: EnrichFunc[SpecificRoot, _], field: String)(filter: Option[Source] => Boolean): Traversable[Root] = {
-    records.filter(r => filter(r.value[SpecificRoot, Source](f, field)))
+    filterValue(f.pathTo(field))(filter)
   }
   def filterValue[SpecificRoot >: Root <: EnrichRoot, Source : ClassTag](f: EnrichFunc[SpecificRoot, _] with DefaultField[Source])(filter: Option[Source] => Boolean): Traversable[Root] = {
-    filterValue(f, f.defaultField)(filter)
+    filterValue(f.pathToDefaultField)(filter)
   }
 
-  def distinctValue[T](value: Root => T)(distinct: (Root, Root) => Root): Traversable[Root] = {
+  def filterNonEmpty(field: Seq[String]): Traversable[Root] = {
+    records.filter{r =>
+      r.get[{def nonEmpty: Boolean}](field) match {
+        case Some(value) => value.nonEmpty
+        case _ => false
+      }
+    }
+  }
+  def filterNonEmpty(field: String): Traversable[Root] = filterNonEmpty(SelectorUtil.parse(field))
+  def filterNonEmpty[SpecificRoot >: Root <: EnrichRoot](f: EnrichFunc[SpecificRoot, _], field: String): Traversable[Root] = filterNonEmpty(f.pathTo(field))
+  def filterNonEmpty[SpecificRoot >: Root <: EnrichRoot](f: EnrichFunc[SpecificRoot, _]): Traversable[Root] = {
+    records.filter{r =>
+      val parent = r(f.source)
+      parent.isDefined && parent.get.enrichments.map(key => parent.get.enrichment[{def nonEmpty: Boolean}](key).map(_.get)).exists{
+        case Some(value) => value.nonEmpty
+        case _ => false
+      }
+    }
+  }
+
+  def distinctValue[T : ClassTag](value: Root => T)(distinct: (Root, Root) => Root): Traversable[Root] = {
     records.groupBy(r => value(r)).mapValues(_.reduce(distinct)).values
   }
-  def distinctValue[Source : ClassTag](field: String)(distinct: (Root, Root) => Root): Traversable[Root] = {
-    records.groupBy(r => r.get[Source](field)).mapValues(_.reduce(distinct)).values
+  def distinctValue(field: Seq[String])(distinct: (Root, Root) => Root): Traversable[Root] = {
+    records.groupBy(r => r.get(field)).mapValues(_.reduce(distinct)).values
   }
-  def distinctValue[SpecificRoot >: Root <: EnrichRoot, Source : ClassTag](f: EnrichFunc[SpecificRoot, _], field: String)(distinct: (Root, Root) => Root): Traversable[Root] = {
-    records.groupBy(r => r.value[SpecificRoot, Source](f, field)).mapValues(_.reduce(distinct)).values
+  def distinctValue(field: String)(distinct: (Root, Root) => Root): Traversable[Root] = {
+    distinctValue(SelectorUtil.parse(field))(distinct)
+  }
+  def distinctValue[SpecificRoot >: Root <: EnrichRoot](f: EnrichFunc[SpecificRoot, _], field: String)(distinct: (Root, Root) => Root): Traversable[Root] = {
+    distinctValue(f.pathTo(field))(distinct)
   }
   def distinctValue[SpecificRoot >: Root <: EnrichRoot, Source : ClassTag](f: EnrichFunc[SpecificRoot, _] with DefaultField[Source])(distinct: (Root, Root) => Root): Traversable[Root] = {
-    records.groupBy(r => r.value[SpecificRoot, Source](f, f.defaultField)).mapValues(_.reduce(distinct)).values
+    distinctValue(f.pathToDefaultField)(distinct)
   }
 
-  def mapPath[T : ClassTag](path: String): Traversable[T] = records.map(r => r.get[T](path)).filter(o => o.isDefined).map(o => o.get)
-
-  def mapValues[T : ClassTag](path: String): Traversable[T] = mapPath[T](path)
-
+  def mapValues[T : ClassTag](path: String): Traversable[T] = records.map(r => r.get[T](path)).filter(o => o.isDefined).map(o => o.get)
   def mapValues[SpecificRoot >: Root <: EnrichRoot, T : ClassTag](f: EnrichFunc[SpecificRoot, _] with DefaultField[T]): Traversable[T] = records.enrich(f).map(_.value[SpecificRoot, T](f)).filter(_.isDefined).map(_.get)
   def mapValues[SpecificRoot >: Root <: EnrichRoot, T : ClassTag](f: EnrichFunc[SpecificRoot, _], field: String): Traversable[T] = records.enrich(f).map(_.value[SpecificRoot, T](f, field)).filter(_.isDefined).map(_.get)
   def mapMultiValues[SpecificRoot >: Root <: EnrichRoot, T : ClassTag](f: EnrichFunc[SpecificRoot, _] with DefaultField[T]): Traversable[Seq[T]] = records.enrich(f).map(_.values[SpecificRoot, T](f)).filter(_.isDefined).map(_.get)

@@ -24,9 +24,13 @@
 
 package de.l3s.archivespark.enrich
 
+import de.l3s.archivespark.utils.SelectorUtil
+
 trait EnrichFunc[Root <: EnrichRoot, Source] extends Serializable {
   def source: Seq[String]
   def fields: Seq[String]
+
+  def pathTo(field: String) = source ++ SelectorUtil.parse(field)
 
   def enrich(root: Root): Root = enrich(root, excludeFromOutput = false)
 

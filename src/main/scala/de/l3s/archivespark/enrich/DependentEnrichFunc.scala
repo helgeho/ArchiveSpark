@@ -31,7 +31,7 @@ trait DependentEnrichFunc[Root <: EnrichRoot, Source] extends EnrichFunc[Root, S
 
   def dependencyField: String
 
-  override def source: Seq[String] = dependency.source ++ SelectorUtil.parse(dependencyField)
+  override def source: Seq[String] = dependency.pathTo(dependencyField)
 
   override protected[enrich] def enrich(root: Root, excludeFromOutput: Boolean): Root = super.enrich(dependency.enrich(root, excludeFromOutput = true), excludeFromOutput)
 

@@ -25,12 +25,13 @@
 package de.l3s.archivespark.specific.warc.specs
 
 import de.l3s.archivespark.dataspecs.{DataSpec, TextDataLoader}
-import de.l3s.archivespark.specific.warc.CdxRecord
+import de.l3s.archivespark.specific.warc.{CdxRecord, WaybackRecord}
 
-class CdxHdfsSpec private (val dataPath: String) extends DataSpec[String, CdxRecord] with TextDataLoader {
-  override def parse(data: String): Option[CdxRecord] = CdxRecord.fromString(data)
+class WaybackCdxHdfsSpec private (cdxPath: String) extends DataSpec[String, WaybackRecord] with TextDataLoader {
+  override def dataPath: String = cdxPath
+  override def parse(data: String): Option[WaybackRecord] = CdxRecord.fromString(data).map(cdx => new WaybackRecord(cdx))
 }
 
-object CdxHdfsSpec {
-  def apply(path: String) = new CdxHdfsSpec(path)
+object WaybackCdxHdfsSpec {
+  def apply(cdxPath: String) = new WaybackCdxHdfsSpec(cdxPath)
 }

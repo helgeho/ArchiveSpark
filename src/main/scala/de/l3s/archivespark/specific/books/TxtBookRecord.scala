@@ -30,7 +30,7 @@ import de.l3s.archivespark.enrich.RootEnrichFunc
 import de.l3s.archivespark.enrich.dataloads.TextLoad
 import de.l3s.archivespark.enrich.functions.Data
 
-class TextBookRecord(meta: BookMetaData, data: DataAccessor[String]) extends DataEnrichRoot[BookMetaData, String](meta) with TextLoad {
+class TxtBookRecord(meta: BookMetaData, data: DataAccessor[String]) extends DataEnrichRoot[BookMetaData, String](meta) with TextLoad {
   override def access[R >: Null](action: String => R): R = data.access(action)
 
   override def defaultEnrichFunction(field: String): Option[RootEnrichFunc[_]] = field match {
@@ -39,6 +39,6 @@ class TextBookRecord(meta: BookMetaData, data: DataAccessor[String]) extends Dat
   }
 }
 
-object TextBookRecord {
-  implicit def recordToMeta(record: TextBookRecord): BookMetaData = record.get
+object TxtBookRecord {
+  implicit def recordToMeta(record: TxtBookRecord): BookMetaData = record.get
 }
