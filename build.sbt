@@ -37,7 +37,17 @@ lazy val archivespark = (project in file(".")).
     resolvers ++= Seq(
       "cloudera" at "https://repository.cloudera.com/artifactory/cloudera-repos",
       "internetarchive" at "http://builds.archive.org:8080/maven2"
-    )
+    ),
+    publishTo := Some("internetarchive" at "http://builds.archive.org:8080/maven2"),
+    credentials += Credentials(Path.userHome / ".ivy2" / ".credentials"),
+    pomExtra :=
+      <licenses>
+        <license>
+          <name>MIT License</name>
+          <url>http://www.opensource.org/licenses/mit-license.php</url>
+          <distribution>repo</distribution>
+        </license>
+      </licenses>
   )
 
 assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = false, includeDependency = false)

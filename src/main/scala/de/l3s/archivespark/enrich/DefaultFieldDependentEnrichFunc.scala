@@ -51,7 +51,7 @@ trait DefaultFieldDependentEnrichFunc[Root <: EnrichRoot, Source, DefaultFieldTy
 
   override def on[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _] with DefaultField[Source]): EnrichFunc[DependencyRoot, Source] with DefaultField[DefaultFieldType] = on(dependency, dependency.defaultField)
   override def on[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _] with DefaultField[Source], index: Int): EnrichFunc[DependencyRoot, Source] with DefaultField[DefaultFieldType] = on(dependency, dependency.defaultField, index)
-  override def onEach[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _] with DefaultField[Source]): EnrichFunc[DependencyRoot, Source] with DefaultField[DefaultFieldType] = onEach(dependency, dependency.defaultField)
+  override def onEach[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _] with DefaultField[Seq[Source]]): EnrichFunc[DependencyRoot, Source] with DefaultField[DefaultFieldType] = onEach(dependency, dependency.defaultField)
 
   override def of[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _], field: String): EnrichFunc[DependencyRoot, Source] with DefaultField[DefaultFieldType] = on(dependency, field)
   override def of[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _], field: String, index: Int): EnrichFunc[DependencyRoot, Source] with DefaultField[DefaultFieldType] = on(dependency, field, index)
@@ -59,5 +59,5 @@ trait DefaultFieldDependentEnrichFunc[Root <: EnrichRoot, Source, DefaultFieldTy
 
   override def of[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _] with DefaultField[Source]): EnrichFunc[DependencyRoot, Source] with DefaultField[DefaultFieldType] = on(dependency)
   override def of[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _] with DefaultField[Source], index: Int): EnrichFunc[DependencyRoot, Source] with DefaultField[DefaultFieldType] = on(dependency, index)
-  override def ofEach[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _] with DefaultField[Source]): EnrichFunc[DependencyRoot, Source] with DefaultField[DefaultFieldType] = onEach(dependency)
+  override def ofEach[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _] with DefaultField[Seq[Source]]): EnrichFunc[DependencyRoot, Source] with DefaultField[DefaultFieldType] = onEach(dependency)
 }
