@@ -36,7 +36,7 @@ lazy val archivespark = (project in file(".")).
     ),
     resolvers ++= Seq(
       "cloudera" at "https://repository.cloudera.com/artifactory/cloudera-repos",
-      "internetarchive" at "http://builds.archive.org:8080/maven2"
+      "internetarchive" at "http://builds.archive.org/maven2"
     ),
     publishTo := Some(Resolver.file("file",  new File(Path.userHome.absolutePath+"/.m2/repository"))),
     pomExtra :=
