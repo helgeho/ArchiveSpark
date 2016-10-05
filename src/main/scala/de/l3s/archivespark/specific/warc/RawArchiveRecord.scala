@@ -52,7 +52,7 @@ object RawArchiveRecord {
 class RawArchiveRecord private (val record: ArchiveRecord) {
   val header = {
     val header = record.getHeader
-    header.getHeaderFields.asScala.mapValues(o => o.toString).toMap
+    Try { header.getHeaderFields.asScala.mapValues(o => o.toString).toMap }.getOrElse(Map.empty)
   }
 
   val payload: Array[Byte] = {
