@@ -36,7 +36,7 @@ class WarcCdxHdfsSpec private (@transient cdx: RDD[CdxRecord], warcPath: String)
   override def load(sc: SparkContext, minPartitions: Int): RDD[CdxRecord] = cdx
 
   override def parse(cdx: CdxRecord): Option[WarcRecord] = {
-    Try{cdx.additionalFields(1)}.toOption.flatMap(filename => parse(cdx, warcPathMap.dir(filename)))
+    Try{cdx.additionalFields(1)}.toOption.flatMap(warcPathMap.dir.get).flatMap(dir => parse(cdx, dir))
   }
 }
 
