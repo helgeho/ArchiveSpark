@@ -28,10 +28,9 @@ import de.l3s.archivespark.dataspecs.DataSpec
 import de.l3s.archivespark.dataspecs.access._
 import de.l3s.archivespark.enrich._
 import de.l3s.archivespark.enrich.dataloads.DataLoadBase
-import de.l3s.archivespark.http.HttpResponse
+import de.l3s.archivespark.specific.warc.specs.{CdxHdfsSpec, WarcCdxHdfsSpec}
+import de.l3s.archivespark.specific.warc.{CdxRecord, WarcRecord}
 import de.l3s.archivespark.utils._
-import de.l3s.archivespark.specific.warc.specs.{CdxHdfsSpec, WarcHdfsSpec}
-import de.l3s.archivespark.specific.warc.{CdxRecord, RawArchiveRecord, WarcRecord}
 import org.apache.hadoop.fs.Path
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext}
@@ -83,7 +82,7 @@ object ArchiveSpark {
     }
   }
 
-  def hdfs(cdxPath: String, warcPath: String)(implicit sc: SparkContext): RDD[WarcRecord] = load(sc, WarcHdfsSpec(cdxPath, warcPath))
+  def hdfs(cdxPath: String, warcPath: String)(implicit sc: SparkContext): RDD[WarcRecord] = load(sc, WarcCdxHdfsSpec(cdxPath, warcPath))
 
   def files(cdxPath: String, warcPath: String): Seq[WarcRecord] = {
     IO.lazyLines(cdxPath)

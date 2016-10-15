@@ -22,24 +22,16 @@
  * SOFTWARE.
  */
 
-package de.l3s.archivespark.benchmarking.warcbase
+package de.l3s.archivespark.specific.warc.specs
 
-import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.fs.Path
-import org.apache.hadoop.hbase.HBaseConfiguration
-import org.apache.hadoop.hbase.client.Result
-import org.apache.hadoop.hbase.io.ImmutableBytesWritable
-import org.apache.hadoop.hbase.mapreduce.TableInputFormat
-import org.apache.spark.SparkContext
-import org.apache.spark.rdd.NewHadoopRDD
+import de.l3s.archivespark.dataspecs.{DataSpec, TextDataLoader}
+import de.l3s.archivespark.specific.warc.{CdxRecord, WaybackRecord}
 
-object HBase {
-  def rdd(table: String)(conf: Configuration => Unit)(implicit sc: SparkContext) = {
-    val hbaseConf = HBaseConfiguration.create()
-    hbaseConf.addResource(new Path(sys.env("HBASE_CONF_DIR"), "core-site.xml"))
-    hbaseConf.addResource(new Path(sys.env("HBASE_CONF_DIR"), "hbase-site.xml"))
-    hbaseConf.set(TableInputFormat.INPUT_TABLE, table)
-    conf(hbaseConf)
-    new NewHadoopRDD(sc, classOf[TableInputFormat], classOf[ImmutableBytesWritable], classOf[Result], hbaseConf).map{case (k,v) => v}
-  }
+class CdxHdfsWaybackSpec private(cdxPath: String) extends DataSpec[String, WaybackRecord] with TextDataLoader {
+  override def dataPath: String = cdxPath
+  override def parse(data: String): Option[WaybackRecord] = CdxRecord.fromString(data).map(cdx => new WaybackRecord(cdx))
+}
+
+object CdxHdfsWaybackSpec {
+  def apply(cdxPath: String) = new CdxHdfsWaybackSpec(cdxPath)
 }

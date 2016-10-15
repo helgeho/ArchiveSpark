@@ -5,7 +5,8 @@ lazy val commonSettings = Seq(
   name := "archivespark",
   organization := "de.l3s",
   version := "2.0.1",
-  scalaVersion := "2.10.5",
+  scalaVersion := "2.11.7",
+  crossScalaVersions := Seq("2.11.7", "2.10.5"),
   fork := true
 )
 
@@ -13,7 +14,7 @@ lazy val archivespark = (project in file(".")).
   settings(commonSettings: _*).
   settings(
     libraryDependencies ++= Seq(
-      "org.apache.spark" %% "spark-core" % "1.6.2" % "provided" excludeAll(
+      "org.apache.spark" %% "spark-core" % "2.0.1" % "provided" excludeAll(
         ExclusionRule(organization = "org.apache.hadoop"),
         ExclusionRule(organization = "org.scala-lang"),
         ExclusionRule(organization = "com.google.guava")),
@@ -26,7 +27,6 @@ lazy val archivespark = (project in file(".")).
       "commons-io" % "commons-io" % "2.4",
       "org.json4s" %% "json4s-native" % "3.2.11" excludeAll ExclusionRule(organization = "org.scala-lang"),
       "org.jsoup" % "jsoup" % "1.8.3",
-      "com.gravity" % "goose" % "2.1.23" % "provided",
       "com.google.protobuf" % "protobuf-java" % "2.6.1",
       "edu.stanford.nlp" % "stanford-corenlp" % "3.4.1" % "provided",
       "org.elasticsearch" %% "elasticsearch-spark" % "2.2.0" % "provided",

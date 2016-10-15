@@ -26,9 +26,9 @@ package de.l3s.archivespark.enrich
 
 import de.l3s.archivespark.utils.Json._
 
-class SingleValueEnrichable[T] private (override val get: T, parent: Enrichable = null, root: EnrichRoot = null) extends TypedEnrichable[T] {
-  _parent = parent
-  _root = root
+class SingleValueEnrichable[T] private (override val get: T, parentEnrichable: Enrichable = null, enrichRoot: EnrichRoot = null) extends TypedEnrichable[T] {
+  _parent = parentEnrichable
+  _root = enrichRoot
 
   def toJson: Map[String, Any] = (if (isExcludedFromOutput) Map() else Map(
     null.asInstanceOf[String] -> json(this.get)

@@ -22,24 +22,24 @@
  * SOFTWARE.
  */
 
-package de.l3s.archivespark.benchmarking.warcbase
+package de.l3s.archivespark.specific.warc.specs
 
-import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.fs.Path
-import org.apache.hadoop.hbase.HBaseConfiguration
-import org.apache.hadoop.hbase.client.Result
-import org.apache.hadoop.hbase.io.ImmutableBytesWritable
-import org.apache.hadoop.hbase.mapreduce.TableInputFormat
+import de.l3s.archivespark.specific.warc.{CdxRecord, WarcRecord}
 import org.apache.spark.SparkContext
-import org.apache.spark.rdd.NewHadoopRDD
+import org.apache.spark.rdd.RDD
 
-object HBase {
-  def rdd(table: String)(conf: Configuration => Unit)(implicit sc: SparkContext) = {
-    val hbaseConf = HBaseConfiguration.create()
-    hbaseConf.addResource(new Path(sys.env("HBASE_CONF_DIR"), "core-site.xml"))
-    hbaseConf.addResource(new Path(sys.env("HBASE_CONF_DIR"), "hbase-site.xml"))
-    hbaseConf.set(TableInputFormat.INPUT_TABLE, table)
-    conf(hbaseConf)
-    new NewHadoopRDD(sc, classOf[TableInputFormat], classOf[ImmutableBytesWritable], classOf[Result], hbaseConf).map{case (k,v) => v}
+import scala.util.Try
+
+class WarcHdfsCdxRddSpec private(@transient cdx: RDD[CdxRecord], warcPath: String) extends WarcHdfsSpecBase[CdxRecord] {
+  val warcPathMap = filePathMap(warcPath)
+
+  override def load(sc: SparkContext, minPartitions: Int): RDD[CdxRecord] = cdx
+
+  override def parse(cdx: CdxRecord): Option[WarcRecord] = {
+    Try{cdx.additionalFields(1)}.toOption.flatMap(warcPathMap.dir.get).flatMap(dir => parse(cdx, dir))
   }
+}
+
+object WarcHdfsCdxRddSpec {
+  def apply(cdx: RDD[CdxRecord], warcPath: String) = new WarcHdfsCdxRddSpec(cdx, warcPath)
 }

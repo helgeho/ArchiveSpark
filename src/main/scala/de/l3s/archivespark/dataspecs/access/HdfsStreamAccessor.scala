@@ -25,6 +25,7 @@
 package de.l3s.archivespark.dataspecs.access
 
 import java.io.InputStream
+
 import org.apache.commons.io.input.BoundedInputStream
 import org.apache.hadoop.fs.{FSDataInputStream, FileSystem}
 import org.apache.spark.deploy.SparkHadoopUtil

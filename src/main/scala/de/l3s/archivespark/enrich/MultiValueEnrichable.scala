@@ -28,9 +28,9 @@ import de.l3s.archivespark.utils.Json._
 
 import scala.reflect.ClassTag
 
-class MultiValueEnrichable[T] private (val children: Seq[TypedEnrichable[T]], parent: Enrichable = null, root: EnrichRoot = null) extends TypedEnrichable[Seq[T]] {
-  _parent = parent
-  _root = root
+class MultiValueEnrichable[T] private (val children: Seq[TypedEnrichable[T]], parentEnrichable: Enrichable = null, enrichRoot: EnrichRoot = null) extends TypedEnrichable[Seq[T]] {
+  _parent = parentEnrichable
+  _root = enrichRoot
 
   def get: Seq[T] = children.map(e => e.get)
 

@@ -26,8 +26,8 @@ package de.l3s.archivespark.specific.warc.specs
 
 import de.l3s.archivespark.dataspecs.DataSpec
 import de.l3s.archivespark.dataspecs.access.{HdfsLocationInfo, HdfsStreamAccessor}
-import de.l3s.archivespark.utils.FilePathMap
 import de.l3s.archivespark.specific.warc.{CdxRecord, WarcRecord}
+import de.l3s.archivespark.utils.FilePathMap
 import org.apache.hadoop.fs.Path
 
 import scala.util.Try
