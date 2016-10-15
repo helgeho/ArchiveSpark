@@ -22,10 +22,12 @@
  * SOFTWARE.
  */
 
-package de.l3s.archivespark.nativescala.implicits.classes
+package de.l3s.archivespark.specific.warc
 
-class SparkRDDLikeTraversable[T](records: Traversable[T]) {
-  def cache(): Seq[T] = records.toSeq.view.force
-  def count() = records.size
-  def collect() = cache()
+import de.l3s.archivespark.enrich.TypedEnrichRoot
+
+class GroupRecord(override val get: Map[String, Any]) extends TypedEnrichRoot[Map[String, Any]] {
+  def get[T](field: String): T = get.apply(field).asInstanceOf[T]
+
+  override def metaKey: String = "group"
 }

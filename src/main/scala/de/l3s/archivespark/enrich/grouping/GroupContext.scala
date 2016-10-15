@@ -22,16 +22,12 @@
  * SOFTWARE.
  */
 
-package de.l3s.archivespark.nativescala
+package de.l3s.archivespark.enrich.grouping
 
-import de.l3s.archivespark.enrich.EnrichRoot
-import de.l3s.archivespark.nativescala.implicits.classes.{EnrichableTraversable, JsonConvertibleTraversable, SparkRDDLikeTraversable}
-import de.l3s.archivespark.utils.JsonConvertible
+import org.apache.spark.rdd.RDD
 
 import scala.reflect.ClassTag
 
-package object implicits {
-  implicit class ImplicitEnrichableTraversable[Root <: EnrichRoot : ClassTag](records: Traversable[Root]) extends EnrichableTraversable[Root](records)
-  implicit class ImplicitJsonConvertibleTraversable[Record <: JsonConvertible](records: Traversable[Record]) extends JsonConvertibleTraversable[Record](records)
-  implicit class ImplicitSparkRDDLikeTraversable[T](records: Traversable[T]) extends SparkRDDLikeTraversable[T](records)
+class GroupContext[Root] private[archivespark] (private[grouping] val keyRecordPairs: RDD[(Map[String, Any], Root)]) {
+  def apply[T : ClassTag](field: String, map: Root => T)(reduce: (T, T) => T) = new GroupAggregation[Root, T](this, field, map, reduce)
 }

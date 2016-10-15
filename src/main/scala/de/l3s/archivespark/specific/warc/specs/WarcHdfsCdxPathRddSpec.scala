@@ -28,7 +28,7 @@ import de.l3s.archivespark.specific.warc.{CdxRecord, WarcRecord}
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 
-class WarcHdfsCdxPathRddSpec private(@transient cdx: RDD[(CdxRecord, String)]) extends WarcHdfsSpecBase[(CdxRecord, String)] {
+class WarcHdfsCdxPathRddSpec private(cdx: RDD[(CdxRecord, String)]) extends WarcHdfsSpecBase[(CdxRecord, String)] {
   override def load(sc: SparkContext, minPartitions: Int): RDD[(CdxRecord, String)] = cdx
 
   override def parse(cdxPath: (CdxRecord, String)): Option[WarcRecord] = {

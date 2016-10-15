@@ -19,7 +19,6 @@ lazy val archivespark = (project in file(".")).
         ExclusionRule(organization = "org.scala-lang"),
         ExclusionRule(organization = "com.google.guava")),
       "org.apache.hadoop" % "hadoop-client" % "2.5.0" % "provided",
-      "com.github.nscala-time" %% "nscala-time" % "2.0.0" excludeAll ExclusionRule(organization = "org.scala-lang"),
       "org.netpreserve.commons" % "webarchive-commons" % "1.1.5" excludeAll(
         ExclusionRule(organization = "org.apache.hadoop"),
         ExclusionRule(organization = "com.google.guava")),
@@ -28,10 +27,10 @@ lazy val archivespark = (project in file(".")).
       "org.json4s" %% "json4s-native" % "3.2.11" excludeAll ExclusionRule(organization = "org.scala-lang"),
       "org.jsoup" % "jsoup" % "1.8.3",
       "com.google.protobuf" % "protobuf-java" % "2.6.1",
-      "edu.stanford.nlp" % "stanford-corenlp" % "3.4.1" % "provided",
-      "org.elasticsearch" %% "elasticsearch-spark" % "2.2.0" % "provided",
       "org.apache.httpcomponents" % "httpclient" % "4.5.1",
       "org.apache.httpcomponents" % "httpcore" % "4.4.4",
+      "edu.stanford.nlp" % "stanford-corenlp" % "3.4.1" % "provided",
+      "org.elasticsearch" %% "elasticsearch-spark" % "2.2.0" % "provided",
       "org.scalatest" %% "scalatest" % "2.2.6" % Test
     ),
     resolvers ++= Seq(

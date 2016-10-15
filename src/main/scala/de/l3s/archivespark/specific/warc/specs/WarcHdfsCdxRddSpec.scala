@@ -30,7 +30,7 @@ import org.apache.spark.rdd.RDD
 
 import scala.util.Try
 
-class WarcHdfsCdxRddSpec private(@transient cdx: RDD[CdxRecord], warcPath: String) extends WarcHdfsSpecBase[CdxRecord] {
+class WarcHdfsCdxRddSpec private(cdx: RDD[CdxRecord], warcPath: String) extends WarcHdfsSpecBase[CdxRecord] {
   val warcPathMap = filePathMap(warcPath)
 
   override def load(sc: SparkContext, minPartitions: Int): RDD[CdxRecord] = cdx

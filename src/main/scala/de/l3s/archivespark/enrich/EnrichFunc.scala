@@ -25,6 +25,7 @@
 package de.l3s.archivespark.enrich
 
 import de.l3s.archivespark.utils.SelectorUtil
+import org.apache.spark.rdd.RDD
 
 trait EnrichFunc[Root <: EnrichRoot, Source] extends Serializable {
   def source: Seq[String]
@@ -46,4 +47,7 @@ trait EnrichFunc[Root <: EnrichRoot, Source] extends Serializable {
   }
 
   def exists(source: Enrichable): Boolean = fields.forall(f => source.enrichment(f).isDefined)
+
+  def prepareGlobal(rdd: RDD[Root]): RDD[Any] = rdd.asInstanceOf[RDD[Any]]
+  def prepareLocal(record: Any) = record.asInstanceOf[Root]
 }

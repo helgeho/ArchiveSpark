@@ -22,12 +22,32 @@
  * SOFTWARE.
  */
 
-package de.l3s.archivespark.nativescala.implicits.classes
+package de.l3s.archivespark.enrich.grouping
 
-import de.l3s.archivespark.utils.JsonConvertible
+import de.l3s.archivespark.ArchiveSpark
+import de.l3s.archivespark.enrich.{Derivatives, RootEnrichFunc, SingleField}
+import de.l3s.archivespark.specific.warc.GroupRecord
+import org.apache.spark.rdd.RDD
 
-class JsonConvertibleTraversable[Record <: JsonConvertible](records: Traversable[Record]) {
-  def toJson = records.map(r => r.toJson)
+import scala.reflect.ClassTag
 
-  def toJsonStrings = records.map(r => r.toJsonString)
+class GroupAggregation[Root, T : ClassTag] private[grouping] (context: GroupContext[Root], field: String, map: Root => T, reduce: (T, T) => T) extends RootEnrichFunc[GroupRecord] with SingleField[T] {
+  override def resultField: String = field
+
+  override def prepareGlobal(rdd: RDD[GroupRecord]): RDD[Any] = {
+    val keyGroupPairs = rdd.map(r => (r.get, r))
+    val keyValuePairs = context.keyRecordPairs.map{case (k, r) => (k, map(r))}.reduceByKey(reduce, ArchiveSpark.parallelism)
+    keyGroupPairs.join(keyValuePairs).map{case (k, groupValue) => groupValue}
+  }
+
+  private var tmpValue: Option[T] = None
+  override def prepareLocal(record: Any): GroupRecord = {
+    val (group, valueOpt) = record.asInstanceOf[(GroupRecord, T)]
+    tmpValue = Some(valueOpt)
+    group
+  }
+
+  override def deriveRoot(source: GroupRecord, derivatives: Derivatives): Unit = {
+    if (tmpValue.isDefined) derivatives << tmpValue.get
+  }
 }

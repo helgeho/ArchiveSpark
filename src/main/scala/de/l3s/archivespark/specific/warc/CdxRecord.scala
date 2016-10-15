@@ -24,13 +24,14 @@
 
 package de.l3s.archivespark.specific.warc
 
-import com.github.nscala_time.time.Imports._
+import java.time.LocalDateTime
+
 import de.l3s.archivespark.utils.JsonConvertible
 
 import scala.util.Try
 
 object CdxRecord {
-  val dateTimeFormat = DateTimeFormat.forPattern("yyyyMMddHHmmss")
+  val DateTimeFormatter = java.time.format.DateTimeFormatter.ofPattern("yyyyMMddHHmmss")
 
   def fromString(str: String): Option[CdxRecord] = {
     val split = str.trim.split("[ \t]")
@@ -59,7 +60,7 @@ case class CdxRecord(surtUrl: String,
                      meta: String,
                      compressedSize: Long,
                      additionalFields: Seq[String]) extends JsonConvertible {
-  def time = Try(CdxRecord.dateTimeFormat.parseDateTime(timestamp)).getOrElse(null)
+  def time = Try(LocalDateTime.parse(timestamp, CdxRecord.DateTimeFormatter)).getOrElse(null)
 
   def toCdxString = {
     val statusStr = if (status < 0) "-" else status.toString
