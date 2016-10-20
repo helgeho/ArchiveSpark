@@ -26,9 +26,8 @@ package de.l3s.archivespark.implicits.classes
 
 import de.l3s.archivespark.ArchiveSpark
 import de.l3s.archivespark.enrich._
-import de.l3s.archivespark.enrich.grouping.GroupContext
+import de.l3s.archivespark.enrich.grouping.{GroupContext, GroupRecord}
 import de.l3s.archivespark.implicits._
-import de.l3s.archivespark.specific.warc.GroupRecord
 import de.l3s.archivespark.utils.SelectorUtil
 import org.apache.spark.rdd.RDD
 
@@ -36,11 +35,10 @@ import scala.reflect.ClassTag
 import scala.util.Try
 
 class EnrichableRDD[Root <: EnrichRoot : ClassTag](rdd: RDD[Root]) {
-  def enrich[SpecificRoot >: Root <: EnrichRoot : ClassTag](func: => EnrichFunc[SpecificRoot, _]): RDD[Root] = {
+  def enrich[SpecificRoot >: Root <: EnrichRoot : ClassTag](func: EnrichFunc[SpecificRoot, _]): RDD[Root] = {
     func.prepareGlobal(rdd.map(_.asInstanceOf[SpecificRoot])).mapPartitions { records =>
-      val f = func
       records.map(r =>
-        f.enrich(f.prepareLocal(r)).asInstanceOf[Root]
+        func.enrich(func.prepareLocal(r)).asInstanceOf[Root]
       )
     }
   }
@@ -52,7 +50,7 @@ class EnrichableRDD[Root <: EnrichRoot : ClassTag](rdd: RDD[Root]) {
         (meta, r)
       }
     }
-    val records = keyRecordPairs.map{case (k, v) => new GroupRecord(k)}.distinct(ArchiveSpark.parallelism)
+    val records = keyRecordPairs.map{case (k, v) => k}.distinct(ArchiveSpark.partitions(rdd.context)).map(new GroupRecord(_)).cache
     (records, new GroupContext[Root](keyRecordPairs))
   }
 

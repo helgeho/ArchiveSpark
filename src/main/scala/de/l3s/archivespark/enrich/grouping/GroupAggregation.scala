@@ -25,25 +25,28 @@
 package de.l3s.archivespark.enrich.grouping
 
 import de.l3s.archivespark.ArchiveSpark
-import de.l3s.archivespark.enrich.{Derivatives, RootEnrichFunc, SingleField}
-import de.l3s.archivespark.specific.warc.GroupRecord
+import de.l3s.archivespark.enrich.{Derivatives, EnrichRoot, RootEnrichFunc, SingleField}
 import org.apache.spark.rdd.RDD
 
+import scala.annotation.meta.param
 import scala.reflect.ClassTag
 
-class GroupAggregation[Root, T : ClassTag] private[grouping] (context: GroupContext[Root], field: String, map: Root => T, reduce: (T, T) => T) extends RootEnrichFunc[GroupRecord] with SingleField[T] {
+class GroupAggregation[Root <: EnrichRoot, T : ClassTag] private[grouping] (@(transient @param) context: GroupContext[Root], field: String, map: Root => Option[T], reduce: (T, T) => T) extends RootEnrichFunc[GroupRecord] with SingleField[T] {
   override def resultField: String = field
 
   override def prepareGlobal(rdd: RDD[GroupRecord]): RDD[Any] = {
+    val partitions = ArchiveSpark.partitions(rdd.context)
     val keyGroupPairs = rdd.map(r => (r.get, r))
-    val keyValuePairs = context.keyRecordPairs.map{case (k, r) => (k, map(r))}.reduceByKey(reduce, ArchiveSpark.parallelism)
-    keyGroupPairs.join(keyValuePairs).map{case (k, groupValue) => groupValue}
+    val keyValuePairs = keyGroupPairs.map{case (k, g) => (k, true)}.join(context.keyRecordPairs).flatMap{case (k, (_, record)) =>
+      map(record).map(v => (k,v))
+    }.reduceByKey(reduce, partitions)
+    keyGroupPairs.leftOuterJoin(keyValuePairs).map{case (k, groupValueOpt) => groupValueOpt}
   }
 
   private var tmpValue: Option[T] = None
   override def prepareLocal(record: Any): GroupRecord = {
-    val (group, valueOpt) = record.asInstanceOf[(GroupRecord, T)]
-    tmpValue = Some(valueOpt)
+    val (group, valueOpt) = record.asInstanceOf[(GroupRecord, Option[T])]
+    tmpValue = valueOpt
     group
   }
 

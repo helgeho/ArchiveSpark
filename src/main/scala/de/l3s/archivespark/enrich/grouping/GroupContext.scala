@@ -24,10 +24,21 @@
 
 package de.l3s.archivespark.enrich.grouping
 
+import de.l3s.archivespark.enrich.{DefaultField, EnrichFunc, EnrichRoot}
 import org.apache.spark.rdd.RDD
 
 import scala.reflect.ClassTag
 
-class GroupContext[Root] private[archivespark] (private[grouping] val keyRecordPairs: RDD[(Map[String, Any], Root)]) {
-  def apply[T : ClassTag](field: String, map: Root => T)(reduce: (T, T) => T) = new GroupAggregation[Root, T](this, field, map, reduce)
+class GroupContext[Root <: EnrichRoot] private[archivespark] (private[grouping] val keyRecordPairs: RDD[(Map[String, Any], Root)]) {
+  def aggregate[T : ClassTag](target: String, map: Root => Option[T])(reduce: (T, T) => T): GroupAggregation[Root, T] = {
+    new GroupAggregation[Root, T](this, target, map, reduce)
+  }
+
+  def aggregateValues[SpecificRoot >: Root <: EnrichRoot, T : ClassTag](target: String, func: EnrichFunc[SpecificRoot, _], field: String)(reduce: (T, T) => T): GroupAggregation[Root, T] = {
+    new GroupAggregation[Root, T](this, target, func.enrich(_, excludeFromOutput = true).get(func.pathTo(field)), reduce)
+  }
+
+  def aggregateValues[SpecificRoot >: Root <: EnrichRoot, T : ClassTag](target: String, func: EnrichFunc[SpecificRoot, _] with DefaultField[T])(reduce: (T, T) => T): GroupAggregation[Root, T] = {
+    aggregateValues[SpecificRoot, T](target, func, func.defaultField)(reduce)
+  }
 }

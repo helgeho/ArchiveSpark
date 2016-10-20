@@ -23,6 +23,7 @@
  */
 
 package de.l3s.archivespark.enrich
+import org.apache.spark.rdd.RDD
 
 class PipedDependentEnrichFunc[Root <: EnrichRoot, Source] private[enrich] (parent: EnrichFunc[_, Source], override val dependency: EnrichFunc[Root, _], override val dependencyField: String)
   extends DependentEnrichFunc[Root, Source] {

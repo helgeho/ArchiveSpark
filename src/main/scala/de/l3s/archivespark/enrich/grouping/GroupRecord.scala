@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package de.l3s.archivespark.specific.warc
+package de.l3s.archivespark.enrich.grouping
 
 import de.l3s.archivespark.enrich.TypedEnrichRoot
 

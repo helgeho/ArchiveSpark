@@ -25,6 +25,7 @@
 package de.l3s.archivespark.enrich
 
 import de.l3s.archivespark.utils.SelectorUtil
+import org.apache.spark.rdd.RDD
 
 trait DependentEnrichFunc[Root <: EnrichRoot, Source] extends EnrichFunc[Root, Source] {
   def dependency: EnrichFunc[Root, _]
@@ -32,6 +33,9 @@ trait DependentEnrichFunc[Root <: EnrichRoot, Source] extends EnrichFunc[Root, S
   def dependencyField: String
 
   override def source: Seq[String] = dependency.pathTo(dependencyField)
+
+  override def prepareGlobal(rdd: RDD[Root]): RDD[Any] = dependency.prepareGlobal(rdd)
+  override def prepareLocal(record: Any): Root = dependency.prepareLocal(record)
 
   override protected[enrich] def enrich(root: Root, excludeFromOutput: Boolean): Root = super.enrich(dependency.enrich(root, excludeFromOutput = true), excludeFromOutput)
 
