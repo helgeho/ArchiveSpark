@@ -10,7 +10,7 @@ It was created to demonstrate how easily [ArchiveSpark](https://github.com/helge
 
 ## Cite
 
-ArchiveSpark has been accepted as a research paper at [JCDL 2016](http://www.jcdl2016.org), where it was nominated for the Best Paper Award.
+ArchiveSpark has been published as a research paper at [JCDL 2016](http://www.jcdl2016.org), where it was nominated for the Best Paper Award.
 If you use ArchiveSpark in your work, please cite:
 
 *[Helge Holzmann, Vinay Goel, Avishek Anand. ArchiveSpark: Efficient Web Archive Access, Extraction and Derivation. In Proceedings of the Joint Conference on Digital Libraries, Newark, New Jersey, USA, 2016.](http://dl.acm.org/citation.cfm?id=2910902)*
