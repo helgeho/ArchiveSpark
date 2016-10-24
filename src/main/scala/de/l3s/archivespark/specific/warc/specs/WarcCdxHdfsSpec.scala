@@ -36,7 +36,7 @@ class WarcCdxHdfsSpec private(cdxPath: String, warcPath: String) extends WarcHdf
 
   override def parse(data: String): Option[WarcRecord] = {
     CdxRecord.fromString(data).flatMap{cdx =>
-      Try{cdx.additionalFields(1)}.toOption.flatMap(warcPathMap.dir.get).flatMap(dir => parse(cdx, dir))
+      Try{cdx.additionalFields(1)}.toOption.flatMap(warcPathMap.dir).flatMap(dir => parse(cdx, dir))
     }
   }
 }

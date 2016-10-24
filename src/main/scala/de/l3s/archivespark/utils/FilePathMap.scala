@@ -24,13 +24,15 @@
 
 package de.l3s.archivespark.utils
 
+import java.nio.file.Paths
+
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.deploy.SparkHadoopUtil
 
 import scala.util.Try
 
 case class FilePathMap(path: String, patterns: Seq[String]) {
-  val dir: Map[String, String] = {
+  val paths: Map[String, String] = {
     var map = collection.mutable.Map[String, String]()
 
     val fs = FileSystem.newInstance(SparkHadoopUtil.get.conf)
@@ -50,4 +52,6 @@ case class FilePathMap(path: String, patterns: Seq[String]) {
 
     map.toMap
   }
+
+  def dir(file: String) = Try {Paths.get(file).getFileName.toString}.toOption.flatMap(paths.get)
 }
