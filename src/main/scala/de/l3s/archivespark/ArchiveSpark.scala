@@ -90,7 +90,7 @@ object ArchiveSpark {
       .map { cdx =>
         val offset = cdx.additionalFields.head.toLong
         val filename = cdx.additionalFields(1)
-        val locationInfo = new HdfsLocationInfo(new Path(warcPath, filename), offset, cdx.compressedSize)
+        val locationInfo = HdfsLocationInfo(new Path(warcPath, filename).toString, offset, cdx.compressedSize)
         new WarcRecord(cdx, filename, new HdfsStreamAccessor(locationInfo))
       }
   }

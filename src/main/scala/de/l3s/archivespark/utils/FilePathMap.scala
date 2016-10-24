@@ -24,8 +24,6 @@
 
 package de.l3s.archivespark.utils
 
-import java.nio.file.Paths
-
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.deploy.SparkHadoopUtil
 
@@ -53,5 +51,8 @@ case class FilePathMap(path: String, patterns: Seq[String]) {
     map.toMap
   }
 
-  def dir(file: String) = Try {Paths.get(file).getFileName.toString}.toOption.flatMap(paths.get)
+  def pathToFile(file: String) = Try {new Path(file).getName}.toOption match {
+    case Some(f) => paths.get(f).map(dir => new Path(dir, f))
+    case None => None
+  }
 }

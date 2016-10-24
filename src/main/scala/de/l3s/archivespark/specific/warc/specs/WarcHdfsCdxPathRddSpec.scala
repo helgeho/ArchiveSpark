@@ -24,7 +24,10 @@
 
 package de.l3s.archivespark.specific.warc.specs
 
+import java.nio.file.Paths
+
 import de.l3s.archivespark.specific.warc.{CdxRecord, WarcRecord}
+import org.apache.hadoop.fs.Path
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 
@@ -33,7 +36,7 @@ class WarcHdfsCdxPathRddSpec private(cdx: RDD[(CdxRecord, String)]) extends Warc
 
   override def parse(cdxPath: (CdxRecord, String)): Option[WarcRecord] = {
     val (cdx, dir) = cdxPath
-    parse(cdx, dir)
+    parse(cdx, new Path(dir, cdx.additionalFields(1)))
   }
 }
 

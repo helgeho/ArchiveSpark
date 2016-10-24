@@ -27,7 +27,7 @@ package de.l3s.archivespark.dataspecs.access
 import java.io.InputStream
 
 import org.apache.commons.io.input.BoundedInputStream
-import org.apache.hadoop.fs.{FSDataInputStream, FileSystem}
+import org.apache.hadoop.fs.{FSDataInputStream, FileSystem, Path}
 import org.apache.spark.deploy.SparkHadoopUtil
 
 class HdfsStreamAccessor(location: HdfsLocationInfo) extends CloseableDataAccessor[InputStream] {
@@ -37,7 +37,7 @@ class HdfsStreamAccessor(location: HdfsLocationInfo) extends CloseableDataAccess
       val fs = FileSystem.newInstance(SparkHadoopUtil.get.conf)
       var stream: FSDataInputStream = null
       try {
-        stream = fs.open(location.path)
+        stream = fs.open(new Path(location.path))
         stream.seek(location.offset)
         Some(new BoundedInputStream(stream, location.length))
       } catch {
