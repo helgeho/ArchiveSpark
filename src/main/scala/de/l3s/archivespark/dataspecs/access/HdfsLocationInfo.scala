@@ -26,4 +26,4 @@ package de.l3s.archivespark.dataspecs.access
 
 import org.apache.hadoop.fs.Path
 
-case class HdfsLocationInfo(path: Path, offset: Long, length: Long)
+case class HdfsLocationInfo(path: Path, offset: Long, length: Long) extends Serializable

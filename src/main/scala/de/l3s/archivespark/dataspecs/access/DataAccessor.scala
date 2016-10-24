@@ -24,7 +24,7 @@
 
 package de.l3s.archivespark.dataspecs.access
 
-trait DataAccessor[Data] {
+trait DataAccessor[Data] extends Serializable {
   def get: Option[Data]
   def access[R >: Null](action: Data => R): R = {
     get match {
