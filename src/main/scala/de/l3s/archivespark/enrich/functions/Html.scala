@@ -30,6 +30,7 @@ import de.l3s.archivespark.specific.warc.CdxRecord
 import org.jsoup.Jsoup
 
 import scala.collection.JavaConverters._
+import scala.util.Try
 
 private object HtmlNamespace extends IdentityEnrichFunction(StringContent, "html")
 
@@ -51,7 +52,7 @@ class HtmlTag (selector: String, index: Int, fieldName: String) extends DefaultF
   override def aliases = Map("html" -> fieldName)
 
   override def derive(source: TypedEnrichable[String], derivatives: Derivatives): Unit = {
-    val url = source.root[CdxRecord].get.originalUrl
+    val url = Try {source.root[CdxRecord].get.originalUrl}.getOrElse("")
     val doc = Jsoup.parse(source.get, url)
     val elements = doc.select(selector)
     if (elements.size() > index) derivatives << elements.get(index).toString
@@ -63,7 +64,7 @@ class HtmlTags (selector: String, fieldName: String) extends DefaultFieldBoundEn
   override def aliases = Map("html" -> fieldName)
 
   override def derive(source: TypedEnrichable[String], derivatives: Derivatives): Unit = {
-    val url = source.root[CdxRecord].get.originalUrl
+    val url = Try {source.root[CdxRecord].get.originalUrl}.getOrElse("")
     val doc = Jsoup.parse(source.get, url)
     val elements = doc.select(selector)
     derivatives.setNext(MultiValueEnrichable(elements.iterator.asScala.toList.map(e => e.toString)))

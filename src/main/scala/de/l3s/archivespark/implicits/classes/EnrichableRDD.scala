@@ -85,6 +85,10 @@ class EnrichableRDD[Root <: EnrichRoot : ClassTag](rdd: RDD[Root]) {
 
   def filterNoException(): RDD[Root] = rdd.filter(r => r.lastException.isDefined)
   def lastException: Option[Exception] = Try{rdd.filter(r => r.lastException.isDefined).take(1).head.lastException.get}.toOption
+  def throwLastException(): Unit = lastException match {
+    case Some(e) => throw e
+    case _ =>
+  }
 
   def filterValue[Source : ClassTag](field: Seq[String])(filter: Option[Source] => Boolean): RDD[Root] = rdd.filter(r => filter(r.get[Source](field)))
   def filterValue[Source : ClassTag](field: String)(filter: Option[Source] => Boolean): RDD[Root] = filterValue(SelectorUtil.parse(field))(filter)

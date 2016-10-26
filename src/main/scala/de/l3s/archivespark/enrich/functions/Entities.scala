@@ -28,9 +28,9 @@ import java.util.Properties
 
 import de.l3s.archivespark.enrich._
 import de.l3s.archivespark.enrich.dataloads.ByteContentLoad
-import edu.stanford.nlp.ling.CoreAnnotations._
+import edu.stanford.nlp.ling.CoreAnnotations.{NamedEntityTagAnnotation, SentencesAnnotation, TextAnnotation, TokensAnnotation}
 import edu.stanford.nlp.pipeline.{Annotation, StanfordCoreNLP}
-//import edu.stanford.nlp.simple._
+
 import scala.collection.JavaConverters._
 
 private object EntitiesNamespace extends IdentityEnrichFunction(HtmlText, "entities")
@@ -52,10 +52,6 @@ class Entities private (properties: Properties, tagFieldMapping: Seq[(String, St
       (ne, word)
     }).groupBy{case (ne, word) => ne.toLowerCase}.mapValues(items => items.map{case (ne, word) => word}.toSet)
     for ((tag, _) <- tagFieldMapping) derivatives.setNext(MultiValueEnrichable(mentions.getOrElse(tag.toLowerCase, Set()).toSeq))
-
-//    val doc = new Document(source.get)/*
-//    val sentences = doc.sentences(properties).asScala
-//    for ((tag, _) <- tagFieldMapping) derivatives << MultiValueArchiveRecordField(sentences.flatMap(s => s.mentions(tag).asScala).toSet.toSeq)*/
   }
 }
 
@@ -71,6 +67,8 @@ object EntitiesConstants {
     setProperty("annotators", "tokenize, ssplit, pos, lemma, ner")
     setProperty("tokenize.class", "PTBTokenizer")
     setProperty("tokenize.language", "en")
+    setProperty("ner.useSUTime", "false")
+    setProperty("ner.applyNumericClassifiers", "false")
   }}
 }
 

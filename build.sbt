@@ -23,11 +23,11 @@ lazy val archivespark = (project in file(".")).
         ExclusionRule(organization = "com.google.guava")),
       "commons-io" % "commons-io" % "2.4",
       "org.json4s" %% "json4s-native" % "3.2.11" excludeAll ExclusionRule(organization = "org.scala-lang"),
-      "org.jsoup" % "jsoup" % "1.8.3",
+      "org.jsoup" % "jsoup" % "1.10.1",
       "com.google.protobuf" % "protobuf-java" % "2.6.1",
       "org.apache.httpcomponents" % "httpclient" % "4.5.1",
       "org.apache.httpcomponents" % "httpcore" % "4.4.4",
-      "edu.stanford.nlp" % "stanford-corenlp" % "3.4.1" % "provided",
+      "edu.stanford.nlp" % "stanford-corenlp" % "3.5.1" % "provided",
       "org.elasticsearch" %% "elasticsearch-spark" % "2.2.0" % "provided",
       "org.scalatest" %% "scalatest" % "2.2.6" % Test
     ),

@@ -37,7 +37,7 @@ object HtmlAttribute {
 }
 
 class HtmlAttribute private (attribute: String) extends DefaultFieldBoundEnrichFunc[EnrichRoot with ByteContentLoad, String, String](HtmlAttributeNamespace) with SingleField[String] {
-  override def fields: Seq[String] = Seq(attribute)
+  override def fields = Seq(attribute)
   override def aliases = Map("value" -> attribute)
 
   override def derive(source: TypedEnrichable[String], derivatives: Derivatives): Unit = {

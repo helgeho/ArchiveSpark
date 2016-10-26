@@ -24,6 +24,8 @@
 
 package de.l3s.archivespark
 
+import java.time.LocalDateTime
+
 import de.l3s.archivespark.enrich.EnrichRoot
 import de.l3s.archivespark.implicits.classes._
 import de.l3s.archivespark.utils.JsonConvertible
@@ -35,4 +37,8 @@ package object implicits {
   implicit class ImplicitEnrichableRDD[Root <: EnrichRoot : ClassTag](rdd: RDD[Root]) extends EnrichableRDD[Root](rdd)
   implicit class ImplicitJsonConvertibleRDD[Record <: JsonConvertible](rdd: RDD[Record]) extends JsonConvertibleRDD[Record](rdd)
   implicit class ImplicitSimplifiedGetterEnrichRoot[Root <: EnrichRoot](root: Root) extends SimplifiedGetterEnrichRoot[Root](root)
+
+  implicit class OrderedLocalDateTime(time: LocalDateTime) extends Ordered[LocalDateTime] {
+    override def compare(that: LocalDateTime): Int = time.compareTo(that)
+  }
 }
