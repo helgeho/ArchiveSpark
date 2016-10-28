@@ -46,7 +46,7 @@ class EnrichableRDD[Root <: EnrichRoot : ClassTag](rdd: RDD[Root]) {
   def group(fields: (String, Root => Any)*) = {
     val keyRecordPairs = rdd.mapPartitions { records =>
       records.map{r =>
-        val meta = fields.toMap.mapValues(f => f(r))
+        val meta = fields.map{case (k, f) => (k, f(r))}.toMap
         (meta, r)
       }
     }

@@ -22,22 +22,8 @@
  * SOFTWARE.
  */
 
-package de.l3s.archivespark.utils
+package de.l3s.archivespark.specific.warc
 
-import org.apache.spark.rdd.RDD
-
-import scala.collection.immutable
-
-object ZeppelinHelpers {
-  def table(rdd: RDD[Seq[Any]], cols: String*): String = {
-    val table = rdd.map(seq => seq.map(_.toString).mkString("\t")).collect.mkString("\n")
-    "%table " + cols.mkString("\t") + "\n" + table
-  }
-
-  def table(values: collection.Map[_, _], keyCol: String, valCol: String): String = {
-    val table = values.toSeq.map{case (k, v) => s"$k\t$v"}.mkString("\n")
-    s"%table $keyCol\t$valCol\n$table"
-  }
-
-  def table(values: immutable.Map[_, _], keyCol: String, valCol: String): String = table(values.toMap, keyCol, valCol)
+object WarcHelpers {
+  def surtHost(surtUrl: String) = surtUrl.splitAt(surtUrl.indexOf(')'))._1
 }
