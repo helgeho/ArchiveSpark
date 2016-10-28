@@ -27,7 +27,7 @@ package de.l3s.archivespark.utils
 import org.apache.spark.rdd.RDD
 
 object ZeppelinHelpers {
-  def table(rdd: RDD[Seq[Any]], cols: String*) = {
+  def table(rdd: RDD[Seq[Any]], cols: String*): String = {
     val table = rdd.map(seq => seq.map(_.toString).mkString("\t")).collect.mkString("\n")
     "%table " + cols.mkString("\t") + "\n" + table
   }
