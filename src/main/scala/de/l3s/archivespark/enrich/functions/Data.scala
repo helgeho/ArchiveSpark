@@ -27,8 +27,10 @@ package de.l3s.archivespark.enrich.functions
 import de.l3s.archivespark.dataspecs.DataEnrichRoot
 import de.l3s.archivespark.enrich._
 
-class Data[T] private (field: String) extends RootEnrichFunc[DataEnrichRoot[_, _]] with SingleField[T] {
+class Data[T] private (field: String, alias: Option[String] = None) extends RootEnrichFunc[DataEnrichRoot[_, _]] with SingleField[T] {
   override def fields: Seq[String] = Seq(field)
+
+  override def aliases: Map[String, String] = alias.map(_ -> field).toMap
 
   override def deriveRoot(source: DataEnrichRoot[_, _], derivatives: Derivatives): Unit = {
     source.access { data =>
@@ -37,6 +39,7 @@ class Data[T] private (field: String) extends RootEnrichFunc[DataEnrichRoot[_, _
   }
 }
 
-object Data extends Data[Any]("data") {
-  def apply[T](field: String) = new Data(field)
+object Data extends Data[Any]("data", None) {
+  def apply[T](field: String): Data[T] = new Data[T](field)
+  def apply[T](field: String, alias: String): Data[T] = new Data[T](field, Some(alias))
 }

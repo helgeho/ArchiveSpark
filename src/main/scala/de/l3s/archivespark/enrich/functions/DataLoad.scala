@@ -27,7 +27,7 @@ package de.l3s.archivespark.enrich.functions
 import de.l3s.archivespark.enrich._
 import de.l3s.archivespark.enrich.dataloads.DataLoadBase
 
-class DataLoad[LoadType <: EnrichRoot with DataLoadBase] private(field: String) extends RootEnrichFunc[LoadType] with SingleField[Nothing] {
+class DataLoad[LoadType <: EnrichRoot with DataLoadBase] private(field: String) extends RootEnrichFunc[LoadType] {
   override def fields: Seq[String] = Seq(field)
 
   override def deriveRoot(source: LoadType, derivatives: Derivatives): Unit = {

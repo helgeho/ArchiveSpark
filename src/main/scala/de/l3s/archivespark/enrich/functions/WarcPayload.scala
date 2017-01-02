@@ -25,6 +25,7 @@
 package de.l3s.archivespark.enrich.functions
 
 import de.l3s.archivespark.enrich._
+import de.l3s.archivespark.enrich.dataloads.ByteContentLoad
 import de.l3s.archivespark.specific.warc.WarcRecord
 
 class WarcPayload private(http: Boolean = true) extends RootEnrichFunc[WarcRecord] with DefaultField[Array[Byte]] {
@@ -34,7 +35,7 @@ class WarcPayload private(http: Boolean = true) extends RootEnrichFunc[WarcRecor
 
   def defaultField = PayloadField
 
-  override def aliases = Map("content" -> PayloadField)
+  override def aliases = Map(ByteContentLoad.Field -> PayloadField)
 
   override def deriveRoot(source: WarcRecord, derivatives: Derivatives): Unit = {
     source.access { record =>

@@ -57,28 +57,16 @@ class EnrichableRDD[Root <: EnrichRoot : ClassTag](rdd: RDD[Root]) {
   def mapEnrich[Source, Target](sourceField: String, target: String)(f: Source => Target): RDD[Root] = mapEnrich(SelectorUtil.parse(sourceField), target, target)(f)
   def mapEnrich[Source, Target](sourceField: String, target: String, alias: String)(f: Source => Target): RDD[Root] = mapEnrich(SelectorUtil.parse(sourceField), target, alias)(f)
   def mapEnrich[Source, Target](sourceField: Seq[String], target: String)(f: Source => Target): RDD[Root] = mapEnrich(sourceField, target, target)(f)
-  def mapEnrich[Source, Target](sourceField: Seq[String], target: String, alias: String)(f: Source => Target): RDD[Root] = {
-    val enrichFunc = new EnrichFunc[Root, Source] {
-      override def source: Seq[String] = sourceField
-      override def fields: Seq[String] = Seq(target)
-      override def aliases = Map(alias -> target)
-      override def derive(source: TypedEnrichable[Source], derivatives: Derivatives): Unit = derivatives << f(source.get)
-    }
-    rdd.map(r => enrichFunc.enrich(r))
-  }
+  def mapEnrich[Source, Target](sourceField: Seq[String], target: String, alias: String)(f: Source => Target): RDD[Root] = rdd.enrich(new EnrichFunc[Root, Source] {
+    override def source: Seq[String] = sourceField
+    override def fields: Seq[String] = Seq(target)
+    override def aliases = Map(alias -> target)
+    override def derive(source: TypedEnrichable[Source], derivatives: Derivatives): Unit = derivatives << f(source.get)
+  })
 
-  def mapEnrich[SpecificRoot >: Root <: EnrichRoot, Source, Target](dependencyFunc: EnrichFunc[SpecificRoot, _] with DefaultField[Source], target: String)(f: Source => Target): RDD[Root] = mapEnrich(dependencyFunc, dependencyFunc.defaultField, target, target)(f)
-  def mapEnrich[SpecificRoot >: Root <: EnrichRoot, Source, Target](dependencyFunc: EnrichFunc[SpecificRoot, _], sourceField: String, target: String)(f: Source => Target): RDD[Root] = mapEnrich(dependencyFunc, sourceField, target, target)(f)
-  def mapEnrich[SpecificRoot >: Root <: EnrichRoot, Source, Target](dependencyFunc: EnrichFunc[SpecificRoot, _], sourceField: String, target: String, alias: String)(f: Source => Target): RDD[Root] = {
-    val enrichFunc = new DependentEnrichFunc[SpecificRoot, Source] {
-      override def dependency: EnrichFunc[SpecificRoot, _] = dependencyFunc
-      override def dependencyField: String = sourceField
-      override def fields: Seq[String] = Seq(target)
-      override def aliases = Map(alias -> target)
-      override def derive(source: TypedEnrichable[Source], derivatives: Derivatives): Unit = derivatives << f(source.get)
-    }
-    rdd.map(r => enrichFunc.enrich(r).asInstanceOf[Root])
-  }
+  def mapEnrich[SpecificRoot >: Root <: EnrichRoot : ClassTag, Source, Target](dependencyFunc: EnrichFunc[SpecificRoot, _] with DefaultField[Source], target: String)(f: Source => Target): RDD[Root] = mapEnrich(dependencyFunc, dependencyFunc.defaultField, target, target)(f)
+  def mapEnrich[SpecificRoot >: Root <: EnrichRoot : ClassTag, Source, Target](dependencyFunc: EnrichFunc[SpecificRoot, _], sourceField: String, target: String)(f: Source => Target): RDD[Root] = mapEnrich(dependencyFunc, sourceField, target, target)(f)
+  def mapEnrich[SpecificRoot >: Root <: EnrichRoot : ClassTag, Source, Target](dependencyFunc: EnrichFunc[SpecificRoot, _], sourceField: String, target: String, alias: String)(f: Source => Target): RDD[Root] = rdd.enrich(dependencyFunc.map(sourceField, target, alias)(f))
 
   def filterExists(path: String): RDD[Root] = rdd.filter(r => r(path).isDefined)
   def filterExists[SpecificRoot >: Root <: EnrichRoot](f: EnrichFunc[SpecificRoot, _]): RDD[Root] = rdd.filter(r => f.isEnriched(r))

@@ -49,15 +49,21 @@ trait DefaultFieldDependentEnrichFunc[Root <: EnrichRoot, Source, DefaultFieldTy
   override def on[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _], field: String, index: Int): EnrichFunc[DependencyRoot, Source] with DefaultField[DefaultFieldType] = on(dependency, field + s"[$index]")
   override def onEach[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _], field: String): EnrichFunc[DependencyRoot, Source] with DefaultField[DefaultFieldType] = on(dependency, field + "*")
 
-  override def on[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _] with DefaultField[Source]): EnrichFunc[DependencyRoot, Source] with DefaultField[DefaultFieldType] = on(dependency, dependency.defaultField)
-  override def on[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _] with DefaultField[Source], index: Int): EnrichFunc[DependencyRoot, Source] with DefaultField[DefaultFieldType] = on(dependency, dependency.defaultField, index)
-  override def onEach[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _] with DefaultField[Seq[Source]]): EnrichFunc[DependencyRoot, Source] with DefaultField[DefaultFieldType] = onEach(dependency, dependency.defaultField)
+  override def on[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _]): EnrichFunc[DependencyRoot, Source] with DefaultField[DefaultFieldType] = {
+    on(dependency, if (dependency.hasField(dependencyField)) dependencyField else dependency.asInstanceOf[DefaultField[Source]].defaultField)
+  }
+  override def on[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _], index: Int): EnrichFunc[DependencyRoot, Source] with DefaultField[DefaultFieldType] = {
+    on(dependency, if (dependency.hasField(dependencyField)) dependencyField else dependency.asInstanceOf[DefaultField[Source]].defaultField, index)
+  }
+  override def onEach[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _]): EnrichFunc[DependencyRoot, Source] with DefaultField[DefaultFieldType] = {
+    onEach(dependency, if (dependency.hasField(dependencyField)) dependencyField else dependency.asInstanceOf[DefaultField[Source]].defaultField)
+  }
 
   override def of[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _], field: String): EnrichFunc[DependencyRoot, Source] with DefaultField[DefaultFieldType] = on(dependency, field)
   override def of[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _], field: String, index: Int): EnrichFunc[DependencyRoot, Source] with DefaultField[DefaultFieldType] = on(dependency, field, index)
   override def ofEach[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _], field: String): EnrichFunc[DependencyRoot, Source] with DefaultField[DefaultFieldType] = onEach(dependency, field)
 
-  override def of[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _] with DefaultField[Source]): EnrichFunc[DependencyRoot, Source] with DefaultField[DefaultFieldType] = on(dependency)
-  override def of[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _] with DefaultField[Source], index: Int): EnrichFunc[DependencyRoot, Source] with DefaultField[DefaultFieldType] = on(dependency, index)
-  override def ofEach[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _] with DefaultField[Seq[Source]]): EnrichFunc[DependencyRoot, Source] with DefaultField[DefaultFieldType] = onEach(dependency)
+  override def of[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _]): EnrichFunc[DependencyRoot, Source] with DefaultField[DefaultFieldType] = on(dependency)
+  override def of[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _], index: Int): EnrichFunc[DependencyRoot, Source] with DefaultField[DefaultFieldType] = on(dependency, index)
+  override def ofEach[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _]): EnrichFunc[DependencyRoot, Source] with DefaultField[DefaultFieldType] = onEach(dependency)
 }

@@ -27,6 +27,8 @@ package de.l3s.archivespark.enrich
 import de.l3s.archivespark.utils.SelectorUtil
 import org.apache.spark.rdd.RDD
 
+import scala.util.Try
+
 trait EnrichFunc[Root <: EnrichRoot, Source] extends Serializable {
   def source: Seq[String]
   def fields: Seq[String]
@@ -39,7 +41,7 @@ trait EnrichFunc[Root <: EnrichRoot, Source] extends Serializable {
 
   protected[enrich] def derive(source: TypedEnrichable[Source], derivatives: Derivatives): Unit
 
-  def aliases: Map[String, String] = Map()
+  def aliases: Map[String, String] = Map.empty
 
   def isEnriched(root: Root): Boolean = root(source) match {
     case Some(source) => exists(source)
@@ -50,4 +52,19 @@ trait EnrichFunc[Root <: EnrichRoot, Source] extends Serializable {
 
   def prepareGlobal(rdd: RDD[Root]): RDD[Any] = rdd.asInstanceOf[RDD[Any]]
   def prepareLocal(record: Any) = record.asInstanceOf[Root]
+
+  def hasField(name: String) = (aliases.keySet ++ fields).contains(name)
+
+  def map[SourceField, Target](target: String)(f: SourceField => Target): DependentEnrichFunc[Root, SourceField] with SingleField[Target] = map[SourceField, Target](Try {this.asInstanceOf[DefaultField[SourceField]].defaultField}.getOrElse(fields.head), target, target)(f)
+  def map[SourceField, Target](sourceField: String, target: String)(f: SourceField => Target): DependentEnrichFunc[Root, SourceField] with SingleField[Target] = map[SourceField, Target](sourceField, target, target)(f)
+  def map[SourceField, Target](sourceField: String, target: String, alias: String)(f: SourceField => Target): DependentEnrichFunc[Root, SourceField] with SingleField[Target] = {
+    val dependencyFunction = this
+    new DependentEnrichFunc[Root, SourceField] with SingleField[Target] {
+      override def dependency = dependencyFunction
+      override def dependencyField = sourceField
+      override def resultField = target
+      override def aliases = Map(alias -> target)
+      override def derive(source: TypedEnrichable[SourceField], derivatives: Derivatives): Unit = derivatives << f(source.get)
+    }
+  }
 }

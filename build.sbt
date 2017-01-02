@@ -4,7 +4,7 @@ import sbt.Keys._
 lazy val commonSettings = Seq(
   name := "archivespark",
   organization := "de.l3s",
-  version := "2.1.0",
+  version := "2.1.1",
   scalaVersion := "2.11.7",
   fork := true
 )
