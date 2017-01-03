@@ -56,7 +56,7 @@ trait DefaultFieldDependentEnrichFunc[Root <: EnrichRoot, Source, DefaultFieldTy
     on(dependency, if (dependency.hasField(dependencyField)) dependencyField else dependency.asInstanceOf[DefaultField[Source]].defaultField, index)
   }
   override def onEach[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _]): EnrichFunc[DependencyRoot, Source] with DefaultField[DefaultFieldType] = {
-    onEach(dependency, if (dependency.hasField(dependencyField)) dependencyField else dependency.asInstanceOf[DefaultField[Source]].defaultField)
+    onEach(dependency, if (dependency.hasField(dependencyField)) dependencyField else dependency.asInstanceOf[DefaultField[Seq[Source]]].defaultField)
   }
 
   override def of[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _], field: String): EnrichFunc[DependencyRoot, Source] with DefaultField[DefaultFieldType] = on(dependency, field)
