@@ -34,7 +34,7 @@ import org.apache.spark.rdd.RDD
 import scala.io.Source
 
 class WaybackSpec private (url: String, matchPrefix: Boolean, from: Long, to: Long, blocksPerPage: Int, pages: Int, maxPartitions: Int) extends DataSpec[String, WaybackRecord] {
-  val CdxServerUrl = "http://web.archive.org/cdx/search/cdx?url=$url&matchType=$prefix&pageSize=$blocks&page=$page"
+  val CdxServerUrl = "http://master03.ib:8111/cdxserver.txt" //"http://web.archive.org/cdx/search/cdx?url=$url&matchType=$prefix&pageSize=$blocks&page=$page"
 
   private def cdxServerUrl(page: Int): String = {
     var uri = CdxServerUrl.replace("$url", URLEncoder.encode(url, "UTF-8"))

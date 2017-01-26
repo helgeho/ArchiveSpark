@@ -30,7 +30,7 @@ import de.l3s.archivespark.dataspecs.DataEnrichRoot
 import de.l3s.archivespark.dataspecs.access.DataAccessor
 import de.l3s.archivespark.enrich.RootEnrichFunc
 import de.l3s.archivespark.enrich.dataloads.ByteContentLoad
-import de.l3s.archivespark.enrich.functions.WarcPayload
+import de.l3s.archivespark.specific.warc.enrichfunctions.WarcPayload
 
 class WarcRecord(cdx: CdxRecord, filename: String, data: DataAccessor[InputStream]) extends DataEnrichRoot[CdxRecord, RawArchiveRecord](cdx) with ByteContentLoad {
   override def access[R >: Null](action: RawArchiveRecord => R): R = {

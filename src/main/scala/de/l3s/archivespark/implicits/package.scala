@@ -34,6 +34,7 @@ import org.apache.spark.rdd.RDD
 import scala.reflect.ClassTag
 
 package object implicits {
+  implicit class ImplicitGenericHelpersRDD[A](rdd: RDD[A]) extends GenericHelpersRDD[A](rdd)
   implicit class ImplicitEnrichableRDD[Root <: EnrichRoot : ClassTag](rdd: RDD[Root]) extends EnrichableRDD[Root](rdd)
   implicit class ImplicitJsonConvertibleRDD[Record <: JsonConvertible](rdd: RDD[Record]) extends JsonConvertibleRDD[Record](rdd)
   implicit class ImplicitSimplifiedGetterEnrichRoot[Root <: EnrichRoot](root: Root) extends SimplifiedGetterEnrichRoot[Root](root)

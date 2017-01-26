@@ -35,3 +35,9 @@ class PipedEnrichFuncWithDefaultField[Source, T] private[enrich] (parent: Enrich
 
   override def defaultField: String = parent.defaultField
 }
+
+class MultiPipedEnrichFuncWithDefaultField[Source, T] private[enrich] (parent: EnrichFunc[_, Source] with DefaultField[T], override val source: Seq[String])
+  extends PipedEnrichFunc[Source](parent, source) with EnrichFunc[EnrichRoot, Source] with DefaultField[Seq[T]] {
+
+  override def defaultField: String = parent.defaultField
+}

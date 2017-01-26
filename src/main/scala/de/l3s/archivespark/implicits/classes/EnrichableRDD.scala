@@ -128,8 +128,8 @@ class EnrichableRDD[Root <: EnrichRoot : ClassTag](rdd: RDD[Root]) {
   def mapValues[T : ClassTag](path: String): RDD[T] = rdd.map(r => r.get[T](path)).filter(_.isDefined).map(_.get)
   def mapValues[SpecificRoot >: Root <: EnrichRoot : ClassTag, T : ClassTag](f: EnrichFunc[SpecificRoot, _] with DefaultField[T]): RDD[T] = rdd.enrich(f).flatMap(_.value[SpecificRoot, T](f))
   def mapValues[SpecificRoot >: Root <: EnrichRoot : ClassTag, T : ClassTag](f: EnrichFunc[SpecificRoot, _], field: String): RDD[T] = rdd.enrich(f).flatMap(_.value[SpecificRoot, T](f, field))
-  def mapMultiValues[SpecificRoot >: Root <: EnrichRoot : ClassTag, T : ClassTag](f: EnrichFunc[SpecificRoot, _] with DefaultField[T]): RDD[Seq[T]] = rdd.enrich(f).flatMap(_.values[SpecificRoot, T](f))
-  def mapMultiValues[SpecificRoot >: Root <: EnrichRoot : ClassTag, T : ClassTag](f: EnrichFunc[SpecificRoot, _], field: String): RDD[Seq[T]] = rdd.enrich(f).flatMap(_.values[SpecificRoot, T](f, field))
-  def flatMultiValues[SpecificRoot >: Root <: EnrichRoot : ClassTag, T : ClassTag](f: EnrichFunc[SpecificRoot, _] with DefaultField[T]): RDD[T] = mapMultiValues[SpecificRoot, T](f).flatMap(r => r)
-  def flatMultiValues[SpecificRoot >: Root <: EnrichRoot : ClassTag, T : ClassTag](f: EnrichFunc[SpecificRoot, _], field: String): RDD[T] = mapMultiValues[SpecificRoot, T](f, field).flatMap(r => r)
+
+  def flatMapValues[T : ClassTag](path: String): RDD[T] = mapValues[TraversableOnce[T]](path).flatMap(r => r)
+  def flatMapValues[SpecificRoot >: Root <: EnrichRoot : ClassTag, T : ClassTag](f: EnrichFunc[SpecificRoot, _] with DefaultField[TraversableOnce[T]]): RDD[T] = mapValues[SpecificRoot, TraversableOnce[T]](f).flatMap(r => r)
+  def flatMapValues[SpecificRoot >: Root <: EnrichRoot : ClassTag, T : ClassTag](f: EnrichFunc[SpecificRoot, _], field: String): RDD[T] = mapValues[SpecificRoot, TraversableOnce[T]](f, field).flatMap(r => r)
 }

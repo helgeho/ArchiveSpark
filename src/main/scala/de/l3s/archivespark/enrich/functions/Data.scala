@@ -27,7 +27,7 @@ package de.l3s.archivespark.enrich.functions
 import de.l3s.archivespark.dataspecs.DataEnrichRoot
 import de.l3s.archivespark.enrich._
 
-class Data[T] private (field: String, alias: Option[String] = None) extends RootEnrichFunc[DataEnrichRoot[_, _]] with SingleField[T] {
+class Data[T] (field: String, alias: Option[String] = None) extends RootEnrichFunc[DataEnrichRoot[_, _]] with SingleField[T] {
   override def fields: Seq[String] = Seq(field)
 
   override def aliases: Map[String, String] = alias.map(_ -> field).toMap

@@ -28,6 +28,7 @@ import de.l3s.archivespark.utils.JsonConvertible
 import org.apache.hadoop.io.compress.GzipCodec
 import org.apache.spark.rdd.RDD
 import org.elasticsearch.spark.rdd.EsSpark
+import de.l3s.archivespark.implicits._
 
 class JsonConvertibleRDD[Record <: JsonConvertible](rdd: RDD[Record]) {
   def toJson = rdd.map(r => r.toJson)
@@ -39,5 +40,5 @@ class JsonConvertibleRDD[Record <: JsonConvertible](rdd: RDD[Record]) {
 
   def saveToEs(resource: String) = EsSpark.saveJsonToEs(rdd.map(r => r.toJsonString(pretty = false)), resource)
 
-  def peekJson = rdd.take(1).head.toJsonString
+  def peekJson = rdd.peek.toJsonString
 }

@@ -68,22 +68,31 @@ trait EnrichFunc[Root <: EnrichRoot, Source] extends Serializable {
     }
   }
 
-  def mapEach[SourceField, Target](target: String)(f: SourceField => Target): DependentEnrichFunc[Root, SourceField] with SingleField[Target] = mapEach[SourceField, Target](Try {this.asInstanceOf[DefaultField[Seq[SourceField]]].defaultField}.getOrElse(fields.head), target, target)(f)
-  def mapEach[SourceField, Target](sourceField: String, target: String)(f: SourceField => Target): DependentEnrichFunc[Root, SourceField] with SingleField[Target] = mapEach[SourceField, Target](sourceField, target, target)(f)
-  def mapEach[SourceField, Target](sourceField: String, target: String, alias: String)(f: SourceField => Target): DependentEnrichFunc[Root, SourceField] with SingleField[Target] = map(sourceField + "*", target, alias)(f)
-
-  def flatMap[SourceField, Target](target: String)(f: Iterable[SourceField] => Iterable[SourceField]): DependentEnrichFunc[Root, Seq[SourceField]] with SingleField[Seq[Target]] = flatMap[SourceField, Target](Try {this.asInstanceOf[DefaultField[SourceField]].defaultField}.getOrElse(fields.head), target, target)(f)
-  def flatMap[SourceField, Target](sourceField: String, target: String)(f: Iterable[SourceField] => Iterable[SourceField]): DependentEnrichFunc[Root, Seq[SourceField]] with SingleField[Seq[Target]] = flatMap[SourceField, Target](sourceField, target, target)(f)
-  def flatMap[SourceField, Target](sourceField: String, target: String, alias: String)(f: Iterable[SourceField] => Iterable[SourceField]): DependentEnrichFunc[Root, Seq[SourceField]] with SingleField[Seq[Target]] = {
+  def mapEach[SourceField, Target](target: String)(f: SourceField => Target): DependentEnrichFunc[Root, SourceField] with SingleField[Seq[Target]] = mapEach[SourceField, Target](Try {this.asInstanceOf[DefaultField[Seq[SourceField]]].defaultField}.getOrElse(fields.head), target, target)(f)
+  def mapEach[SourceField, Target](sourceField: String, target: String)(f: SourceField => Target): DependentEnrichFunc[Root, SourceField] with SingleField[Seq[Target]] = mapEach[SourceField, Target](sourceField, target, target)(f)
+  def mapEach[SourceField, Target](sourceField: String, target: String, alias: String)(f: SourceField => Target): DependentEnrichFunc[Root, SourceField] with SingleField[Seq[Target]] = {
     val dependencyFunction = this
-    new DependentEnrichFunc[Root, Seq[SourceField]] with SingleField[Target] {
+    new DependentEnrichFunc[Root, SourceField] with SingleField[Seq[Target]] {
+      override def dependency = dependencyFunction
+      override def dependencyField = sourceField + "*"
+      override def resultField = target
+      override def aliases = Map(alias -> target)
+      override def derive(source: TypedEnrichable[SourceField], derivatives: Derivatives): Unit = derivatives << f(source.get)
+    }
+  }
+
+  def flatMap[SourceField, Target](target: String)(f: Iterable[SourceField] => Iterable[Target]): DependentEnrichFunc[Root, Seq[SourceField]] with SingleField[Seq[Target]] = flatMap[SourceField, Target](Try {this.asInstanceOf[DefaultField[Seq[SourceField]]].defaultField}.getOrElse(fields.head), target, target)(f)
+  def flatMap[SourceField, Target](sourceField: String, target: String)(f: Iterable[SourceField] => Iterable[Target]): DependentEnrichFunc[Root, Seq[SourceField]] with SingleField[Seq[Target]] = flatMap[SourceField, Target](sourceField, target, target)(f)
+  def flatMap[SourceField, Target](sourceField: String, target: String, alias: String)(f: Iterable[SourceField] => Iterable[Target]): DependentEnrichFunc[Root, Seq[SourceField]] with SingleField[Seq[Target]] = {
+    val dependencyFunction = this
+    new DependentEnrichFunc[Root, Seq[SourceField]] with SingleField[Seq[Target]] {
       override def dependency = dependencyFunction
       override def dependencyField = sourceField
       override def resultField = target
       override def aliases = Map(alias -> target)
       override def derive(source: TypedEnrichable[Seq[SourceField]], derivatives: Derivatives): Unit = {
         val mapped = f(source.get)
-        derivatives.setNext(MultiValueEnrichable[SourceField](mapped.toSeq))
+        derivatives.setNext(MultiValueEnrichable(mapped.toSeq))
       }
     }
   }

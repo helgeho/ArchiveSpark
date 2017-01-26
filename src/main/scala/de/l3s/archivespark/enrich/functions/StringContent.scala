@@ -27,6 +27,7 @@ package de.l3s.archivespark.enrich.functions
 import de.l3s.archivespark.enrich._
 import de.l3s.archivespark.enrich.dataloads.ByteContentLoad
 import de.l3s.archivespark.http.HttpHeader
+import de.l3s.archivespark.specific.warc.enrichfunctions.HttpPayload
 import org.apache.http.entity.ByteArrayEntity
 import org.apache.http.util.EntityUtils
 

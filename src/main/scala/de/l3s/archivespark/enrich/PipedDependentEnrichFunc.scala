@@ -23,7 +23,6 @@
  */
 
 package de.l3s.archivespark.enrich
-import org.apache.spark.rdd.RDD
 
 class PipedDependentEnrichFunc[Root <: EnrichRoot, Source] private[enrich] (parent: EnrichFunc[_, Source], override val dependency: EnrichFunc[Root, _], override val dependencyField: String)
   extends DependentEnrichFunc[Root, Source] {
@@ -35,6 +34,12 @@ class PipedDependentEnrichFunc[Root <: EnrichRoot, Source] private[enrich] (pare
 
 class PipedDependentEnrichFuncWithDefaultField[Root <: EnrichRoot, Source, T] private[enrich] (parent: EnrichFunc[_, Source] with DefaultField[T], override val dependency: EnrichFunc[Root, _], override val dependencyField: String)
   extends PipedDependentEnrichFunc[Root, Source](parent, dependency, dependencyField) with DefaultFieldDependentEnrichFunc[Root, Source, T] {
+
+  override def defaultField: String = parent.defaultField
+}
+
+class MultiPipedDependentEnrichFuncWithDefaultField[Root <: EnrichRoot, Source, T] private[enrich] (parent: EnrichFunc[_, Source] with DefaultField[T], override val dependency: EnrichFunc[Root, _], override val dependencyField: String)
+  extends PipedDependentEnrichFunc[Root, Source](parent, dependency, dependencyField) with DefaultFieldDependentEnrichFunc[Root, Source, Seq[T]] {
 
   override def defaultField: String = parent.defaultField
 }

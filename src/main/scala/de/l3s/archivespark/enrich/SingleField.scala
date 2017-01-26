@@ -24,7 +24,7 @@
 
 package de.l3s.archivespark.enrich
 
-trait SingleField[FieldValue] extends DefaultField[FieldValue] { this: EnrichFunc[_, _] =>
+trait SingleField[+FieldValue] extends DefaultField[FieldValue] { this: EnrichFunc[_, _] =>
   def pathToResultField: Seq[String] = pathTo(resultField)
   def resultField: String = defaultField
   def defaultField: String = this.fields.head

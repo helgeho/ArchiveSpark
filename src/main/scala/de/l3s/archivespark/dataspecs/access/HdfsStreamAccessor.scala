@@ -41,7 +41,10 @@ class HdfsStreamAccessor(location: HdfsLocationInfo) extends CloseableDataAccess
         stream.seek(location.offset)
         Some(new BoundedInputStream(stream, location.length))
       } catch {
-        case e: Exception => None
+        case e: Exception =>
+          e.printStackTrace()
+          if (stream != null) stream.close()
+          None
       }
     }
   }
