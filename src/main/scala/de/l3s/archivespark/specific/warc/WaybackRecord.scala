@@ -31,7 +31,7 @@ import de.l3s.archivespark.http.{HttpClient, HttpRecord}
 import de.l3s.archivespark.specific.warc.enrichfunctions.HttpPayload
 
 class WaybackRecord(cdx: CdxRecord) extends DataEnrichRoot[CdxRecord, HttpRecord](cdx) with ByteContentLoad {
-  val WaybackUrl = "http://master03.ib:8111/northwestmedicin5519nort_djvu.txt" //"http://web.archive.org/web/$timestampid_/$url"
+  val WaybackUrl = "http://web.archive.org/web/$timestampid_/$url"
 
   def waybackUrl(timestamp: String, url: String) = {
     WaybackUrl.replace("$timestamp", timestamp).replace("$url", url)
