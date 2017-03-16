@@ -45,11 +45,11 @@ object HttpClient {
     "Accept" -> "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
   )
 
-  lazy val client = {
+  @transient lazy val client = {
     val sslContext = SSLContexts.custom().loadTrustMaterial(null, new TrustStrategy() {
       def isTrusted(chain: Array[X509Certificate], authType: String): Boolean = true
     }).build()
-    HttpClientBuilder.create().setSSLSocketFactory(new SSLConnectionSocketFactory(sslContext)).build()
+    HttpClientBuilder.create().useSystemProperties().setSSLSocketFactory(new SSLConnectionSocketFactory(sslContext)).build()
   }
 
   def get(url: String, headers: Map[String, String] = defaultHeaders): Option[HttpRecord] = {
@@ -72,13 +72,13 @@ object HttpClient {
       val headers = response.getAllHeaders.map(header => header.getName -> header.getValue).toMap
 
       val responseBytes = new ByteArrayOutputStream()
-      val entity = headers.get("X-Archive-Orig-content-encoding") match {
-        case Some("gzip") => new GzipDecompressingEntity(response.getEntity)
-        case Some("deflate") => new DeflateDecompressingEntity(response.getEntity)
-        case _ => response.getEntity
-      }
+      val entity = response.getEntity
       entityStream = entity.getContent
-      IOUtils.copy(entityStream, responseBytes)
+      try {
+        IOUtils.copy(entityStream, responseBytes)
+      } catch {
+        case e: Exception => e.printStackTrace()
+      }
 
       Some(HttpResponse(finalUri, response.getStatusLine.toString.trim, headers, responseBytes.toByteArray))
     } finally {

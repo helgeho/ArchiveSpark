@@ -27,6 +27,6 @@ package de.l3s.archivespark.implicits.classes
 import org.apache.spark.rdd.RDD
 
 class GenericHelpersRDD[A](rdd: RDD[A]) {
-  def peek: A = rdd.take(1).head
+  def peek: A = rdd.first
   def peek(index: Int) = rdd.take(index + 1).drop(index).head
 }

@@ -32,7 +32,7 @@ import org.apache.http.entity.ByteArrayEntity
 import org.apache.http.util.EntityUtils
 
 object StringContent extends DefaultFieldDependentEnrichFunc[EnrichRoot with ByteContentLoad, Array[Byte], String] with SingleField[String] {
-  val DefaultChartset = "UTF-8"
+  val DefaultCharset = "UTF-8"
 
   override def dependency = DataLoad(ByteContentLoad.Field)
   override def dependencyField = ByteContentLoad.Field
@@ -42,8 +42,8 @@ object StringContent extends DefaultFieldDependentEnrichFunc[EnrichRoot with Byt
 
   override def derive(source: TypedEnrichable[Array[Byte]], derivatives: Derivatives): Unit = {
     val charset = source.parent.get[Map[String, String]](HttpPayload.HeaderField) match {
-      case Some(headers) => HttpHeader(headers).charset.getOrElse(DefaultChartset)
-      case None => DefaultChartset
+      case Some(headers) => HttpHeader(headers).charset.getOrElse(DefaultCharset)
+      case None => DefaultCharset
     }
     val entity = new ByteArrayEntity(source.get)
     derivatives << EntityUtils.toString(entity, charset).trim

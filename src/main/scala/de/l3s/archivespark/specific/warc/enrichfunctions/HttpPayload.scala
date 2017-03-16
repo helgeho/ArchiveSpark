@@ -24,10 +24,11 @@
 
 package de.l3s.archivespark.specific.warc.enrichfunctions
 
+import de.l3s.archivespark.dataspecs.DataEnrichRoot
 import de.l3s.archivespark.enrich.{DefaultField, Derivatives, RootEnrichFunc}
-import de.l3s.archivespark.specific.warc.WaybackRecord
+import de.l3s.archivespark.http.HttpRecord
 
-object HttpPayload extends RootEnrichFunc[WaybackRecord] with DefaultField[Array[Byte]] {
+object HttpPayload extends RootEnrichFunc[DataEnrichRoot[_, HttpRecord]] with DefaultField[Array[Byte]] {
   val StatusLineField = "httpStatusLine"
   val HeaderField = "httpHeader"
   val PayloadField = "payload"
@@ -38,7 +39,7 @@ object HttpPayload extends RootEnrichFunc[WaybackRecord] with DefaultField[Array
 
   override def aliases = Map("content" -> PayloadField)
 
-  override def deriveRoot(source: WaybackRecord, derivatives: Derivatives): Unit = {
+  override def deriveRoot(source: DataEnrichRoot[_, HttpRecord], derivatives: Derivatives): Unit = {
     source.access { record =>
       derivatives << record.statusLine
       derivatives << record.header.headers

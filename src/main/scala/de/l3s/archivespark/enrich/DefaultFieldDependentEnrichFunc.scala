@@ -48,7 +48,7 @@ trait DefaultFieldDependentEnrichFunc[Root <: EnrichRoot, Source, DefaultFieldTy
   override def ofEach(source: Seq[String]): EnrichFunc[_, Source] with DefaultField[Seq[DefaultFieldType]] = onEach(source)
 
   override def on[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _], field: String): EnrichFunc[DependencyRoot, Source] with DefaultField[DefaultFieldType] = new PipedDependentEnrichFuncWithDefaultField[DependencyRoot, Source, DefaultFieldType](this, dependency, field)
-  override def onEach[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _], field: String): EnrichFunc[DependencyRoot, Source] with DefaultField[Seq[DefaultFieldType]] = new MultiPipedDependentEnrichFuncWithDefaultField[DependencyRoot, Source, DefaultFieldType](this, dependency, field)
+  override def onEach[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _], field: String): EnrichFunc[DependencyRoot, Source] with DefaultField[Seq[DefaultFieldType]] = new MultiPipedDependentEnrichFuncWithDefaultField[DependencyRoot, Source, DefaultFieldType](this, dependency, field + "*")
 
   override def on[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _], field: String, index: Int): EnrichFunc[DependencyRoot, Source] with DefaultField[DefaultFieldType] = on(dependency, field + s"[$index]")
 
