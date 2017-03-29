@@ -41,7 +41,7 @@ object SURT {
   }
 
   def toUrl(surt: String): String = {
-    if (surt.matches("^[a-z]+\\:")) return surt
+    if (surt.matches("^[a-z]+\\:.*")) return surt
     val (host, path) = surt.splitAt(surt.indexOf(')'))
     val hostSplit = host.split(',')
     "http://" + hostSplit.reverse.mkString(".") + path.drop(1)
