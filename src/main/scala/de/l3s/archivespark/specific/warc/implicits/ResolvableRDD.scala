@@ -27,10 +27,14 @@ package de.l3s.archivespark.specific.warc.implicits
 import de.l3s.archivespark.specific.warc.CdxRecord
 import org.apache.spark.rdd.RDD
 
-class ResolvableRDD(rdd: RDD[CdxRecord]) {
+object ResolvableRDD {
   val RevisitMime = "warc/revisit"
+}
 
-  def resolveRevisits(@transient original: RDD[CdxRecord]): RDD[CdxRecord] = {
+class ResolvableRDD(rdd: RDD[CdxRecord]) {
+  import ResolvableRDD._
+
+  def resolveRevisits(original: RDD[CdxRecord]): RDD[CdxRecord] = {
     val originalPaired = original.filter(r => r.mime != RevisitMime).map(r => (r.digest, r)).reduceByKey { (r1, r2) =>
       if (r1.timestamp.compareTo(r2.timestamp) >= 0) r1 else r2
     }
@@ -38,7 +42,7 @@ class ResolvableRDD(rdd: RDD[CdxRecord]) {
     val (responses, revisits) = (rdd.filter(r => r.mime != RevisitMime), rdd.filter(r => r.mime == RevisitMime))
 
     revisits.map(r => (r.digest, r)).join(originalPaired).map{case (digest, (revisit, record)) =>
-      record.copy(timestamp = revisit.timestamp)
+      record.copy(timestamp = revisit.timestamp, surtUrl = revisit.surtUrl, originalUrl = revisit.originalUrl)
     }.union(responses)
   }
 
