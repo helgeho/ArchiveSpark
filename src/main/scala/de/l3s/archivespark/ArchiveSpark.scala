@@ -84,16 +84,5 @@ object ArchiveSpark {
 
   def hdfs(cdxPath: String, warcPath: String)(implicit sc: SparkContext): RDD[WarcRecord] = load(sc, WarcCdxHdfsSpec(cdxPath, warcPath))
 
-  def files(cdxPath: String, warcPath: String): Seq[WarcRecord] = {
-    IO.lazyLines(cdxPath)
-      .flatMap(CdxRecord.fromString)
-      .map { cdx =>
-        val offset = cdx.additionalFields.head.toLong
-        val filename = cdx.additionalFields(1)
-        val locationInfo = HdfsLocationInfo(new Path(warcPath, filename).toString, offset, cdx.compressedSize)
-        new WarcRecord(cdx, filename, new HdfsStreamAccessor(locationInfo))
-      }
-  }
-
   def cdx(path: String)(implicit sc: SparkContext): RDD[CdxRecord] = load(sc, CdxHdfsSpec(path))
 }

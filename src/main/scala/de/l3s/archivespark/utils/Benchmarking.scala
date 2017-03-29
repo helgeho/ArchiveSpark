@@ -38,7 +38,7 @@ object Benchmarking {
 
   def time[R](action: => R, times: Int = 1): R = {
     var result: R = time("0")(action)
-    for (i <- 1 to (times - 1)) {
+    for (i <- 1 until times) {
       result = time(i.toString)(action)
     }
     result

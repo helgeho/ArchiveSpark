@@ -32,4 +32,7 @@ import scala.reflect.ClassTag
 class SimplifiedGetterEnrichRoot[Root <: EnrichRoot](root: Root) {
   def value[SpecificRoot >: Root <: EnrichRoot, T : ClassTag](f: EnrichFunc[SpecificRoot, _] with DefaultField[T]): Option[T] = root.get[T](f.pathToDefaultField)
   def value[SpecificRoot >: Root <: EnrichRoot, T : ClassTag](f: EnrichFunc[SpecificRoot, _], field: String): Option[T] = root.get[T](f.pathTo(field))
+
+  def valueOrElse[SpecificRoot >: Root <: EnrichRoot, T : ClassTag](f: EnrichFunc[SpecificRoot, _] with DefaultField[T], elseValue: => T): T = root.get[T](f.pathToDefaultField).getOrElse(elseValue)
+  def valueOrElse[SpecificRoot >: Root <: EnrichRoot, T : ClassTag](f: EnrichFunc[SpecificRoot, _], field: String, elseValue: => T): T = root.get[T](f.pathTo(field)).getOrElse(elseValue)
 }
