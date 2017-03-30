@@ -24,9 +24,16 @@
 
 package de.l3s.archivespark.implicits.classes
 
+import de.l3s.archivespark.ArchiveSpark
 import org.apache.spark.rdd.RDD
+
+import scala.reflect.ClassTag
 
 class GenericHelpersRDD[A](rdd: RDD[A]) {
   def peek: A = rdd.first
   def peek(index: Int) = rdd.take(index + 1).drop(index).head
+
+  def distinctValue[T : ClassTag](value: A => T)(distinct: (A, A) => A): RDD[A] = {
+    rdd.keyBy(value).reduceByKey(distinct, ArchiveSpark.partitions(rdd.sparkContext)).values
+  }
 }
