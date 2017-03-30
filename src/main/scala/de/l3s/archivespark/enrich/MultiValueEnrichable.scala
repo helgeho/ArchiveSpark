@@ -28,10 +28,7 @@ import de.l3s.archivespark.utils.Json._
 
 import scala.reflect.ClassTag
 
-class MultiValueEnrichable[T] private (val children: Seq[TypedEnrichable[T]], parentEnrichable: Enrichable = null, enrichRoot: EnrichRoot = null) extends TypedEnrichable[Seq[T]] {
-  _parent = parentEnrichable
-  _root = enrichRoot
-
+class MultiValueEnrichable[T] private (val children: Seq[TypedEnrichable[T]]) extends TypedEnrichable[Seq[T]] {
   def get: Seq[T] = children.map(e => e.get)
 
   override protected[archivespark] def excludeFromOutput(value: Boolean, overwrite: Boolean): Unit = {
@@ -88,5 +85,5 @@ class MultiValueEnrichable[T] private (val children: Seq[TypedEnrichable[T]], pa
 }
 
 object MultiValueEnrichable {
-  def apply[T](values: Seq[T], parent: Enrichable = null, root: EnrichRoot = null): MultiValueEnrichable[T] = new MultiValueEnrichable[T](values.map(v => SingleValueEnrichable(v)), parent, root)
+  def apply[T](values: Seq[T]): MultiValueEnrichable[T] = new MultiValueEnrichable[T](values.map(v => SingleValueEnrichable(v)))
 }
