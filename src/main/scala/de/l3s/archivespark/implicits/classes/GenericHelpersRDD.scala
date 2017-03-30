@@ -29,7 +29,7 @@ import org.apache.spark.rdd.RDD
 
 import scala.reflect.ClassTag
 
-class GenericHelpersRDD[A](rdd: RDD[A]) {
+class GenericHelpersRDD[A : ClassTag](rdd: RDD[A]) {
   def peek: A = rdd.first
   def peek(index: Int) = rdd.take(index + 1).drop(index).head
 

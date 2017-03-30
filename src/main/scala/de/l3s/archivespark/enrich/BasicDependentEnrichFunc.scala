@@ -22,18 +22,17 @@
  * SOFTWARE.
  */
 
-package de.l3s.archivespark.enrich.functions
+package de.l3s.archivespark.enrich
 
-import de.l3s.archivespark.enrich.dataloads.TextLoad
-import de.l3s.archivespark.enrich.{EnrichFunc, _}
-import de.l3s.archivespark.specific.warc.CdxRecord
+abstract class BasicDependentEnrichFunc[Root <: EnrichRoot, Input, Output](parent: EnrichFunc[Root, _] with DefaultField[Input], name: String, body: TypedEnrichable[Input] => Option[Output])
+  extends DefaultFieldDependentEnrichFunc[Root, Input, Output] with SingleField[Output] {
 
-import scala.util.Try
-import de.l3s.archivespark.utils.{SURT ⇒ surt}
+  override def dependency = parent
+  override def dependencyField = parent.defaultField
 
-object SURT extends BasicEnrichFunc(TextLoad, "SURT", (in: TypedEnrichable[String]) => Some {
-  Try{in.root[CdxRecord].get.originalUrl}.toOption match {
-    case Some(baseUrl) => surt.fromUrl(in.get, baseUrl)
-    case None => surt.fromUrl(in.get)
+  override def resultField = name
+
+  override def derive(source: TypedEnrichable[Input], derivatives: Derivatives): Unit = for (value <- body(source)) {
+    derivatives << value
   }
-})
+}

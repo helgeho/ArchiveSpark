@@ -22,18 +22,8 @@
  * SOFTWARE.
  */
 
-package de.l3s.archivespark.enrich.functions
+package de.l3s.archivespark.enrich.dataloads
 
-import de.l3s.archivespark.enrich.dataloads.TextLoad
-import de.l3s.archivespark.enrich.{EnrichFunc, _}
-import de.l3s.archivespark.specific.warc.CdxRecord
-
-import scala.util.Try
-import de.l3s.archivespark.utils.{SURT ⇒ surt}
-
-object SURT extends BasicEnrichFunc(TextLoad, "SURT", (in: TypedEnrichable[String]) => Some {
-  Try{in.root[CdxRecord].get.originalUrl}.toOption match {
-    case Some(baseUrl) => surt.fromUrl(in.get, baseUrl)
-    case None => surt.fromUrl(in.get)
-  }
-})
+trait DataLoadCompanion[Load <: DataLoadBase] {
+  def Field: String
+}

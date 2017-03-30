@@ -26,6 +26,6 @@ package de.l3s.archivespark.enrich.dataloads
 
 trait ByteContentLoad extends DataLoadBase
 
-object ByteContentLoad {
+object ByteContentLoad extends DataLoadCompanion[ByteContentLoad] {
   val Field: String = "content"
 }

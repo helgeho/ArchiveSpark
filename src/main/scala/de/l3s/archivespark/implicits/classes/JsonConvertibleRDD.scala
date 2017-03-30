@@ -30,7 +30,9 @@ import org.apache.spark.rdd.RDD
 import org.elasticsearch.spark.rdd.EsSpark
 import de.l3s.archivespark.implicits._
 
-class JsonConvertibleRDD[Record <: JsonConvertible](rdd: RDD[Record]) {
+import scala.reflect.ClassTag
+
+class JsonConvertibleRDD[Record <: JsonConvertible : ClassTag](rdd: RDD[Record]) {
   def toJson = rdd.map(r => r.toJson)
 
   def toJsonStrings = rdd.map(r => r.toJsonString)

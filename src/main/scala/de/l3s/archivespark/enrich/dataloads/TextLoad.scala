@@ -26,6 +26,6 @@ package de.l3s.archivespark.enrich.dataloads
 
 trait TextLoad extends DataLoadBase
 
-object TextLoad {
+object TextLoad extends DataLoadCompanion[TextLoad] {
   val Field: String = "text"
 }

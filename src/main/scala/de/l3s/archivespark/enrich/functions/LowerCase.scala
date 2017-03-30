@@ -27,13 +27,6 @@ package de.l3s.archivespark.enrich.functions
 import de.l3s.archivespark.enrich.dataloads.TextLoad
 import de.l3s.archivespark.enrich.{EnrichFunc, _}
 
-object LowerCase extends DefaultFieldDependentEnrichFunc[EnrichRoot with TextLoad, String, String] with SingleField[String] {
-  override def dependency: EnrichFunc[EnrichRoot with TextLoad, _] = DataLoad(TextLoad.Field)
-  override def dependencyField: String = TextLoad.Field
-
-  override def resultField = "lowercase"
-
-  override def derive(source: TypedEnrichable[String], derivatives: Derivatives): Unit = {
-    derivatives << source.get.toLowerCase
-  }
-}
+object LowerCase extends BasicEnrichFunc(TextLoad, "lowercase", (in: TypedEnrichable[String]) => Some {
+  in.get.toLowerCase
+})

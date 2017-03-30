@@ -31,17 +31,7 @@ import org.jsoup.parser.Parser
 
 import scala.collection.JavaConverters._
 
-object HtmlText extends DefaultFieldDependentEnrichFunc[EnrichRoot with ByteContentLoad, String, String] with SingleField[String] {
-  override def dependency = Html
-  override def dependencyField = Html.defaultField
-
-  override def fields = Seq("text")
-
-  override def derive(source: TypedEnrichable[String], derivatives: Derivatives): Unit = {
-    val nodes = Parser.parseXmlFragment(source.get, "").asScala
-    if (nodes.nonEmpty) {
-      val el = nodes.head.asInstanceOf[Element]
-      derivatives << el.text
-    }
-  }
-}
+object HtmlText extends BasicDependentEnrichFunc(Html, "text", {in: TypedEnrichable[String] =>
+  val nodes = Parser.parseXmlFragment(in.get, "").asScala
+  nodes.headOption.map{case el: Element => el.text}
+})
