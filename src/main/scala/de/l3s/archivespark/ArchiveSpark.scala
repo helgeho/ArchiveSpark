@@ -71,6 +71,7 @@ object ArchiveSpark {
   }
 
   def load[Raw, Parsed : ClassTag](sc: SparkContext, spec: DataSpec[Raw, Parsed]): RDD[Parsed] = {
+    initialize(sc)
     spec.initialize(sc)
     val raw = spec.load(sc, partitions(sc))
     val specBc = sc.broadcast(spec)
