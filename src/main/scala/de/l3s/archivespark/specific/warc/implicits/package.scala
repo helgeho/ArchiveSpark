@@ -28,4 +28,5 @@ import org.apache.spark.rdd.RDD
 
 package object implicits {
     implicit class ImplicitResolvableRDD(rdd: RDD[CdxRecord]) extends ResolvableRDD(rdd)
+    implicit class ImplicitWarcRDD[WARC <: WarcLikeRecord](rdd: RDD[WARC]) extends WarcRDD(rdd)
 }

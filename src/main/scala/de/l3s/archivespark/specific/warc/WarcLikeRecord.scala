@@ -22,40 +22,9 @@
  * SOFTWARE.
  */
 
-package de.l3s.archivespark.specific.warc.enrichfunctions
+package de.l3s.archivespark.specific.warc
 
-import de.l3s.archivespark.enrich._
+import de.l3s.archivespark.enrich.TypedEnrichRoot
 import de.l3s.archivespark.enrich.dataloads.ByteContentLoad
-import de.l3s.archivespark.specific.warc.WarcRecord
 
-class WarcPayload private(http: Boolean = true) extends RootEnrichFunc[WarcRecord] with DefaultField[Array[Byte]] {
-  import WarcPayload._
-
-  override def fields = if (http) Seq(RecordHeaderField, HttpStatusLineField, HttpHeaderField, PayloadField) else Seq(RecordHeaderField, PayloadField)
-
-  def defaultField = PayloadField
-
-  override def aliases = Map(ByteContentLoad.Field -> PayloadField)
-
-  override def deriveRoot(source: WarcRecord, derivatives: Derivatives): Unit = {
-    source.access { record =>
-      derivatives << record.header
-      if (http) {
-        derivatives << record.httpResponse.statusLine
-        derivatives << record.httpResponse.header.headers
-        derivatives << record.httpResponse.payload
-      } else {
-        derivatives << record.payload
-      }
-    }
-  }
-}
-
-object WarcPayload extends WarcPayload(http = true) {
-  val RecordHeaderField = "recordHeader"
-  val HttpStatusLineField = HttpPayload.StatusLineField
-  val HttpHeaderField = HttpPayload.HeaderField
-  val PayloadField = "payload"
-
-  def apply(http: Boolean = true) = new WarcPayload(http)
-}
+trait WarcLikeRecord extends TypedEnrichRoot[CdxRecord] with ByteContentLoad with CdxBasedRecord

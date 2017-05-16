@@ -28,11 +28,11 @@ import java.io.InputStream
 
 import de.l3s.archivespark.dataspecs.DataEnrichRoot
 import de.l3s.archivespark.dataspecs.access.DataAccessor
-import de.l3s.archivespark.enrich.RootEnrichFunc
+import de.l3s.archivespark.enrich.{DefaultField, RootEnrichFunc}
 import de.l3s.archivespark.enrich.dataloads.ByteContentLoad
 import de.l3s.archivespark.specific.warc.enrichfunctions.WarcPayload
 
-class WarcRecord(cdx: CdxRecord, filename: String, data: DataAccessor[InputStream]) extends DataEnrichRoot[CdxRecord, RawArchiveRecord](cdx) with ByteContentLoad {
+class WarcRecord(cdx: CdxRecord, filename: String, data: DataAccessor[InputStream]) extends DataEnrichRoot[CdxRecord, RawArchiveRecord](cdx) with ByteContentLoad with WarcLikeRecord {
   override def access[R >: Null](action: RawArchiveRecord => R): R = {
     data.access{ stream =>
       val record = RawArchiveRecord(filename, stream)
@@ -47,8 +47,4 @@ class WarcRecord(cdx: CdxRecord, filename: String, data: DataAccessor[InputStrea
       case _ => None
     }
   }
-}
-
-object WarcRecord {
-  implicit def warcRecordToCdxRecord(record: WarcRecord): CdxRecord = record.get
 }

@@ -108,7 +108,7 @@ class EnrichableRDD[Root <: EnrichRoot : ClassTag](rdd: RDD[Root]) {
       }
     }
   }
-  
+
   def distinctValue(field: Seq[String])(distinct: (Root, Root) => Root): RDD[Root] = {
     rdd.map(r => (r.get(field), r)).reduceByKey(distinct, ArchiveSpark.partitions(rdd.sparkContext)).values
   }

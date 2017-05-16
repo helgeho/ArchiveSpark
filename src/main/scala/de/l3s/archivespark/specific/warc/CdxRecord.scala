@@ -59,7 +59,7 @@ case class CdxRecord(surtUrl: String,
                      redirectUrl: String,
                      meta: String,
                      compressedSize: Long,
-                     additionalFields: Seq[String]) extends JsonConvertible {
+                     additionalFields: Seq[String]) extends CdxBasedRecord with JsonConvertible {
   def time = Try(LocalDateTime.parse(timestamp, CdxRecord.DateTimeFormatter)).getOrElse(null)
 
   def toCdxString = {
@@ -78,4 +78,6 @@ case class CdxRecord(surtUrl: String,
     "meta" -> meta,
     "compressedSize" -> compressedSize
   )
+
+  override def get: CdxRecord = this
 }

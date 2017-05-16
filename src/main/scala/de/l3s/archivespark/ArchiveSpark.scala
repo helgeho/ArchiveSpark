@@ -38,6 +38,8 @@ import org.apache.spark.{SparkConf, SparkContext}
 import scala.reflect.ClassTag
 
 object ArchiveSpark {
+  val appName = "ArchiveSpark"
+
   private var initialized = false
 
   var parallelism = 0

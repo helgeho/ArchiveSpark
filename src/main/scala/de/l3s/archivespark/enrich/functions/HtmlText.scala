@@ -32,6 +32,5 @@ import org.jsoup.parser.Parser
 import scala.collection.JavaConverters._
 
 object HtmlText extends BasicDependentEnrichFunc(Html, "text", {in: TypedEnrichable[String] =>
-  val nodes = Parser.parseXmlFragment(in.get, "").asScala
-  nodes.headOption.map{case el: Element => el.text}
+  Parser.parseXmlFragment(in.get, "").asScala.headOption.map{case el: Element => el.text}
 })

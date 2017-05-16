@@ -22,40 +22,31 @@
  * SOFTWARE.
  */
 
-package de.l3s.archivespark.specific.warc.enrichfunctions
+package de.l3s.archivespark.specific.warc.implicits
 
-import de.l3s.archivespark.enrich._
 import de.l3s.archivespark.enrich.dataloads.ByteContentLoad
-import de.l3s.archivespark.specific.warc.WarcRecord
+import de.l3s.archivespark.enrich.functions.DataLoad
+import de.l3s.archivespark.enrich.{EnrichFunc, EnrichRoot}
+import de.l3s.archivespark.implicits._
+import de.l3s.archivespark.specific.warc.enrichfunctions.HttpPayload
+import de.l3s.archivespark.specific.warc.{WarcHeaders, WarcLikeRecord, WarcMeta, WarcRecordInfo}
+import org.apache.spark.rdd.RDD
 
-class WarcPayload private(http: Boolean = true) extends RootEnrichFunc[WarcRecord] with DefaultField[Array[Byte]] {
-  import WarcPayload._
+class WarcRDD[WARC <: WarcLikeRecord](rdd: RDD[WARC]) {
+  def saveAsWarc(info: WarcMeta): Long = {
+    val payloadEnrichFunc: EnrichFunc[WarcLikeRecord, _] = DataLoad(ByteContentLoad.Field)
+    rdd.enrich(payloadEnrichFunc).mapPartitionsWithIndex{case (idx, warcs) =>
+      val fileSuffix = s"-$idx.warc.gz"
+      val header = WarcHeaders.file(info, fileSuffix)
 
-  override def fields = if (http) Seq(RecordHeaderField, HttpStatusLineField, HttpHeaderField, PayloadField) else Seq(RecordHeaderField, PayloadField)
-
-  def defaultField = PayloadField
-
-  override def aliases = Map(ByteContentLoad.Field -> PayloadField)
-
-  override def deriveRoot(source: WarcRecord, derivatives: Derivatives): Unit = {
-    source.access { record =>
-      derivatives << record.header
-      if (http) {
-        derivatives << record.httpResponse.statusLine
-        derivatives << record.httpResponse.header.headers
-        derivatives << record.httpResponse.payload
-      } else {
-        derivatives << record.payload
+      for (warc <- warcs) {
+        val httpHeadersOpt: Option[Map[String, String]] = warc.value(payloadEnrichFunc, HttpPayload.HeaderField)
+        val payload: Array[Byte] = warc.value(payloadEnrichFunc, HttpPayload.PayloadField).get
+        val recordInfo = WarcRecordInfo(warc.get.originalUrl, warc.get.time, httpHeadersOpt.flatMap(_.get("")))
+        val recordHeader
       }
-    }
+
+      Iterator(1L)
+    }.reduce(_ + _)
   }
-}
-
-object WarcPayload extends WarcPayload(http = true) {
-  val RecordHeaderField = "recordHeader"
-  val HttpStatusLineField = HttpPayload.StatusLineField
-  val HttpHeaderField = HttpPayload.HeaderField
-  val PayloadField = "payload"
-
-  def apply(http: Boolean = true) = new WarcPayload(http)
 }
