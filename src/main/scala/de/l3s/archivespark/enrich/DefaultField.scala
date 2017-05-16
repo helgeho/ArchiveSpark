@@ -24,7 +24,6 @@
 
 package de.l3s.archivespark.enrich
 
-trait DefaultField[+FieldValue] { this: EnrichFunc[_, _] =>
-  def pathToDefaultField: Seq[String] = pathTo(defaultField)
-  def defaultField: String
+trait DefaultField[+FieldValue] extends DefaultFieldAccess[FieldValue, FieldValue] { this: EnrichFunc[_, _] =>
+
 }

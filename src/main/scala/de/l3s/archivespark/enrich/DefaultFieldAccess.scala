@@ -22,28 +22,9 @@
  * SOFTWARE.
  */
 
-package de.l3s.archivespark.specific.warc.enrichfunctions
+package de.l3s.archivespark.enrich
 
-import de.l3s.archivespark.dataspecs.DataEnrichRoot
-import de.l3s.archivespark.enrich.{DefaultFieldAccess, Derivatives, RootEnrichFunc}
-import de.l3s.archivespark.http.HttpRecord
-
-object HttpPayload extends RootEnrichFunc[DataEnrichRoot[_, HttpRecord]] with DefaultFieldAccess[Array[Byte]] {
-  val StatusLineField = "httpStatusLine"
-  val HeaderField = "httpHeader"
-  val PayloadField = "payload"
-
-  override def fields = Seq(StatusLineField, HeaderField, PayloadField)
-
-  def defaultField = PayloadField
-
-  override def aliases = Map("content" -> PayloadField)
-
-  override def deriveRoot(source: DataEnrichRoot[_, HttpRecord], derivatives: Derivatives): Unit = {
-    source.access { record =>
-      derivatives << record.statusLine
-      derivatives << record.header.headers
-      derivatives << record.payload
-    }
-  }
+trait DefaultFieldAccess[+InternalFieldValue, +ExternalFieldValue] { this: EnrichFunc[_, _] =>
+  def pathToDefaultField: Seq[String] = pathTo(defaultField)
+  def defaultField: String
 }

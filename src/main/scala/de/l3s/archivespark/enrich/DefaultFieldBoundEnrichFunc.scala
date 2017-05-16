@@ -30,5 +30,5 @@ abstract class DefaultFieldBoundEnrichFunc[Root <: EnrichRoot, Source, DefaultFi
   override def dependency = bound
   override def dependencyField = field
 
-  override def on[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _], field: String): EnrichFunc[DependencyRoot, Source] with DefaultField[DefaultFieldType] = super.on(bound.on(dependency, field), dependencyField)
+  override def on[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _], field: String): EnrichFunc[DependencyRoot, Source] with DefaultFieldAccess[DefaultFieldType] = super.on(bound.on(dependency, field), dependencyField)
 }

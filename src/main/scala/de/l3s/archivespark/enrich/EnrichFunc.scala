@@ -55,7 +55,7 @@ trait EnrichFunc[Root <: EnrichRoot, Source] extends Serializable {
 
   def hasField(name: String) = (aliases.keySet ++ fields).contains(name)
 
-  def map[SourceField, Target](target: String)(f: SourceField => Target): DependentEnrichFunc[Root, SourceField] with SingleField[Target] = map[SourceField, Target](Try {this.asInstanceOf[DefaultField[SourceField]].defaultField}.getOrElse(fields.head), target, target)(f)
+  def map[SourceField, Target](target: String)(f: SourceField => Target): DependentEnrichFunc[Root, SourceField] with SingleField[Target] = map[SourceField, Target](Try {this.asInstanceOf[DefaultFieldAccess[SourceField]].defaultField}.getOrElse(fields.head), target, target)(f)
   def map[SourceField, Target](sourceField: String, target: String)(f: SourceField => Target): DependentEnrichFunc[Root, SourceField] with SingleField[Target] = map[SourceField, Target](sourceField, target, target)(f)
   def map[SourceField, Target](sourceField: String, target: String, alias: String)(f: SourceField => Target): DependentEnrichFunc[Root, SourceField] with SingleField[Target] = {
     val dependencyFunction = this
@@ -68,7 +68,7 @@ trait EnrichFunc[Root <: EnrichRoot, Source] extends Serializable {
     }
   }
 
-  def mapEach[SourceField, Target](target: String)(f: SourceField => Target): DependentEnrichFunc[Root, SourceField] with SingleField[Seq[Target]] = mapEach[SourceField, Target](Try {this.asInstanceOf[DefaultField[Seq[SourceField]]].defaultField}.getOrElse(fields.head), target, target)(f)
+  def mapEach[SourceField, Target](target: String)(f: SourceField => Target): DependentEnrichFunc[Root, SourceField] with SingleField[Seq[Target]] = mapEach[SourceField, Target](Try {this.asInstanceOf[DefaultFieldAccess[Seq[SourceField]]].defaultField}.getOrElse(fields.head), target, target)(f)
   def mapEach[SourceField, Target](sourceField: String, target: String)(f: SourceField => Target): DependentEnrichFunc[Root, SourceField] with SingleField[Seq[Target]] = mapEach[SourceField, Target](sourceField, target, target)(f)
   def mapEach[SourceField, Target](sourceField: String, target: String, alias: String)(f: SourceField => Target): DependentEnrichFunc[Root, SourceField] with SingleField[Seq[Target]] = {
     val dependencyFunction = this
@@ -81,7 +81,7 @@ trait EnrichFunc[Root <: EnrichRoot, Source] extends Serializable {
     }
   }
 
-  def flatMap[SourceField, Target](target: String)(f: Iterable[SourceField] => Iterable[Target]): DependentEnrichFunc[Root, Seq[SourceField]] with SingleField[Seq[Target]] = flatMap[SourceField, Target](Try {this.asInstanceOf[DefaultField[Seq[SourceField]]].defaultField}.getOrElse(fields.head), target, target)(f)
+  def flatMap[SourceField, Target](target: String)(f: Iterable[SourceField] => Iterable[Target]): DependentEnrichFunc[Root, Seq[SourceField]] with SingleField[Seq[Target]] = flatMap[SourceField, Target](Try {this.asInstanceOf[DefaultFieldAccess[Seq[SourceField]]].defaultField}.getOrElse(fields.head), target, target)(f)
   def flatMap[SourceField, Target](sourceField: String, target: String)(f: Iterable[SourceField] => Iterable[Target]): DependentEnrichFunc[Root, Seq[SourceField]] with SingleField[Seq[Target]] = flatMap[SourceField, Target](sourceField, target, target)(f)
   def flatMap[SourceField, Target](sourceField: String, target: String, alias: String)(f: Iterable[SourceField] => Iterable[Target]): DependentEnrichFunc[Root, Seq[SourceField]] with SingleField[Seq[Target]] = {
     val dependencyFunction = this

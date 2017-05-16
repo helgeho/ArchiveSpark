@@ -64,7 +64,7 @@ class EnrichableRDD[Root <: EnrichRoot : ClassTag](rdd: RDD[Root]) {
     override def derive(source: TypedEnrichable[Source], derivatives: Derivatives): Unit = derivatives << f(source.get)
   })
 
-  def mapEnrich[SpecificRoot >: Root <: EnrichRoot : ClassTag, Source, Target](dependencyFunc: EnrichFunc[SpecificRoot, _] with DefaultField[Source], target: String)(f: Source => Target): RDD[Root] = mapEnrich(dependencyFunc, dependencyFunc.defaultField, target, target)(f)
+  def mapEnrich[SpecificRoot >: Root <: EnrichRoot : ClassTag, Source, Target](dependencyFunc: EnrichFunc[SpecificRoot, _] with DefaultFieldAccess[Source], target: String)(f: Source => Target): RDD[Root] = mapEnrich(dependencyFunc, dependencyFunc.defaultField, target, target)(f)
   def mapEnrich[SpecificRoot >: Root <: EnrichRoot : ClassTag, Source, Target](dependencyFunc: EnrichFunc[SpecificRoot, _], sourceField: String, target: String)(f: Source => Target): RDD[Root] = mapEnrich(dependencyFunc, sourceField, target, target)(f)
   def mapEnrich[SpecificRoot >: Root <: EnrichRoot : ClassTag, Source, Target](dependencyFunc: EnrichFunc[SpecificRoot, _], sourceField: String, target: String, alias: String)(f: Source => Target): RDD[Root] = rdd.enrich(dependencyFunc.map(sourceField, target, alias)(f))
 
@@ -83,7 +83,7 @@ class EnrichableRDD[Root <: EnrichRoot : ClassTag](rdd: RDD[Root]) {
   def filterValue[SpecificRoot >: Root <: EnrichRoot, Source : ClassTag](f: EnrichFunc[SpecificRoot, _], field: String)(filter: Option[Source] => Boolean): RDD[Root] = {
     filterValue(f.pathTo(field))(filter)
   }
-  def filterValue[SpecificRoot >: Root <: EnrichRoot, Source : ClassTag](f: EnrichFunc[SpecificRoot, _] with DefaultField[Source])(filter: Option[Source] => Boolean): RDD[Root] = {
+  def filterValue[SpecificRoot >: Root <: EnrichRoot, Source : ClassTag](f: EnrichFunc[SpecificRoot, _] with DefaultFieldAccess[Source])(filter: Option[Source] => Boolean): RDD[Root] = {
     filterValue(f.pathToDefaultField)(filter)
   }
 
@@ -118,15 +118,15 @@ class EnrichableRDD[Root <: EnrichRoot : ClassTag](rdd: RDD[Root]) {
   def distinctValue[SpecificRoot >: Root <: EnrichRoot](f: EnrichFunc[SpecificRoot, _], field: String)(distinct: (Root, Root) => Root): RDD[Root] = {
     distinctValue(f.pathTo(field))(distinct)
   }
-  def distinctValue[SpecificRoot >: Root <: EnrichRoot, Source : ClassTag](f: EnrichFunc[SpecificRoot, _] with DefaultField[Source])(distinct: (Root, Root) => Root): RDD[Root] = {
+  def distinctValue[SpecificRoot >: Root <: EnrichRoot, Source : ClassTag](f: EnrichFunc[SpecificRoot, _] with DefaultFieldAccess[Source])(distinct: (Root, Root) => Root): RDD[Root] = {
     distinctValue(f.pathToDefaultField)(distinct)
   }
 
   def mapValues[T : ClassTag](path: String): RDD[T] = rdd.map(r => r.get[T](path)).filter(_.isDefined).map(_.get)
-  def mapValues[SpecificRoot >: Root <: EnrichRoot : ClassTag, T : ClassTag](f: EnrichFunc[SpecificRoot, _] with DefaultField[T]): RDD[T] = rdd.enrich(f).flatMap(_.value[SpecificRoot, T](f))
+  def mapValues[SpecificRoot >: Root <: EnrichRoot : ClassTag, T : ClassTag](f: EnrichFunc[SpecificRoot, _] with DefaultFieldAccess[T]): RDD[T] = rdd.enrich(f).flatMap(_.value[SpecificRoot, T](f))
   def mapValues[SpecificRoot >: Root <: EnrichRoot : ClassTag, T : ClassTag](f: EnrichFunc[SpecificRoot, _], field: String): RDD[T] = rdd.enrich(f).flatMap(_.value[SpecificRoot, T](f, field))
 
   def flatMapValues[T : ClassTag](path: String): RDD[T] = mapValues[TraversableOnce[T]](path).flatMap(r => r)
-  def flatMapValues[SpecificRoot >: Root <: EnrichRoot : ClassTag, T : ClassTag](f: EnrichFunc[SpecificRoot, _] with DefaultField[TraversableOnce[T]]): RDD[T] = mapValues[SpecificRoot, TraversableOnce[T]](f).flatMap(r => r)
+  def flatMapValues[SpecificRoot >: Root <: EnrichRoot : ClassTag, T : ClassTag](f: EnrichFunc[SpecificRoot, _] with DefaultFieldAccess[TraversableOnce[T]]): RDD[T] = mapValues[SpecificRoot, TraversableOnce[T]](f).flatMap(r => r)
   def flatMapValues[SpecificRoot >: Root <: EnrichRoot : ClassTag, T : ClassTag](f: EnrichFunc[SpecificRoot, _], field: String): RDD[T] = mapValues[SpecificRoot, TraversableOnce[T]](f, field).flatMap(r => r)
 }
