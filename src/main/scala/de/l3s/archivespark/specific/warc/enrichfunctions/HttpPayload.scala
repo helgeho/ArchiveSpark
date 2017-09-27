@@ -25,10 +25,10 @@
 package de.l3s.archivespark.specific.warc.enrichfunctions
 
 import de.l3s.archivespark.dataspecs.DataEnrichRoot
-import de.l3s.archivespark.enrich.{DefaultFieldAccess, Derivatives, RootEnrichFunc}
+import de.l3s.archivespark.enrich.{DefaultField, Derivatives, RootEnrichFunc}
 import de.l3s.archivespark.http.HttpRecord
 
-object HttpPayload extends RootEnrichFunc[DataEnrichRoot[_, HttpRecord]] with DefaultFieldAccess[Array[Byte]] {
+object HttpPayload extends RootEnrichFunc[DataEnrichRoot[_, HttpRecord]] with DefaultField[Array[Byte]] {
   val StatusLineField = "httpStatusLine"
   val HeaderField = "httpHeader"
   val PayloadField = "payload"

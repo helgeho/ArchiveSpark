@@ -38,7 +38,7 @@ class GroupContext[Root <: EnrichRoot] private[archivespark] (private[grouping] 
     new GroupAggregation[Root, T](this, target, func.enrich(_, excludeFromOutput = true).get(func.pathTo(field)), reduce)
   }
 
-  def aggregateValues[SpecificRoot >: Root <: EnrichRoot, T : ClassTag](target: String, func: EnrichFunc[SpecificRoot, _] with DefaultFieldAccess[T])(reduce: (T, T) => T): GroupAggregation[Root, T] = {
+  def aggregateValues[SpecificRoot >: Root <: EnrichRoot, T : ClassTag](target: String, func: EnrichFunc[SpecificRoot, _] with DefaultFieldAccess[_, T])(reduce: (T, T) => T): GroupAggregation[Root, T] = {
     aggregateValues[SpecificRoot, T](target, func, func.defaultField)(reduce)
   }
 }

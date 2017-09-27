@@ -28,7 +28,7 @@ import de.l3s.archivespark.enrich._
 import de.l3s.archivespark.enrich.dataloads.ByteContentLoad
 import de.l3s.archivespark.specific.warc.WarcRecord
 
-class WarcPayload private(http: Boolean = true) extends RootEnrichFunc[WarcRecord] with DefaultFieldAccess[Array[Byte]] {
+class WarcPayload private(http: Boolean = true) extends RootEnrichFunc[WarcRecord] with DefaultField[Array[Byte]] {
   import WarcPayload._
 
   override def fields = if (http) Seq(RecordHeaderField, HttpStatusLineField, HttpHeaderField, PayloadField) else Seq(RecordHeaderField, PayloadField)

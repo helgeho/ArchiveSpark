@@ -28,6 +28,7 @@ import java.net.URLEncoder
 
 import de.l3s.archivespark.dataspecs.DataSpec
 import de.l3s.archivespark.specific.warc.{CdxRecord, WaybackRecord}
+import de.l3s.archivespark.utils.RddUtil
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 
@@ -42,12 +43,12 @@ class WaybackSpec private (url: String, matchPrefix: Boolean, from: Long, to: Lo
     uri = uri.replace("$blocks", blocksPerPage.toString)
     uri = uri.replace("$page", page.toString)
     if (from > 0) uri += "&from=" + from
-    if (to > 0) uri += "&from=" + to
+    if (to > 0) uri += "&to=" + to
     uri
   }
 
   override def load(sc: SparkContext, minPartitions: Int): RDD[String] = {
-    sc.parallelize(0 until pages, if (maxPartitions == 0) minPartitions else maxPartitions.min(minPartitions)).flatMap{page =>
+    RddUtil.parallelize(sc, pages, if (maxPartitions == 0) minPartitions else maxPartitions.min(minPartitions)).flatMap{page =>
       try {
         Source.fromURL(cdxServerUrl(page)).getLines()
       } catch {

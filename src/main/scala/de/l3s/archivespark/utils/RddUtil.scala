@@ -22,17 +22,27 @@
  * SOFTWARE.
  */
 
-package de.l3s.archivespark.enrich
+package de.l3s.archivespark.utils
 
-abstract class BasicDependentEnrichFunc[Root <: EnrichRoot, Input, Output](parent: EnrichFunc[Root, _] with DefaultFieldAccess[Input, _], name: String, body: TypedEnrichable[Input] => Option[Output])
-  extends DefaultFieldDependentEnrichFunc[Root, Input, Output, Output] with SingleField[Output] {
+import org.apache.spark.rdd.RDD
+import org.apache.spark.{Partitioner, SparkContext}
 
-  override def dependency = parent
-  override def dependencyField = parent.defaultField
+object RddUtil {
+  class ItemParitioner(override val numPartitions: Int) extends Partitioner {
+    override def getPartition(key: Any): Int = key match {
+      case k: Int => k % numPartitions
+      case _ => key.hashCode % numPartitions
+    }
+  }
 
-  override def resultField = name
+  def parallelize(sc: SparkContext, items: Int): RDD[Int] = parallelize(sc, items, items)
 
-  override def derive(source: TypedEnrichable[Input], derivatives: Derivatives): Unit = for (value <- body(source)) {
-    derivatives << value
+  def parallelize(sc: SparkContext, items: Int, partitions: Int): RDD[Int] = parallelize(sc, 0 until items, partitions)
+
+  def parallelize[T](sc: SparkContext, items: Seq[T]): RDD[T] = parallelize(sc, items, items.size)
+
+  def parallelize[T](sc: SparkContext, items: Seq[T], partitions: Int): RDD[T] = {
+    val partitioner = new ItemParitioner(partitions.min(items.size))
+    sc.parallelize(items.zipWithIndex.map{case (v, i) => (i, v)}).partitionBy(partitioner).values
   }
 }

@@ -24,15 +24,4 @@
 
 package de.l3s.archivespark.enrich
 
-abstract class BasicDependentEnrichFunc[Root <: EnrichRoot, Input, Output](parent: EnrichFunc[Root, _] with DefaultFieldAccess[Input, _], name: String, body: TypedEnrichable[Input] => Option[Output])
-  extends DefaultFieldDependentEnrichFunc[Root, Input, Output, Output] with SingleField[Output] {
-
-  override def dependency = parent
-  override def dependencyField = parent.defaultField
-
-  override def resultField = name
-
-  override def derive(source: TypedEnrichable[Input], derivatives: Derivatives): Unit = for (value <- body(source)) {
-    derivatives << value
-  }
-}
+trait MultiVal

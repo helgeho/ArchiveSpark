@@ -25,7 +25,7 @@
 package de.l3s.archivespark.enrich
 
 abstract class BoundEnrichFunc[Root <: EnrichRoot, Source](bound: DependentEnrichFunc[Root, _], field: String = null) extends DependentEnrichFunc[Root, Source] {
-  def this(bound: DefaultFieldDependentEnrichFunc[Root, _, _]) = this(bound, bound.defaultField)
+  def this(bound: DefaultFieldDependentEnrichFunc[Root, _, _, _]) = this(bound, bound.defaultField)
 
   override def dependency = bound
   override def dependencyField = field

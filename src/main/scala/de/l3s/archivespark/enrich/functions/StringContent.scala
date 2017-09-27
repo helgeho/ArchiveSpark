@@ -31,7 +31,7 @@ import de.l3s.archivespark.specific.warc.enrichfunctions.HttpPayload
 import org.apache.http.entity.ByteArrayEntity
 import org.apache.http.util.EntityUtils
 
-object StringContent extends DefaultFieldDependentEnrichFunc[EnrichRoot with ByteContentLoad, Array[Byte], String] with SingleField[String] {
+object StringContent extends DefaultFieldDependentEnrichFunc[EnrichRoot with ByteContentLoad, Array[Byte], String, String] with SingleField[String] {
   val DefaultCharset = "UTF-8"
 
   override def dependency = DataLoad(ByteContentLoad.Field)

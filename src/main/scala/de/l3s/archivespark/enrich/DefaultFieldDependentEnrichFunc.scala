@@ -24,49 +24,85 @@
 
 package de.l3s.archivespark.enrich
 
+import de.l3s.archivespark.specific.warc.WarcRecord
 import de.l3s.archivespark.utils.SelectorUtil
 
 trait DefaultFieldDependentEnrichFunc[Root <: EnrichRoot, Source, InternalFieldType, ExternalFieldType] extends DependentEnrichFunc[Root, Source] with DefaultFieldAccess[InternalFieldType, ExternalFieldType] {
   override def onRoot: EnrichFunc[_, Source] with DefaultFieldAccess[InternalFieldType, ExternalFieldType] = new PipedEnrichFuncWithDefaultField[Source, InternalFieldType, ExternalFieldType](this, source)
-  override def ofRoot = onRoot
+  override def ofRoot: EnrichFunc[_, Source] with DefaultFieldAccess[InternalFieldType, ExternalFieldType] = onRoot
 
   override def on(source: Seq[String]): EnrichFunc[_, Source] with DefaultFieldAccess[InternalFieldType, ExternalFieldType] = new PipedEnrichFuncWithDefaultField[Source, InternalFieldType, ExternalFieldType](this, source)
-  override def onEach(source: Seq[String]): EnrichFunc[_, Source] with DefaultFieldAccess[InternalFieldType, Seq[ExternalFieldType]] = new MultiPipedEnrichFuncWithDefaultField[Source, DefaultFieldType](this, source :+ "*")
 
-  override def on(source: String): EnrichFunc[_, Source] with DefaultFieldAccess[DefaultFieldType] = on(SelectorUtil.parse(source))
-  override def on(source: String, index: Int): EnrichFunc[_, Source] with DefaultFieldAccess[DefaultFieldType] = on(SelectorUtil.parse(source), index)
-  override def on(source: Seq[String], index: Int): EnrichFunc[_, Source] with DefaultFieldAccess[DefaultFieldType] = on(source :+ s"[$index]")
+  def onMulti(source: Seq[String]): EnrichFunc[_, Source] with DefaultFieldAccess[InternalFieldType, Seq[ExternalFieldType]] = new MultiPipedEnrichFuncWithDefaultField[Source, InternalFieldType, ExternalFieldType](this, source)
+  override def onEach(source: Seq[String]): EnrichFunc[_, Source] with DefaultFieldAccess[InternalFieldType, Seq[ExternalFieldType]] = onMulti(source :+ "*")
 
-  override def onEach(source: String): EnrichFunc[_, Source] with DefaultFieldAccess[Seq[DefaultFieldType]] = onEach(SelectorUtil.parse(source))
+  def onMulti(source: String): EnrichFunc[_, Source] with DefaultFieldAccess[InternalFieldType, Seq[ExternalFieldType]] = onMulti(SelectorUtil.parse(source))
+  override def on(source: String): EnrichFunc[_, Source] with DefaultFieldAccess[InternalFieldType, ExternalFieldType] = on(SelectorUtil.parse(source))
 
-  override def of(source: String): EnrichFunc[_, Source] with DefaultFieldAccess[DefaultFieldType] = on(source)
-  override def of(source: Seq[String]): EnrichFunc[_, Source] with DefaultFieldAccess[DefaultFieldType] = on(source)
-  override def of(source: String, index: Int): EnrichFunc[_, Source] with DefaultFieldAccess[DefaultFieldType] = on(source, index)
-  override def of(source: Seq[String], index: Int): EnrichFunc[_, Source] with DefaultFieldAccess[DefaultFieldType] = on(source, index)
+  def onMulti(source: Seq[String], index: Int): EnrichFunc[_, Source] with DefaultFieldAccess[InternalFieldType, Seq[ExternalFieldType]] = onMulti(source :+ s"[$index]")
+  override def on(source: Seq[String], index: Int): EnrichFunc[_, Source] with DefaultFieldAccess[InternalFieldType, ExternalFieldType] = on(source :+ s"[$index]")
 
-  override def ofEach(source: String): EnrichFunc[_, Source] with DefaultFieldAccess[Seq[DefaultFieldType]] = onEach(source)
-  override def ofEach(source: Seq[String]): EnrichFunc[_, Source] with DefaultFieldAccess[Seq[DefaultFieldType]] = onEach(source)
+  def onMulti(source: String, index: Int): EnrichFunc[_, Source] with DefaultFieldAccess[InternalFieldType, Seq[ExternalFieldType]] = onMulti(SelectorUtil.parse(source), index)
+  override def on(source: String, index: Int): EnrichFunc[_, Source] with DefaultFieldAccess[InternalFieldType, ExternalFieldType] = on(SelectorUtil.parse(source), index)
 
-  override def on[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _], field: String): EnrichFunc[DependencyRoot, Source] with DefaultFieldAccess[DefaultFieldType] = new PipedDependentEnrichFuncWithDefaultField[DependencyRoot, Source, DefaultFieldType](this, dependency, field)
-  override def onEach[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _], field: String): EnrichFunc[DependencyRoot, Source] with DefaultFieldAccess[Seq[DefaultFieldType]] = new MultiPipedDependentEnrichFuncWithDefaultField[DependencyRoot, Source, DefaultFieldType](this, dependency, field + "*")
+  override def onEach(source: String): EnrichFunc[_, Source] with DefaultFieldAccess[InternalFieldType, Seq[ExternalFieldType]] = onEach(SelectorUtil.parse(source))
 
-  override def on[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _], field: String, index: Int): EnrichFunc[DependencyRoot, Source] with DefaultFieldAccess[DefaultFieldType] = on(dependency, field + s"[$index]")
+  def ofMulti(source: String): EnrichFunc[_, Source] with DefaultFieldAccess[InternalFieldType, Seq[ExternalFieldType]] = onMulti(source)
+  def ofMulti(source: Seq[String]): EnrichFunc[_, Source] with DefaultFieldAccess[InternalFieldType, Seq[ExternalFieldType]] = onMulti(source)
+  def ofMulti(source: String, index: Int): EnrichFunc[_, Source] with DefaultFieldAccess[InternalFieldType, Seq[ExternalFieldType]] = onMulti(source, index)
+  def ofMulti(source: Seq[String], index: Int): EnrichFunc[_, Source] with DefaultFieldAccess[InternalFieldType, Seq[ExternalFieldType]] = onMulti(source, index)
 
-  override def on[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _]): EnrichFunc[DependencyRoot, Source] with DefaultFieldAccess[DefaultFieldType] = {
-    on(dependency, if (dependency.hasField(dependencyField)) dependencyField else dependency.asInstanceOf[DefaultFieldAccess[Source]].defaultField)
+  override def of(source: String): EnrichFunc[_, Source] with DefaultFieldAccess[InternalFieldType, ExternalFieldType] = on(source)
+  override def of(source: Seq[String]): EnrichFunc[_, Source] with DefaultFieldAccess[InternalFieldType, ExternalFieldType] = on(source)
+  override def of(source: String, index: Int): EnrichFunc[_, Source] with DefaultFieldAccess[InternalFieldType, ExternalFieldType] = on(source, index)
+  override def of(source: Seq[String], index: Int): EnrichFunc[_, Source] with DefaultFieldAccess[InternalFieldType, ExternalFieldType] = on(source, index)
+
+  override def ofEach(source: String): EnrichFunc[_, Source] with DefaultFieldAccess[InternalFieldType, Seq[ExternalFieldType]] = onEach(source)
+  override def ofEach(source: Seq[String]): EnrichFunc[_, Source] with DefaultFieldAccess[InternalFieldType, Seq[ExternalFieldType]] = onEach(source)
+
+  override def on[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _], field: String): EnrichFunc[DependencyRoot, Source] with DefaultFieldAccess[InternalFieldType, ExternalFieldType] = new PipedDependentEnrichFuncWithDefaultField[DependencyRoot, Source, InternalFieldType, ExternalFieldType](this, dependency, field)
+
+  def on[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _] with MultiVal, field: String)(implicit d: DummyImplicit): EnrichFunc[DependencyRoot, Source] with DefaultFieldAccess[InternalFieldType, Seq[ExternalFieldType]] = onMulti(dependency, field)
+  def onMulti[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _], field: String): EnrichFunc[DependencyRoot, Source] with DefaultFieldAccess[InternalFieldType, Seq[ExternalFieldType]] = new MultiPipedDependentEnrichFuncWithDefaultField[DependencyRoot, Source, InternalFieldType, ExternalFieldType](this, dependency, field)
+  override def onEach[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _], field: String): EnrichFunc[DependencyRoot, Source] with DefaultFieldAccess[InternalFieldType, Seq[ExternalFieldType]] = onMulti(dependency, field + "*")
+
+  def on[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _] with MultiVal, field: String, index: Int)(implicit d: DummyImplicit): EnrichFunc[DependencyRoot, Source] with DefaultFieldAccess[InternalFieldType, Seq[ExternalFieldType]] = onMulti(dependency, field, index)
+  def onMulti[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _], field: String, index: Int): EnrichFunc[DependencyRoot, Source] with DefaultFieldAccess[InternalFieldType, Seq[ExternalFieldType]] = onMulti(dependency, field + s"[$index]")
+  override def on[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _], field: String, index: Int): EnrichFunc[DependencyRoot, Source] with DefaultFieldAccess[InternalFieldType, ExternalFieldType] = on(dependency, field + s"[$index]")
+
+  def on[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _] with MultiVal)(implicit d: DummyImplicit): EnrichFunc[DependencyRoot, Source] with DefaultFieldAccess[InternalFieldType, Seq[ExternalFieldType]] = onMulti(dependency)
+  def onMulti[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _]): EnrichFunc[DependencyRoot, Source] with DefaultFieldAccess[InternalFieldType, Seq[ExternalFieldType]] = {
+    onMulti(dependency, if (dependency.hasField(dependencyField)) dependencyField else dependency.asInstanceOf[DefaultFieldAccess[Source, _]].defaultField)
   }
-  override def on[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _], index: Int): EnrichFunc[DependencyRoot, Source] with DefaultFieldAccess[DefaultFieldType] = {
-    on(dependency, if (dependency.hasField(dependencyField)) dependencyField else dependency.asInstanceOf[DefaultFieldAccess[Source]].defaultField, index)
-  }
-  override def onEach[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _]): EnrichFunc[DependencyRoot, Source] with DefaultFieldAccess[Seq[DefaultFieldType]] = {
-    onEach(dependency, if (dependency.hasField(dependencyField)) dependencyField else dependency.asInstanceOf[DefaultFieldAccess[Seq[Source]]].defaultField)
+
+  def on[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _] with MultiVal, index: Int)(implicit d: DummyImplicit): EnrichFunc[DependencyRoot, Source] with DefaultFieldAccess[InternalFieldType, Seq[ExternalFieldType]] = onMulti(dependency, index)
+  def onMulti[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _], index: Int): EnrichFunc[DependencyRoot, Source] with DefaultFieldAccess[InternalFieldType, Seq[ExternalFieldType]] = {
+    onMulti(dependency, if (dependency.hasField(dependencyField)) dependencyField else dependency.asInstanceOf[DefaultFieldAccess[Source, _]].defaultField, index)
   }
 
-  override def of[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _], field: String): EnrichFunc[DependencyRoot, Source] with DefaultFieldAccess[DefaultFieldType] = on(dependency, field)
-  override def of[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _], field: String, index: Int): EnrichFunc[DependencyRoot, Source] with DefaultFieldAccess[DefaultFieldType] = on(dependency, field, index)
-  override def ofEach[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _], field: String): EnrichFunc[DependencyRoot, Source] with DefaultFieldAccess[Seq[DefaultFieldType]] = onEach(dependency, field)
+  override def on[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _]): EnrichFunc[DependencyRoot, Source] with DefaultFieldAccess[InternalFieldType, ExternalFieldType] = {
+    on(dependency, if (dependency.hasField(dependencyField)) dependencyField else dependency.asInstanceOf[DefaultFieldAccess[Source, _]].defaultField)
+  }
+  override def on[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _], index: Int): EnrichFunc[DependencyRoot, Source] with DefaultFieldAccess[InternalFieldType, ExternalFieldType] = {
+    on(dependency, if (dependency.hasField(dependencyField)) dependencyField else dependency.asInstanceOf[DefaultFieldAccess[Source, _]].defaultField, index)
+  }
+  override def onEach[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _]): EnrichFunc[DependencyRoot, Source] with DefaultFieldAccess[InternalFieldType, Seq[ExternalFieldType]] = {
+    onEach(dependency, if (dependency.hasField(dependencyField)) dependencyField else dependency.asInstanceOf[DefaultFieldAccess[Source, _]].defaultField)
+  }
 
-  override def of[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _]): EnrichFunc[DependencyRoot, Source] with DefaultFieldAccess[DefaultFieldType] = on(dependency)
-  override def of[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _], index: Int): EnrichFunc[DependencyRoot, Source] with DefaultFieldAccess[DefaultFieldType] = on(dependency, index)
-  override def ofEach[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _]): EnrichFunc[DependencyRoot, Source] with DefaultFieldAccess[Seq[DefaultFieldType]] = onEach(dependency)
+  def of[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _] with MultiVal, field: String)(implicit d: DummyImplicit): EnrichFunc[DependencyRoot, Source] with DefaultFieldAccess[InternalFieldType, Seq[ExternalFieldType]] = onMulti(dependency, field)
+  def of[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _] with MultiVal, field: String, index: Int)(implicit d: DummyImplicit): EnrichFunc[DependencyRoot, Source] with DefaultFieldAccess[InternalFieldType, Seq[ExternalFieldType]] = onMulti(dependency, field, index)
+  def ofMulti[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _], field: String): EnrichFunc[DependencyRoot, Source] with DefaultFieldAccess[InternalFieldType, Seq[ExternalFieldType]] = onMulti(dependency, field)
+  def ofMulti[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _], field: String, index: Int): EnrichFunc[DependencyRoot, Source] with DefaultFieldAccess[InternalFieldType, Seq[ExternalFieldType]] = onMulti(dependency, field, index)
+  override def of[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _], field: String): EnrichFunc[DependencyRoot, Source] with DefaultFieldAccess[InternalFieldType, ExternalFieldType] = on(dependency, field)
+  override def of[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _], field: String, index: Int): EnrichFunc[DependencyRoot, Source] with DefaultFieldAccess[InternalFieldType, ExternalFieldType] = on(dependency, field, index)
+  override def ofEach[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _], field: String): EnrichFunc[DependencyRoot, Source] with DefaultFieldAccess[InternalFieldType, Seq[ExternalFieldType]] = onEach(dependency, field)
+
+  def of[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _] with MultiVal)(implicit d: DummyImplicit): EnrichFunc[DependencyRoot, Source] with DefaultFieldAccess[InternalFieldType, Seq[ExternalFieldType]] = onMulti(dependency)
+  def of[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _] with MultiVal, index: Int)(implicit d: DummyImplicit): EnrichFunc[DependencyRoot, Source] with DefaultFieldAccess[InternalFieldType, Seq[ExternalFieldType]] = onMulti(dependency, index)
+  def ofMulti[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _]): EnrichFunc[DependencyRoot, Source] with DefaultFieldAccess[InternalFieldType, Seq[ExternalFieldType]] = onMulti(dependency)
+  def ofMulti[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _], index: Int): EnrichFunc[DependencyRoot, Source] with DefaultFieldAccess[InternalFieldType, Seq[ExternalFieldType]] = onMulti(dependency, index)
+  override def of[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _]): EnrichFunc[DependencyRoot, Source] with DefaultFieldAccess[InternalFieldType, ExternalFieldType] = on(dependency)
+  override def of[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _], index: Int): EnrichFunc[DependencyRoot, Source] with DefaultFieldAccess[InternalFieldType, ExternalFieldType] = on(dependency, index)
+  override def ofEach[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _]): EnrichFunc[DependencyRoot, Source] with DefaultFieldAccess[InternalFieldType, Seq[ExternalFieldType]] = onEach(dependency)
 }

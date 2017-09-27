@@ -25,9 +25,9 @@
 package de.l3s.archivespark.enrich
 
 class IdentityEnrichFunction[T, Root <: EnrichRoot] (override val dependency: EnrichFunc[Root, _], override val dependencyField: String, val fieldName: String)
-  extends DefaultFieldDependentEnrichFunc[Root, T, T] with SingleField[T] {
+  extends DefaultFieldDependentEnrichFunc[Root, T, T, T] with SingleField[T] {
 
-  def this(dependency: EnrichFunc[Root, _] with DefaultField[T], fieldName: String) {
+  def this(dependency: EnrichFunc[Root, _] with DefaultFieldAccess[T, _], fieldName: String) {
     this(dependency, dependency.defaultField, fieldName)
   }
 

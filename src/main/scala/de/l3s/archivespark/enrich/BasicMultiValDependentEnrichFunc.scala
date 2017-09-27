@@ -25,7 +25,7 @@
 package de.l3s.archivespark.enrich
 
 abstract class BasicMultiValDependentEnrichFunc[Root <: EnrichRoot, Input, Output](parent: EnrichFunc[Root, _] with DefaultField[Input], name: String, body: TypedEnrichable[Input] => Option[Seq[Output]])
-  extends DefaultFieldDependentEnrichFunc[Root, Input, Seq[Output]] with SingleField[Seq[Output]] {
+  extends DefaultFieldDependentEnrichFunc[Root, Input, Seq[Output], Seq[Output]] with SingleField[Seq[Output]] {
 
   override def dependency = parent
   override def dependencyField = parent.defaultField
