@@ -44,7 +44,7 @@ object WarcHeaders {
     header.append("WARC/1.0").append(Br)
     header.append("WARC-Type: warcinfo").append(Br)
     header.append("WARC-Date: " + LocalDateTime.now + "Z").append(Br)
-    header.append("WARC-Filename: " + info.name + fileSuffix).append(Br)
+    header.append("WARC-Filename: " + info.filename(fileSuffix)).append(Br)
     header.append("WARC-Record-ID: <" + warcRecordID() +">").append(Br)
     header.append("Content-Type: application/warc-fields").append(Br)
 

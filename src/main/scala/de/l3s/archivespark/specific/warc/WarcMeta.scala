@@ -30,4 +30,6 @@ case class WarcMeta(
   name: String = "ArchiveSpark-WARC",
   publisher: String = "Anonymous",
   created: LocalDateTime = LocalDateTime.now
-)
+) {
+  def filename(suffix: String): String = name + suffix
+}

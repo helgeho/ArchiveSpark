@@ -26,7 +26,9 @@ package de.l3s.archivespark.specific.warc
 
 import org.apache.spark.rdd.RDD
 
+import scala.reflect.ClassTag
+
 package object implicits {
     implicit class ImplicitResolvableRDD(rdd: RDD[CdxRecord]) extends ResolvableRDD(rdd)
-    implicit class ImplicitWarcRDD[WARC <: WarcLikeRecord](rdd: RDD[WARC]) extends WarcRDD(rdd)
+    implicit class ImplicitWarcRDD[WARC <: WarcLikeRecord : ClassTag](rdd: RDD[WARC]) extends WarcRDD(rdd)
 }

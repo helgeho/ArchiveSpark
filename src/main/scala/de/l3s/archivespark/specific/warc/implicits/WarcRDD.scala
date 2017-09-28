@@ -24,29 +24,45 @@
 
 package de.l3s.archivespark.specific.warc.implicits
 
+import de.l3s.archivespark.enrich.EnrichFunc
 import de.l3s.archivespark.enrich.dataloads.ByteContentLoad
 import de.l3s.archivespark.enrich.functions.DataLoad
-import de.l3s.archivespark.enrich.{EnrichFunc, EnrichRoot}
 import de.l3s.archivespark.implicits._
 import de.l3s.archivespark.specific.warc.enrichfunctions.HttpPayload
 import de.l3s.archivespark.specific.warc.{WarcHeaders, WarcLikeRecord, WarcMeta, WarcRecordInfo}
+import de.l3s.archivespark.utils.{GZipBytes, SparkIO}
 import org.apache.spark.rdd.RDD
 
-class WarcRDD[WARC <: WarcLikeRecord](rdd: RDD[WARC]) {
-  def saveAsWarc(info: WarcMeta): Long = {
+import scala.reflect.ClassTag
+
+class WarcRDD[WARC <: WarcLikeRecord : ClassTag](rdd: RDD[WARC]) {
+  def saveAsWarc(path: String, info: WarcMeta): Long = {
     val payloadEnrichFunc: EnrichFunc[WarcLikeRecord, _] = DataLoad(ByteContentLoad.Field)
-    rdd.enrich(payloadEnrichFunc).mapPartitionsWithIndex{case (idx, warcs) =>
-      val fileSuffix = s"-$idx.warc.gz"
-      val header = WarcHeaders.file(info, fileSuffix)
 
-      for (warc <- warcs) {
-        val httpHeadersOpt: Option[Map[String, String]] = warc.value(payloadEnrichFunc, HttpPayload.HeaderField)
-        val payload: Array[Byte] = warc.value(payloadEnrichFunc, HttpPayload.PayloadField).get
-        val recordInfo = WarcRecordInfo(warc.get.originalUrl, warc.get.time, httpHeadersOpt.flatMap(_.get("")))
-        val recordHeader
+    val gz = path.toLowerCase.endsWith(".gz")
+
+    SparkIO.save(path, rdd.enrich(payloadEnrichFunc)) { (idx, warcs, open) =>
+      val fileSuffix = s"-$idx.warc${if (gz) ".gz" else ""}"
+
+      open(info.filename(fileSuffix)) { stream =>
+        val header = WarcHeaders.file(info, fileSuffix)
+        stream.write(if (gz) GZipBytes(header) else header)
+
+        for (warc <- warcs) {
+          val httpHeadersOpt = warc.value[WarcLikeRecord, Map[String, String]](payloadEnrichFunc, HttpPayload.HeaderField)
+          val payload = warc.value[WarcLikeRecord, Array[Byte]](payloadEnrichFunc, HttpPayload.PayloadField).get
+          val recordInfo = WarcRecordInfo(warc.get.originalUrl, warc.get.time, httpHeadersOpt.flatMap(_.get("ip???????")))
+          val recordHeader = WarcHeaders.responseRecord(info, recordInfo, payload)
+
+          if (gz) stream.write(GZipBytes.open {gzip =>
+              gzip.write(recordHeader)
+              gzip.write(payload)
+          }) else {
+            stream.write(recordHeader)
+            stream.write(payload)
+          }
+        }
       }
-
-      Iterator(1L)
-    }.reduce(_ + _)
+    }
   }
 }

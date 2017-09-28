@@ -27,6 +27,8 @@ package de.l3s.archivespark.utils
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{Partitioner, SparkContext}
 
+import scala.reflect.ClassTag
+
 object RddUtil {
   class ItemParitioner(override val numPartitions: Int) extends Partitioner {
     override def getPartition(key: Any): Int = key match {
@@ -39,9 +41,9 @@ object RddUtil {
 
   def parallelize(sc: SparkContext, items: Int, partitions: Int): RDD[Int] = parallelize(sc, 0 until items, partitions)
 
-  def parallelize[T](sc: SparkContext, items: Seq[T]): RDD[T] = parallelize(sc, items, items.size)
+  def parallelize[T : ClassTag](sc: SparkContext, items: Seq[T]): RDD[T] = parallelize(sc, items, items.size)
 
-  def parallelize[T](sc: SparkContext, items: Seq[T], partitions: Int): RDD[T] = {
+  def parallelize[T : ClassTag](sc: SparkContext, items: Seq[T], partitions: Int): RDD[T] = {
     val partitioner = new ItemParitioner(partitions.min(items.size))
     sc.parallelize(items.zipWithIndex.map{case (v, i) => (i, v)}).partitionBy(partitioner).values
   }
