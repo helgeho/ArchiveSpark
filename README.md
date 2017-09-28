@@ -1,5 +1,7 @@
 # ArchiveSpark
 
+![ArchiveSpark Logo](./logo.png)
+
 An Apache Spark framework (not only) for Web Archives that enables easy data processing, extraction as well as derivation.
 
 To get you started, please find more information in our [wiki](https://github.com/helgeho/ArchiveSpark/wiki).
