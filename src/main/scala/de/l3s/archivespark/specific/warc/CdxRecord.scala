@@ -25,13 +25,14 @@
 package de.l3s.archivespark.specific.warc
 
 import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 import de.l3s.archivespark.utils.JsonConvertible
 
 import scala.util.Try
 
 object CdxRecord {
-  val DateTimeFormatter = java.time.format.DateTimeFormatter.ofPattern("yyyyMMddHHmmss")
+  val DateTimeFormatter: DateTimeFormatter = java.time.format.DateTimeFormatter.ofPattern("yyyyMMddHHmmss")
 
   def fromString(str: String): Option[CdxRecord] = {
     val split = str.trim.split("[ \t]")
@@ -60,12 +61,17 @@ case class CdxRecord(surtUrl: String,
                      meta: String,
                      compressedSize: Long,
                      additionalFields: Seq[String]) extends CdxBasedRecord with JsonConvertible {
-  def time = Try(LocalDateTime.parse(timestamp, CdxRecord.DateTimeFormatter)).getOrElse(null)
+  def time: LocalDateTime = Try(LocalDateTime.parse(timestamp, CdxRecord.DateTimeFormatter)).getOrElse(null)
 
-  def toCdxString = {
+  def toCdxString(additionalFields: Seq[String]): String = {
     val statusStr = if (status < 0) "-" else status.toString
-    s"$surtUrl $timestamp $originalUrl $mime $statusStr $digest $redirectUrl $meta $compressedSize"
+    val additionalStr = if (additionalFields.nonEmpty) additionalFields.mkString(" ") else ""
+    s"$surtUrl $timestamp $originalUrl $mime $statusStr $digest $redirectUrl $meta $compressedSize $additionalStr".trim
   }
+
+  def toCdxString(includeAdditionalFields: Boolean = true): String = toCdxString(if (includeAdditionalFields) additionalFields else Seq.empty)
+
+  def toCdxString: String = toCdxString()
 
   def toJson: Map[String, Any] = Map[String, Any](
     "surtUrl" -> surtUrl,

@@ -24,6 +24,6 @@
 
 package de.l3s.archivespark.enrich.dataloads
 
-trait DataLoadCompanion[Load <: DataLoadBase] {
+trait DataLoadCompanion[Load <: DataLoadBase] extends Serializable {
   def Field: String
 }

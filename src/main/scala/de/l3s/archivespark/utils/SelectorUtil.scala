@@ -25,7 +25,7 @@
 package de.l3s.archivespark.utils
 
 object SelectorUtil {
-  def parse(path: String) = path.split("\\.").map(_.trim).flatMap{k =>
+  def parse(path: String): Array[String] = path.split("\\.").map(_.trim).flatMap{ k =>
     var split = -1
     if (k.endsWith("]")) split = k.lastIndexOf('[')
     else if(k.endsWith("*")) split = k.length - 1

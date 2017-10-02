@@ -16,7 +16,7 @@ ArchiveSpark has been published as a research paper at [JCDL 2016](http://www.jc
 If you use ArchiveSpark in your work, please cite:
 
 *[Helge Holzmann, Vinay Goel, Avishek Anand. ArchiveSpark: Efficient Web Archive Access, Extraction and Derivation. In Proceedings of the Joint Conference on Digital Libraries, Newark, New Jersey, USA, 2016.](http://dl.acm.org/citation.cfm?id=2910902)*
-**[Download PDF](http://l3s.de/~holzmann/papers/archivespark2016jcdl.pdf)**
+**[Download PDF](http://www.helgeholzmann.de/papers/JCDL_2016_ArchiveSpark.pdf)**
 
 More information can be found in the slides presented at the [WebSci`16 Hackathon](http://www.websci16.org/hackathon):
 
@@ -38,7 +38,7 @@ If you do not have Web archive data available to use it with ArchiveSpark, easil
 
 The MIT License (MIT)
 
-Copyright (c) 2015-2017 Helge Holzmann ([L3S](http://www.L3S.de)) and Vinay Goel ([Internet Archive](http://www.archive.org))
+Copyright (c) 2015-2017 [Helge Holzmann](http://www.HelgeHolzmann.de) ([L3S](http://www.L3S.de)) and Vinay Goel ([Internet Archive](http://www.archive.org))
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

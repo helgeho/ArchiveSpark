@@ -55,22 +55,22 @@ trait EnrichFunc[Root <: EnrichRoot, Source] extends Serializable {
 
   def hasField(name: String): Boolean = (aliases.keySet ++ fields).contains(name)
 
-  def onRoot: EnrichFunc[_, Source] = new PipedEnrichFunc[Source](this, Seq())
-  def ofRoot: EnrichFunc[_, Source] = onRoot
+  def onRoot: EnrichFunc[EnrichRoot, Source] = on(Seq.empty)
+  def ofRoot: EnrichFunc[EnrichRoot, Source] = onRoot
 
-  def on(source: Seq[String]): EnrichFunc[_, Source] = new PipedEnrichFunc[Source](this, source)
-  def on(source: String): EnrichFunc[_, Source] = on(SelectorUtil.parse(source))
-  def on(source: String, index: Int): EnrichFunc[_, Source] = on(SelectorUtil.parse(source), index)
-  def on(source: Seq[String], index: Int): EnrichFunc[_, Source] = on(source :+ s"[$index]")
-  def onEach(source: String): EnrichFunc[_, Source] = onEach(SelectorUtil.parse(source))
-  def onEach(source: Seq[String]): EnrichFunc[_, Source] = on(source :+ "*")
+  def on(source: Seq[String]): EnrichFunc[EnrichRoot, Source] = new PipedEnrichFunc[Source](this, source)
+  def on(source: String): EnrichFunc[EnrichRoot, Source] = on(SelectorUtil.parse(source))
+  def on(source: String, index: Int): EnrichFunc[EnrichRoot, Source] = on(SelectorUtil.parse(source), index)
+  def on(source: Seq[String], index: Int): EnrichFunc[EnrichRoot, Source] = on(source :+ s"[$index]")
+  def onEach(source: String): EnrichFunc[EnrichRoot, Source] = onEach(SelectorUtil.parse(source))
+  def onEach(source: Seq[String]): EnrichFunc[EnrichRoot, Source] = on(source :+ "*")
 
-  def of(source: String): EnrichFunc[_, Source] = on(source)
-  def of(source: Seq[String]): EnrichFunc[_, Source] = on(source)
-  def of(source: String, index: Int): EnrichFunc[_, Source] = on(source, index)
-  def of(source: Seq[String], index: Int): EnrichFunc[_, Source] = on(source, index)
-  def ofEach(source: String): EnrichFunc[_, Source] = onEach(source)
-  def ofEach(source: Seq[String]): EnrichFunc[_, Source] = onEach(source)
+  def of(source: String): EnrichFunc[EnrichRoot, Source] = on(source)
+  def of(source: Seq[String]): EnrichFunc[EnrichRoot, Source] = on(source)
+  def of(source: String, index: Int): EnrichFunc[EnrichRoot, Source] = on(source, index)
+  def of(source: Seq[String], index: Int): EnrichFunc[EnrichRoot, Source] = on(source, index)
+  def ofEach(source: String): EnrichFunc[EnrichRoot, Source] = onEach(source)
+  def ofEach(source: Seq[String]): EnrichFunc[EnrichRoot, Source] = onEach(source)
 
   def map[SourceField, Target](target: String)(f: SourceField => Target): DependentEnrichFunc[Root, SourceField] with SingleField[Target] = map[SourceField, Target](Try {this.asInstanceOf[DefaultFieldAccess[SourceField, _]].defaultField}.getOrElse(fields.head), target, target)(f)
   def map[SourceField, Target](sourceField: String, target: String)(f: SourceField => Target): DependentEnrichFunc[Root, SourceField] with SingleField[Target] = map[SourceField, Target](sourceField, target, target)(f)

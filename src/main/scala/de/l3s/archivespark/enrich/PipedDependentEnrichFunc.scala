@@ -33,13 +33,13 @@ class PipedDependentEnrichFunc[Root <: EnrichRoot, Source] private[enrich] (pare
 }
 
 class PipedDependentEnrichFuncWithDefaultField[Root <: EnrichRoot, Source, I, E] private[enrich] (parent: EnrichFunc[_, Source] with DefaultFieldAccess[I, E], override val dependency: EnrichFunc[Root, _], override val dependencyField: String)
-  extends PipedDependentEnrichFunc[Root, Source](parent, dependency, dependencyField) with DefaultFieldDependentEnrichFunc[Root, Source, I, E] {
+  extends PipedDependentEnrichFunc[Root, Source](parent, dependency, dependencyField) with DependentEnrichFuncWithDefaultField[Root, Source, I, E] {
 
   override def defaultField: String = parent.defaultField
 }
 
 class MultiPipedDependentEnrichFuncWithDefaultField[Root <: EnrichRoot, Source, I, E] private[enrich] (parent: EnrichFunc[_, Source] with DefaultFieldAccess[I, E], override val dependency: EnrichFunc[Root, _], override val dependencyField: String)
-  extends PipedDependentEnrichFunc[Root, Source](parent, dependency, dependencyField) with DefaultFieldDependentEnrichFunc[Root, Source, I, Seq[E]] with MultiVal {
+  extends PipedDependentEnrichFunc[Root, Source](parent, dependency, dependencyField) with DependentEnrichFuncWithDefaultField[Root, Source, I, Seq[E]] with MultiVal {
 
   override def defaultField: String = parent.defaultField
 }

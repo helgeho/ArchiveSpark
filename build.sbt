@@ -4,7 +4,7 @@ import sbt.Keys._
 lazy val commonSettings = Seq(
   name := "archivespark",
   organization := "de.l3s",
-  version := "2.1.3",
+  version := "2.5",
   scalaVersion := "2.11.7",
   fork := true
 )
@@ -13,7 +13,7 @@ lazy val archivespark = (project in file(".")).
   settings(commonSettings: _*).
   settings(
     libraryDependencies ++= Seq(
-      "org.apache.spark" %% "spark-core" % "2.0.1" % "provided" excludeAll(
+      "org.apache.spark" %% "spark-core" % "2.2.0" % "provided" excludeAll(
         ExclusionRule(organization = "org.apache.hadoop"),
         ExclusionRule(organization = "org.scala-lang"),
         ExclusionRule(organization = "com.google.guava")),

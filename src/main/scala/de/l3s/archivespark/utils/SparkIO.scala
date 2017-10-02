@@ -32,32 +32,30 @@ import org.apache.spark.deploy.SparkHadoopUtil
 import org.apache.spark.rdd.RDD
 
 object SparkIO {
-  def defaultCreate(fs: FileSystem, path: Path): OutputStream = fs.create(path)
+  def defaultCreate(fs: FileSystem, path: Path): OutputStream = fs.create(path, true)
 
-  def save[T](dir: String, rdd: RDD[T], create: (FileSystem, Path) => OutputStream = defaultCreate)(savePartition: (Int, Iterator[T], String => (OutputStream => Unit) => Boolean) => Boolean): Long = {
+  def save[T](dir: String, rdd: RDD[T], create: (FileSystem, Path) => OutputStream = defaultCreate)(savePartition: (Int, Iterator[T], String => (=> OutputStream => Unit) => Unit) => Long): Long = {
     val fs = FileSystem.newInstance(SparkHadoopUtil.get.conf)
     val dirPath = new Path(dir)
     if (fs.exists(dirPath)) throw new AlreadyExistsException(s"Output directory already exists ($dir).")
     fs.mkdirs(dirPath)
 
     rdd.mapPartitionsWithIndex{case (idx, records) =>
-      def open(filename: String)(action: OutputStream => Unit): Boolean = {
+      def open(filename: String)(action: => OutputStream => Unit): Unit = {
         val fs = FileSystem.newInstance(SparkHadoopUtil.get.conf)
         var stream: OutputStream = null
         try {
-          stream = create(fs, new Path(dir, filename))
-          action(stream)
-          true
-        } catch {
-          case e: Exception =>
-            e.printStackTrace()
-            false
+          lazy val lazyStream = {
+            stream = create(fs, new Path(dir, filename))
+            stream
+          }
+          action(lazyStream)
         } finally {
           if (stream != null) stream.close()
         }
       }
-      val success = savePartition(idx, records, open)
-      Iterator(if (success) 1L else 0L)
+      val processed = savePartition(idx, records, open)
+      Iterator(processed)
     }.reduce(_ + _)
   }
 }

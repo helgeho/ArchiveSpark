@@ -38,7 +38,7 @@ private object EntitiesNamespace extends IdentityEnrichFunction(HtmlText, "entit
 /*
 In order to use this enrich function, please make sure have Stanford CoreNLP model file in your classpath.
  */
-class Entities private (properties: Properties, tagFieldMapping: Seq[(String, String)]) extends DefaultFieldBoundEnrichFunc[EnrichRoot with ByteContentLoad, String, Seq[String]](EntitiesNamespace) with SingleField[Seq[String]] {
+class Entities private (properties: Properties, tagFieldMapping: Seq[(String, String)]) extends BoundEnrichFuncWithDefaultField[EnrichRoot with ByteContentLoad, String, Seq[String]](EntitiesNamespace) with SingleField[Seq[String]] {
   override def fields = tagFieldMapping.map{case (tag, field) => field}
 
   override def derive(source: TypedEnrichable[String], derivatives: Derivatives): Unit = {

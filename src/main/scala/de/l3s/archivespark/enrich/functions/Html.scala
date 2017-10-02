@@ -47,7 +47,7 @@ object Html extends HtmlTag("body", 0, "body") {
   def all(selector: String, fieldName: String): HtmlTags = new HtmlTags(selector, fieldName)
 }
 
-class HtmlTag (selector: String, index: Int, fieldName: String) extends DefaultFieldBoundEnrichFunc[EnrichRoot with ByteContentLoad, String, String](HtmlNamespace) with SingleField[String] {
+class HtmlTag (selector: String, index: Int, fieldName: String) extends BoundEnrichFuncWithDefaultField[EnrichRoot with ByteContentLoad, String, String](HtmlNamespace) with SingleField[String] {
   override def fields: Seq[String] = Seq(fieldName)
   override def aliases = Map("html" -> fieldName)
 
@@ -59,7 +59,7 @@ class HtmlTag (selector: String, index: Int, fieldName: String) extends DefaultF
   }
 }
 
-class HtmlTags (selector: String, fieldName: String) extends DefaultFieldBoundEnrichFunc[EnrichRoot with ByteContentLoad, String, Seq[String]](HtmlNamespace) with SingleField[Seq[String]] {
+class HtmlTags (selector: String, fieldName: String) extends BoundEnrichFuncWithDefaultField[EnrichRoot with ByteContentLoad, String, Seq[String]](HtmlNamespace) with SingleField[Seq[String]] {
   override def fields: Seq[String] = Seq(fieldName)
   override def aliases = Map("html" -> fieldName)
 

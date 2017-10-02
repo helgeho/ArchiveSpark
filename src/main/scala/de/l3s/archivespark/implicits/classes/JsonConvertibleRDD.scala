@@ -33,14 +33,14 @@ import de.l3s.archivespark.implicits._
 import scala.reflect.ClassTag
 
 class JsonConvertibleRDD[Record <: JsonConvertible : ClassTag](rdd: RDD[Record]) {
-  def toJson = rdd.map(r => r.toJson)
+  def toJson: RDD[Map[String, Any]] = rdd.map(r => r.toJson)
 
-  def toJsonStrings = rdd.map(r => r.toJsonString)
-  def toJsonStrings(pretty: Boolean = true) = rdd.map(r => r.toJsonString(pretty))
+  def toJsonStrings: RDD[String] = rdd.map(r => r.toJsonString)
+  def toJsonStrings(pretty: Boolean = true): RDD[String] = rdd.map(r => r.toJsonString(pretty))
 
-  def saveAsJson(path: String) = if (path.endsWith(".gz")) toJsonStrings.saveAsTextFile(path, classOf[GzipCodec]) else toJsonStrings.saveAsTextFile(path)
+  def saveAsJson(path: String): Unit = if (path.endsWith(".gz")) toJsonStrings.saveAsTextFile(path, classOf[GzipCodec]) else toJsonStrings.saveAsTextFile(path)
 
-  def saveToEs(resource: String) = EsSpark.saveJsonToEs(rdd.map(r => r.toJsonString(pretty = false)), resource)
+  def saveToEs(resource: String): Unit = EsSpark.saveJsonToEs(rdd.map(r => r.toJsonString(pretty = false)), resource)
 
-  def peekJson = rdd.peek.toJsonString
+  def peekJson: String = rdd.peek.toJsonString
 }

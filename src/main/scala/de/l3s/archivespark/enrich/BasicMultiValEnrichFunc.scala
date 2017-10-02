@@ -28,7 +28,7 @@ import de.l3s.archivespark.enrich.dataloads.{DataLoadBase, DataLoadCompanion}
 import de.l3s.archivespark.enrich.functions.DataLoad
 
 abstract class BasicMultiValEnrichFunc[DataLoad <: DataLoadBase, Input, Output](dataLoad: DataLoadCompanion[DataLoad], name: String, body: TypedEnrichable[Input] => Option[Seq[Output]])
-  extends DefaultFieldDependentEnrichFunc[EnrichRoot with DataLoad, Input, Seq[Output], Seq[Output]] with SingleField[Seq[Output]] {
+  extends DependentEnrichFuncWithDefaultField[EnrichRoot with DataLoad, Input, Seq[Output], Seq[Output]] with SingleField[Seq[Output]] {
 
   override def dependency: EnrichFunc[EnrichRoot with DataLoad, _] = DataLoad(dataLoad.Field)
   override def dependencyField: String = dataLoad.Field

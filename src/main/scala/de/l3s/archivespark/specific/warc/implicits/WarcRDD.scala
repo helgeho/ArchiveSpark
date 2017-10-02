@@ -24,45 +24,84 @@
 
 package de.l3s.archivespark.specific.warc.implicits
 
+import java.io.PrintStream
+import java.util.zip.GZIPOutputStream
+
 import de.l3s.archivespark.enrich.EnrichFunc
 import de.l3s.archivespark.enrich.dataloads.ByteContentLoad
 import de.l3s.archivespark.enrich.functions.DataLoad
 import de.l3s.archivespark.implicits._
-import de.l3s.archivespark.specific.warc.enrichfunctions.HttpPayload
+import de.l3s.archivespark.specific.warc.enrichfunctions.{HttpPayload, WarcPayload}
 import de.l3s.archivespark.specific.warc.{WarcHeaders, WarcLikeRecord, WarcMeta, WarcRecordInfo}
 import de.l3s.archivespark.utils.{GZipBytes, SparkIO}
+import org.apache.hadoop.io.compress.GzipCodec
 import org.apache.spark.rdd.RDD
 
 import scala.reflect.ClassTag
 
+object WarcRDD {
+  val WarcIpField = "WARC-IP-Address"
+}
+
 class WarcRDD[WARC <: WarcLikeRecord : ClassTag](rdd: RDD[WARC]) {
-  def saveAsWarc(path: String, info: WarcMeta): Long = {
+  import WarcRDD._
+
+  def saveAsWarc(path: String, info: WarcMeta, generateCdx: Boolean = true): Long = {
     val payloadEnrichFunc: EnrichFunc[WarcLikeRecord, _] = DataLoad(ByteContentLoad.Field)
 
     val gz = path.toLowerCase.endsWith(".gz")
 
-    SparkIO.save(path, rdd.enrich(payloadEnrichFunc)) { (idx, warcs, open) =>
-      val fileSuffix = s"-$idx.warc${if (gz) ".gz" else ""}"
+    SparkIO.save(path, rdd.enrich(payloadEnrichFunc)) { (idx, records, open) =>
+      val id = idx.toString.reverse.padTo(5, '0').reverse.mkString
+      val warcSuffix = s"-$id.warc${if (gz) ".gz" else ""}"
+      val cdxSuffix = s"-$id.cdx${if (gz) ".gz" else ""}"
 
-      open(info.filename(fileSuffix)) { stream =>
-        val header = WarcHeaders.file(info, fileSuffix)
-        stream.write(if (gz) GZipBytes(header) else header)
+      var processed = 0L
+      if (records.nonEmpty) {
+        val warcFilename = info.filename(warcSuffix)
+        open(warcFilename) { warcStream =>
+          val header = WarcHeaders.file(info, warcSuffix)
+          val headerBytes = if (gz) GZipBytes(header) else header
+          warcStream.write(headerBytes)
 
-        for (warc <- warcs) {
-          val httpHeadersOpt = warc.value[WarcLikeRecord, Map[String, String]](payloadEnrichFunc, HttpPayload.HeaderField)
-          val payload = warc.value[WarcLikeRecord, Array[Byte]](payloadEnrichFunc, HttpPayload.PayloadField).get
-          val recordInfo = WarcRecordInfo(warc.get.originalUrl, warc.get.time, httpHeadersOpt.flatMap(_.get("ip???????")))
-          val recordHeader = WarcHeaders.responseRecord(info, recordInfo, payload)
+          var offset = headerBytes.length.toLong
+          open(info.filename(cdxSuffix)) { cdxStream =>
+            lazy val cdxCompressed = new GZIPOutputStream(cdxStream)
+            lazy val cdxOut = if (gz) new PrintStream(cdxCompressed) else new PrintStream(cdxStream)
 
-          if (gz) stream.write(GZipBytes.open {gzip =>
-              gzip.write(recordHeader)
-              gzip.write(payload)
-          }) else {
-            stream.write(recordHeader)
-            stream.write(payload)
+            processed = records.map { record =>
+              val warcHeadersOpt = record.value[WarcLikeRecord, Map[String, String]](payloadEnrichFunc, WarcPayload.RecordHeaderField)
+              val recordInfo = WarcRecordInfo(record.get.originalUrl, record.get.time, warcHeadersOpt.flatMap(_.get(WarcIpField)))
+              val payload = record.value[WarcLikeRecord, Array[Byte]](payloadEnrichFunc, HttpPayload.PayloadField).get
+              val recordHeader = WarcHeaders.responseRecord(info, recordInfo, payload)
+
+              val httpStatusOpt = record.value[WarcLikeRecord, String](payloadEnrichFunc, HttpPayload.StatusLineField)
+              val httpHeadersOpt = record.value[WarcLikeRecord, Map[String, String]](payloadEnrichFunc, HttpPayload.HeaderField)
+              val httpHeader = if (httpStatusOpt.isDefined && httpHeadersOpt.isDefined) WarcHeaders.http(httpStatusOpt.get, httpHeadersOpt.get) else Array.empty[Byte]
+
+              val recordBytes = if (gz) GZipBytes(recordHeader ++ httpHeader ++ payload) else recordHeader ++ httpHeader ++ payload
+              warcStream.write(recordBytes)
+
+              if (generateCdx) {
+                val locationInfo = Array(offset.toString, warcFilename)
+                cdxOut.println(record.get.copy(compressedSize = recordBytes.length).toCdxString(locationInfo))
+              }
+
+              offset += recordBytes.length
+
+              1L
+            }.sum
+
+            if (generateCdx && gz) cdxCompressed.finish()
           }
         }
       }
+      processed
     }
   }
+
+  def toCdxStrings: RDD[String] = toCdxStrings()
+  def toCdxStrings(includeAdditionalFields: Boolean = true): RDD[String] = rdd.map(_.toCdxString(includeAdditionalFields))
+
+  def saveAsCdx(path: String): Unit = if (path.endsWith(".gz")) toCdxStrings.saveAsTextFile(path, classOf[GzipCodec]) else toCdxStrings.saveAsTextFile(path)
 }

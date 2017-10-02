@@ -31,7 +31,7 @@ import scala.reflect.ClassTag
 
 class GenericHelpersRDD[A : ClassTag](rdd: RDD[A]) {
   def peek: A = rdd.first
-  def peek(index: Int) = rdd.take(index + 1).drop(index).head
+  def peek(index: Int): A = rdd.take(index + 1).drop(index).head
 
   def distinctValue[T : ClassTag](value: A => T)(distinct: (A, A) => A): RDD[A] = {
     rdd.keyBy(value).reduceByKey(distinct, ArchiveSpark.partitions(rdd.sparkContext)).values

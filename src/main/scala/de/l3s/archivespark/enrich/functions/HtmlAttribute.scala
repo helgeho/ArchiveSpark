@@ -36,7 +36,7 @@ object HtmlAttribute {
   def apply(name: String): HtmlAttribute = new HtmlAttribute(name)
 }
 
-class HtmlAttribute private (attribute: String) extends DefaultFieldBoundEnrichFunc[EnrichRoot with ByteContentLoad, String, String](HtmlAttributeNamespace) with SingleField[String] {
+class HtmlAttribute private (attribute: String) extends BoundEnrichFuncWithDefaultField[EnrichRoot with ByteContentLoad, String, String](HtmlAttributeNamespace) with SingleField[String] {
   override def fields = Seq(attribute)
   override def aliases = Map("value" -> attribute)
 

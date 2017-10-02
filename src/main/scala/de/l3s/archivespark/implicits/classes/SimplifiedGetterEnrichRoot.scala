@@ -30,6 +30,9 @@ import de.l3s.archivespark.utils.SelectorUtil
 import scala.reflect.ClassTag
 
 class SimplifiedGetterEnrichRoot[Root <: EnrichRoot](root: Root) {
+  def getValue[SpecificRoot >: Root <: EnrichRoot, T : ClassTag](f: EnrichFunc[SpecificRoot, _] with DefaultFieldAccess[_, T]): T = value(f).get
+  def getValue[SpecificRoot >: Root <: EnrichRoot, T : ClassTag](f: EnrichFunc[SpecificRoot, _], field: String): T = value(f, field).get
+
   def value[SpecificRoot >: Root <: EnrichRoot, T : ClassTag](f: EnrichFunc[SpecificRoot, _] with DefaultFieldAccess[_, T]): Option[T] = root.get[T](f.pathToDefaultField)
   def value[SpecificRoot >: Root <: EnrichRoot, T : ClassTag](f: EnrichFunc[SpecificRoot, _], field: String): Option[T] = root.get[T](f.pathTo(field))
 

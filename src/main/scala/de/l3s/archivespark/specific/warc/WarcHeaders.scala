@@ -82,5 +82,16 @@ object WarcHeaders {
     header.toString().getBytes(UTF8)
   }
 
+  def http(statusLine: String, headers: Map[String, String]) = {
+    val header = StringBuilder.newBuilder
+    header.append(statusLine).append(Br)
+    for ((key, value) <- headers) {
+      header.append(s"$key: $value").append(Br)
+    }
+    header.append(Br)
+
+    header.toString().getBytes(UTF8)
+  }
+
   private def warcRecordID() = "urn:uuid:" + UUID.randomUUID()
 }
