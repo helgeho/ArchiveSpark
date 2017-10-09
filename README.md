@@ -4,6 +4,11 @@
 
 An Apache Spark framework (not only) for Web Archives that enables easy data processing, extraction as well as derivation.
 
+Get it from Maven Central:
+```
+libraryDependencies += "com.github.helgeho" %% "archivespark" % "2.5"
+``` 
+
 To get you started, please find more information in our [wiki](https://github.com/helgeho/ArchiveSpark/wiki).
 
 Dataspecs and basic enrich functions for Web Archives are included in this core project.
