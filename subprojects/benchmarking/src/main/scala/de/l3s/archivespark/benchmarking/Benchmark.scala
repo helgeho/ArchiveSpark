@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package de1.l3s.archivesparkb.benchmarking
+package de.l3s.archivespark.benchmarking
 
 import scala.math._
 
