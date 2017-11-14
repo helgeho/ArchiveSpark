@@ -24,11 +24,32 @@
 
 package de.l3s.archivespark.dataspecs.access
 
-import org.apache.hadoop.fs.{FSDataInputStream, FileSystem, Path}
+import java.io.InputStream
+import java.util.zip.GZIPInputStream
+
+import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.deploy.SparkHadoopUtil
 
-import scala.io.Source
+class HdfsFileAccessor(path: String, decompress: Boolean = true) extends CloseableDataAccessor[InputStream] {
+  override def get: Option[InputStream] = {
+    val fs = FileSystem.get(SparkHadoopUtil.get.conf)
+    var stream: InputStream = null
+    try {
+      val raw = fs.open(new Path(path))
+      stream = if (decompress) HdfsFileAccessor.decompress(path, raw) else raw
+      Some(stream)
+    } catch {
+      case e: Exception =>
+        e.printStackTrace()
+        if (stream != null) stream.close()
+        None
+    }
+  }
+}
 
-class HdfsTextFileAccessor(path: String, decompress: Boolean = true) extends DataAccessor[String] {
-  override def get: Option[String] = Option(new HdfsFileAccessor(path, decompress).access(Source.fromInputStream(_).mkString))
+object HdfsFileAccessor {
+  def decompress(path: String, stream: InputStream): InputStream = {
+    if (path.toLowerCase.endsWith(".gz")) new GZIPInputStream(stream)
+    else stream
+  }
 }

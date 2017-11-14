@@ -31,9 +31,9 @@ import scala.util.Try
 trait CloseableDataAccessor[Data <: Closeable] extends DataAccessor[Data] {
   override def access[R >: Null](action: Data => R): R = {
     get match {
-      case Some(stream) =>
-        val result = action(stream)
-        Try {stream.close()}
+      case Some(data) =>
+        val result = action(data)
+        Try {data.close()}
         result
       case None => null
     }

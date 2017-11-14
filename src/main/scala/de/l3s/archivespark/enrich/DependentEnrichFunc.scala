@@ -24,7 +24,6 @@
 
 package de.l3s.archivespark.enrich
 
-import de.l3s.archivespark.utils.SelectorUtil
 import org.apache.spark.rdd.RDD
 
 trait DependentEnrichFunc[Root <: EnrichRoot, Source] extends EnrichFunc[Root, Source] {
@@ -39,25 +38,13 @@ trait DependentEnrichFunc[Root <: EnrichRoot, Source] extends EnrichFunc[Root, S
 
   override protected[enrich] def enrich(root: Root, excludeFromOutput: Boolean): Root = super.enrich(dependency.enrich(root, excludeFromOutput = true), excludeFromOutput)
 
-  def on[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _], field: String): EnrichFunc[DependencyRoot, Source] = new PipedDependentEnrichFunc[DependencyRoot, Source](this, dependency, field)
-  def on[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _], field: String, index: Int): EnrichFunc[DependencyRoot, Source] = on(dependency, field + s"[$index]")
-  def onEach[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _], field: String): EnrichFunc[DependencyRoot, Source] = on(dependency, field + "*")
-
-  def on[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _]): EnrichFunc[DependencyRoot, Source] = {
+  override def on[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _]): EnrichFunc[DependencyRoot, Source] = {
     on(dependency, if (dependency.hasField(dependencyField)) dependencyField else dependency.asInstanceOf[DefaultFieldAccess[Source, _]].defaultField)
   }
-  def on[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _], index: Int): EnrichFunc[DependencyRoot, Source] = {
+  override def on[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _], index: Int): EnrichFunc[DependencyRoot, Source] = {
     on(dependency, if (dependency.hasField(dependencyField)) dependencyField else dependency.asInstanceOf[DefaultFieldAccess[Source, _]].defaultField, index)
   }
-  def onEach[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _]): EnrichFunc[DependencyRoot, Source] = {
+  override def onEach[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _]): EnrichFunc[DependencyRoot, Source] = {
     onEach(dependency, if (dependency.hasField(dependencyField)) dependencyField else dependency.asInstanceOf[DefaultFieldAccess[Seq[Source], _]].defaultField)
   }
-
-  def of[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _], field: String): EnrichFunc[DependencyRoot, Source] = on(dependency, field)
-  def of[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _], field: String, index: Int): EnrichFunc[DependencyRoot, Source] = on(dependency, field, index)
-  def ofEach[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _], field: String): EnrichFunc[DependencyRoot, Source] = onEach(dependency, field)
-
-  def of[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _]): EnrichFunc[DependencyRoot, Source] = on(dependency)
-  def of[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _], index: Int): EnrichFunc[DependencyRoot, Source] = on(dependency, index)
-  def ofEach[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _]): EnrichFunc[DependencyRoot, Source] = onEach(dependency)
 }

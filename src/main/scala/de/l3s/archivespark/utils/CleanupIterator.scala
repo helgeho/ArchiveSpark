@@ -22,13 +22,31 @@
  * SOFTWARE.
  */
 
-package de.l3s.archivespark.dataspecs.access
+package de.l3s.archivespark.utils
 
-import org.apache.hadoop.fs.{FSDataInputStream, FileSystem, Path}
-import org.apache.spark.deploy.SparkHadoopUtil
+import scala.util.Try
 
-import scala.io.Source
+class CleanupIterator[A] private (iterator: Iterator[A], cleanup: () => Unit, retryDelayMs: Option[Int] = None) extends Iterator[A] {
+  override def hasNext: Boolean = {
+    try {
+      val hasNext = iterator.hasNext
+      if (!hasNext) Try { cleanup() }
+      hasNext
+    } catch {
+      case e: Exception =>
+        if (retryDelayMs.isDefined) {
+          e.printStackTrace()
+          Thread.sleep(retryDelayMs.get)
+          hasNext
+        } else {
+          throw e
+        }
+    }
+  }
 
-class HdfsTextFileAccessor(path: String, decompress: Boolean = true) extends DataAccessor[String] {
-  override def get: Option[String] = Option(new HdfsFileAccessor(path, decompress).access(Source.fromInputStream(_).mkString))
+  override def next(): A = iterator.next()
+}
+
+object CleanupIterator {
+  def apply[A](iterator: Iterator[A], cleanup: () => Unit, retryDelayMs: Option[Int] = None): CleanupIterator[A] = new CleanupIterator(iterator, cleanup, retryDelayMs)
 }

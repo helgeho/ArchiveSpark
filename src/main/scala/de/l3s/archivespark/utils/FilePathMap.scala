@@ -29,8 +29,8 @@ import org.apache.spark.deploy.SparkHadoopUtil
 
 import scala.util.Try
 
-case class FilePathMap(path: String, patterns: Seq[String]) {
-  val paths: Map[String, String] = {
+case class FilePathMap(path: String, patterns: Seq[String] = Seq.empty) {
+  val pathMap: Map[String, String] = {
     var map = collection.mutable.Map[String, String]()
 
     val fs = FileSystem.newInstance(SparkHadoopUtil.get.conf)
@@ -39,7 +39,7 @@ case class FilePathMap(path: String, patterns: Seq[String]) {
       while (files.hasNext) {
         val path = files.next.getPath
         val filename = path.getName
-        if (patterns.exists(filename.matches)) {
+        if (patterns.isEmpty || patterns.exists(filename.matches)) {
           if (map.contains(filename)) throw new RuntimeException("duplicate filename: " + filename)
           map += filename -> path.getParent.toString.intern
         }
@@ -51,8 +51,10 @@ case class FilePathMap(path: String, patterns: Seq[String]) {
     map.toMap
   }
 
+  def paths: Seq[Path] = pathMap.toSeq.map{case (f, p) => new Path(p, f)}
+
   def pathToFile(file: String) = Try {new Path(file).getName}.toOption match {
-    case Some(f) => paths.get(f).map(dir => new Path(dir, f))
+    case Some(f) => pathMap.get(f).map(dir => new Path(dir, f))
     case None => None
   }
 }

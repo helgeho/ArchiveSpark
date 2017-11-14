@@ -1,0 +1,51 @@
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2015-2017 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+package de.l3s.archivespark.specific.raw
+
+import de.l3s.archivespark.dataspecs.DataSpec
+import de.l3s.archivespark.dataspecs.access.HdfsFileAccessor
+import de.l3s.archivespark.utils.{FilePathMap, RddUtil}
+import org.apache.spark.SparkContext
+import org.apache.spark.rdd.RDD
+
+class HdfsFileSpec private(path: String, filePatterns: Seq[String], decompress: Boolean, maxPartitions: Int, retryDelayMs: Option[Int]) extends DataSpec[String, FileStreamRecord] {
+  override def load(sc: SparkContext, minPartitions: Int): RDD[String] = {
+    val paths = FilePathMap(path, filePatterns).paths.map(_.toString)
+    RddUtil.parallelize(sc, paths, if (maxPartitions == 0) minPartitions else maxPartitions.min(minPartitions))
+  }
+
+  override def parse(data: String): Option[FileStreamRecord] = {
+    println(this.getClass.getCanonicalName + ": Reading file " + data)
+    Some(new FileStreamRecord(data, new HdfsFileAccessor(data, decompress), retryDelayMs))
+  }
+}
+
+object HdfsFileSpec {
+  val DefaultRetryDelay: Int = 1000
+
+  def apply(path: String, filePatterns: Seq[String] = Seq.empty, decompress: Boolean = true, maxPartitions: Int = 0, retryDelayMs: Option[Int] = Some(DefaultRetryDelay)): HdfsFileSpec = {
+    new HdfsFileSpec(path, filePatterns, decompress, maxPartitions, retryDelayMs)
+  }
+}

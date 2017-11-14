@@ -46,6 +46,8 @@ class ResolvableRDD(rdd: RDD[CdxRecord]) {
     }.union(responses)
   }
 
+  def resolveRevisits(): RDD[CdxRecord] = resolveRevisits(rdd)
+
   def mapInfo[Info](map: CdxRecord => String, @transient infoMapping: RDD[(String, Info)]): RDD[(CdxRecord, Info)] = {
     val fileRecordPairs = rdd.map(r => (map(r), r))
     fileRecordPairs.join(infoMapping).map{case (_, pair) => pair}

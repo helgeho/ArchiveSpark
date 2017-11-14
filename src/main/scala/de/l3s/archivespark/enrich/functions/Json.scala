@@ -43,7 +43,7 @@ class Json private (path: Seq[String], fieldName: String) extends BoundEnrichFun
 }
 
 object Json extends Json(Seq(), "root") {
-  def apply(path: String = "", fieldName: String = null) = {
+  def apply(path: String = "", fieldName: String = null): Json = {
     val pathSplit = if (path.isEmpty) Seq() else path.split("\\.").toSeq
     new Json(pathSplit, if (fieldName != null) fieldName else {
       if (pathSplit.isEmpty) "root"

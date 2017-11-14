@@ -22,13 +22,17 @@
  * SOFTWARE.
  */
 
-package de.l3s.archivespark.dataspecs.access
+package de.l3s.archivespark.enrich.functions
 
-import org.apache.hadoop.fs.{FSDataInputStream, FileSystem, Path}
-import org.apache.spark.deploy.SparkHadoopUtil
+import de.l3s.archivespark.enrich.{BasicEnrichFunc, DefaultFieldAccess, EnrichFunc, TypedEnrichable}
+import de.l3s.archivespark.enrich.dataloads.ByteContentLoad
+import de.l3s.archivespark.http.HttpHeader
+import de.l3s.archivespark.specific.warc.enrichfunctions.HttpPayload
+import org.apache.http.entity.ByteArrayEntity
+import org.apache.http.util.EntityUtils
 
-import scala.io.Source
-
-class HdfsTextFileAccessor(path: String, decompress: Boolean = true) extends DataAccessor[String] {
-  override def get: Option[String] = Option(new HdfsFileAccessor(path, decompress).access(Source.fromInputStream(_).mkString))
-}
+//class Values private (funcs: Seq[EnrichFunc[_, _] with DefaultFieldAccess[_, _]]) extends EnrichFunc[]
+//
+//object Values {
+//  def apply(funcs: (EnrichFunc[_, _] with DefaultFieldAccess[_, _])*): Values = new Values(funcs)
+//}

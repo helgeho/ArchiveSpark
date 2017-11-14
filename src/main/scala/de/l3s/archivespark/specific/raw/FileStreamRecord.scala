@@ -22,13 +22,23 @@
  * SOFTWARE.
  */
 
-package de.l3s.archivespark.dataspecs.access
+package de.l3s.archivespark.specific.raw
 
-import org.apache.hadoop.fs.{FSDataInputStream, FileSystem, Path}
-import org.apache.spark.deploy.SparkHadoopUtil
+import java.io.InputStream
+
+import de.l3s.archivespark.dataspecs.DataEnrichRoot
+import de.l3s.archivespark.dataspecs.access.DataAccessor
+import de.l3s.archivespark.utils.CleanupIterator
 
 import scala.io.Source
 
-class HdfsTextFileAccessor(path: String, decompress: Boolean = true) extends DataAccessor[String] {
-  override def get: Option[String] = Option(new HdfsFileAccessor(path, decompress).access(Source.fromInputStream(_).mkString))
+class FileStreamRecord(path: String, accessor: DataAccessor[InputStream], retryDelayMs: Option[Int] = None) extends DataEnrichRoot[String, InputStream](path) {
+  override def access[R >: Null](action: InputStream => R): R = accessor.access(action)
+
+  def accessSource[R >: Null](action: Source => R): R = access { stream => action(Source.fromInputStream(stream)) }
+
+  def lineIterator: Iterator[String] = accessor.get match {
+    case Some(stream) => CleanupIterator(Source.fromInputStream(stream).getLines.map(_.stripLineEnd), () => stream.close(), retryDelayMs)
+    case None => Iterator.empty
+  }
 }

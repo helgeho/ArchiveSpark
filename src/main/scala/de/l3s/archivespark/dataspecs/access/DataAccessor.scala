@@ -28,7 +28,7 @@ trait DataAccessor[Data] extends Serializable {
   def get: Option[Data]
   def access[R >: Null](action: Data => R): R = {
     get match {
-      case Some(stream) => action(stream)
+      case Some(data) => action(data)
       case None => null
     }
   }

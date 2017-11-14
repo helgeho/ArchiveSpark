@@ -44,7 +44,7 @@ object ArchiveSpark {
 
   var parallelism = 0
 
-  def partitions(sc: SparkContext) = if (parallelism > 0) parallelism else sc.defaultParallelism
+  def partitions(sc: SparkContext): Int = if (parallelism > 0) parallelism else sc.defaultParallelism
 
   def initialize(sc: SparkContext): Unit = {
     if (initialized) return

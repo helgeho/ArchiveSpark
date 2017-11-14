@@ -24,7 +24,7 @@
 
 package de.l3s.archivespark.specific.warc.implicits
 
-import java.io.PrintStream
+import java.io.{ByteArrayOutputStream, PrintStream, PrintWriter}
 import java.util.zip.GZIPOutputStream
 
 import de.l3s.archivespark.enrich.EnrichFunc
@@ -50,6 +50,15 @@ class WarcRDD[WARC <: WarcLikeRecord : ClassTag](rdd: RDD[WARC]) {
     val payloadEnrichFunc: EnrichFunc[WarcLikeRecord, _] = DataLoad(ByteContentLoad.Field)
 
     val gz = path.toLowerCase.endsWith(".gz")
+
+    val emptyLines = {
+      val bytes = new ByteArrayOutputStream()
+      val print = new PrintWriter(bytes)
+      print.println()
+      print.println()
+      print.flush()
+      bytes.toByteArray
+    }
 
     SparkIO.save(path, rdd.enrich(payloadEnrichFunc)) { (idx, records, open) =>
       val id = idx.toString.reverse.padTo(5, '0').reverse.mkString
@@ -79,7 +88,7 @@ class WarcRDD[WARC <: WarcLikeRecord : ClassTag](rdd: RDD[WARC]) {
               val httpHeadersOpt = record.value[WarcLikeRecord, Map[String, String]](payloadEnrichFunc, HttpPayload.HeaderField)
               val httpHeader = if (httpStatusOpt.isDefined && httpHeadersOpt.isDefined) WarcHeaders.http(httpStatusOpt.get, httpHeadersOpt.get) else Array.empty[Byte]
 
-              val recordBytes = if (gz) GZipBytes(recordHeader ++ httpHeader ++ payload) else recordHeader ++ httpHeader ++ payload
+              val recordBytes = if (gz) GZipBytes(recordHeader ++ httpHeader ++ payload ++ emptyLines) else recordHeader ++ httpHeader ++ payload ++ emptyLines
               warcStream.write(recordBytes)
 
               if (generateCdx) {

@@ -72,6 +72,28 @@ trait EnrichFunc[Root <: EnrichRoot, Source] extends Serializable {
   def ofEach(source: String): EnrichFunc[EnrichRoot, Source] = onEach(source)
   def ofEach(source: Seq[String]): EnrichFunc[EnrichRoot, Source] = onEach(source)
 
+  def on[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _], field: String): EnrichFunc[DependencyRoot, Source] = new PipedDependentEnrichFunc[DependencyRoot, Source](this, dependency, field)
+  def on[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _], field: String, index: Int): EnrichFunc[DependencyRoot, Source] = on(dependency, field + s"[$index]")
+  def onEach[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _], field: String): EnrichFunc[DependencyRoot, Source] = on(dependency, field + "*")
+
+  def on[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _]): EnrichFunc[DependencyRoot, Source] = {
+    on(dependency, dependency.asInstanceOf[DefaultFieldAccess[Source, _]].defaultField)
+  }
+  def on[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _], index: Int): EnrichFunc[DependencyRoot, Source] = {
+    on(dependency, dependency.asInstanceOf[DefaultFieldAccess[Source, _]].defaultField, index)
+  }
+  def onEach[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _]): EnrichFunc[DependencyRoot, Source] = {
+    onEach(dependency, dependency.asInstanceOf[DefaultFieldAccess[Seq[Source], _]].defaultField)
+  }
+
+  def of[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _], field: String): EnrichFunc[DependencyRoot, Source] = on(dependency, field)
+  def of[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _], field: String, index: Int): EnrichFunc[DependencyRoot, Source] = on(dependency, field, index)
+  def ofEach[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _], field: String): EnrichFunc[DependencyRoot, Source] = onEach(dependency, field)
+
+  def of[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _]): EnrichFunc[DependencyRoot, Source] = on(dependency)
+  def of[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _], index: Int): EnrichFunc[DependencyRoot, Source] = on(dependency, index)
+  def ofEach[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _]): EnrichFunc[DependencyRoot, Source] = onEach(dependency)
+
   def map[SourceField, Target](target: String)(f: SourceField => Target): DependentEnrichFunc[Root, SourceField] with SingleField[Target] = map[SourceField, Target](Try {this.asInstanceOf[DefaultFieldAccess[SourceField, _]].defaultField}.getOrElse(fields.head), target, target)(f)
   def map[SourceField, Target](sourceField: String, target: String)(f: SourceField => Target): DependentEnrichFunc[Root, SourceField] with SingleField[Target] = map[SourceField, Target](sourceField, target, target)(f)
   def map[SourceField, Target](sourceField: String, target: String, alias: String)(f: SourceField => Target): DependentEnrichFunc[Root, SourceField] with SingleField[Target] = {

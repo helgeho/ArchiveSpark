@@ -31,21 +31,14 @@ import de.l3s.archivespark.specific.warc.enrichfunctions.HttpPayload
 import org.apache.http.entity.ByteArrayEntity
 import org.apache.http.util.EntityUtils
 
-object StringContent extends DependentEnrichFuncWithDefaultField[EnrichRoot with ByteContentLoad, Array[Byte], String, String] with SingleField[String] {
-  val DefaultCharset = "UTF-8"
-
-  override def dependency = DataLoad(ByteContentLoad.Field)
-  override def dependencyField = ByteContentLoad.Field
-
-  override def fields = Seq("string")
-  override def aliases = Map("text" -> "string")
-
-  override def derive(source: TypedEnrichable[Array[Byte]], derivatives: Derivatives): Unit = {
-    val charset = source.parent.get[Map[String, String]](HttpPayload.HeaderField) match {
-      case Some(headers) => HttpHeader(headers).charset.getOrElse(DefaultCharset)
-      case None => DefaultCharset
-    }
-    val entity = new ByteArrayEntity(source.get)
-    derivatives << EntityUtils.toString(entity, charset).trim
+object StringContent extends BasicEnrichFunc(ByteContentLoad, "string", (in: TypedEnrichable[Array[Byte]]) => Some {
+  val defaultCharset = "UTF-8"
+  val charset = in.parent.get[Map[String, String]](HttpPayload.HeaderField) match {
+    case Some(headers) => HttpHeader(headers).charset.getOrElse(defaultCharset)
+    case None => defaultCharset
   }
+  val entity = new ByteArrayEntity(in.get)
+  EntityUtils.toString(entity, charset).trim
+}) {
+  override def aliases = Map("text" -> "string")
 }

@@ -34,7 +34,7 @@ class HdfsStreamAccessor(location: HdfsLocationInfo) extends CloseableDataAccess
   override def get: Option[InputStream] = {
     if (location.length < 0 || location.offset < 0) None
     else {
-      val fs = FileSystem.newInstance(SparkHadoopUtil.get.conf)
+      val fs = FileSystem.get(SparkHadoopUtil.get.conf)
       var stream: FSDataInputStream = null
       try {
         stream = fs.open(new Path(location.path))
