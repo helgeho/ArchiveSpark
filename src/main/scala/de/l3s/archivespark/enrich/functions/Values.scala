@@ -24,15 +24,25 @@
 
 package de.l3s.archivespark.enrich.functions
 
-import de.l3s.archivespark.enrich.{BasicEnrichFunc, DefaultFieldAccess, EnrichFunc, TypedEnrichable}
-import de.l3s.archivespark.enrich.dataloads.ByteContentLoad
-import de.l3s.archivespark.http.HttpHeader
-import de.l3s.archivespark.specific.warc.enrichfunctions.HttpPayload
-import org.apache.http.entity.ByteArrayEntity
-import org.apache.http.util.EntityUtils
+import de.l3s.archivespark.enrich._
 
-//class Values private (funcs: Seq[EnrichFunc[_, _] with DefaultFieldAccess[_, _]]) extends EnrichFunc[]
-//
-//object Values {
-//  def apply(funcs: (EnrichFunc[_, _] with DefaultFieldAccess[_, _])*): Values = new Values(funcs)
-//}
+class Values[Root <: EnrichRoot, Source] private (override val resultField: String, funcs: Seq[EnrichFunc[_, _] with DefaultFieldAccess[_, _]]) extends EnrichFunc[Root, Source] with SingleField[Array[_]] {
+  override def source: Seq[String] = Seq.empty
+
+  override protected[enrich] def derive(source: TypedEnrichable[Source], derivatives: Derivatives): Unit = {
+    val values = for (func <- funcs) yield {
+      var sourcePath = collection.mutable.Seq(this.source: _*)
+      val valueSuffix = func.source.dropWhile(sourcePath.drop(1).headOption.contains)
+      val commonLength = func.source.size - valueSuffix.size
+      val commonParentUpLength = this.source.size - commonLength
+      var commonParent = source
+      for (up <- 1 to commonParentUpLength) commonParent = commonParent.parent
+      commonParent.get(valueSuffix).get
+    }
+    derivatives << values.toArray
+  }
+}
+
+object Values {
+  def apply[Root <: EnrichRoot, Source](resultField: String, funcs: (EnrichFunc[_, _] with DefaultFieldAccess[_, _])*): Values[Root, Source] = new Values(resultField, funcs)
+}
