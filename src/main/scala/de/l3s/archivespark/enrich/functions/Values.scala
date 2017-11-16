@@ -26,23 +26,29 @@ package de.l3s.archivespark.enrich.functions
 
 import de.l3s.archivespark.enrich._
 
-class Values[Root <: EnrichRoot, Source] private (override val resultField: String, funcs: Seq[EnrichFunc[_, _] with DefaultFieldAccess[_, _]]) extends EnrichFunc[Root, Source] with SingleField[Array[_]] {
+class Values private (override val resultField: String, funcs: Seq[EnrichFunc[_, _] with DefaultFieldAccess[_, _]]) extends EnrichFuncWithDefaultField[EnrichRoot, Any, Array[_], Array[_]] with SingleField[Array[_]] {
   override def source: Seq[String] = Seq.empty
 
-  override protected[enrich] def derive(source: TypedEnrichable[Source], derivatives: Derivatives): Unit = {
+  override protected[enrich] def derive(source: TypedEnrichable[Any], derivatives: Derivatives): Unit = {
+    val chain = source.chain
     val values = for (func <- funcs) yield {
-      var sourcePath = collection.mutable.Seq(this.source: _*)
-      val valueSuffix = func.source.dropWhile(sourcePath.drop(1).headOption.contains)
-      val commonLength = func.source.size - valueSuffix.size
-      val commonParentUpLength = this.source.size - commonLength
-      var commonParent = source
-      for (up <- 1 to commonParentUpLength) commonParent = commonParent.parent
-      commonParent.get(valueSuffix).get
+      var commonParent = chain.head
+      val valueSuffix = func.source.zipWithIndex.dropWhile{case (s, i) =>
+        if (i + 1 < chain.size) {
+          val field = commonParent.field(s)
+          val next = chain(i + 1)
+          if (next.field == field || (field == "*" && next.field.matches("\\[\\d+\\]"))) {
+            commonParent = next
+            true
+          } else false
+        } else false
+      }.map(_._1)
+      commonParent(valueSuffix).flatMap(_.get[Any](func.defaultField)).get
     }
     derivatives << values.toArray
   }
 }
 
 object Values {
-  def apply[Root <: EnrichRoot, Source](resultField: String, funcs: (EnrichFunc[_, _] with DefaultFieldAccess[_, _])*): Values[Root, Source] = new Values(resultField, funcs)
+  def apply(resultField: String, funcs: (EnrichFunc[_, _] with DefaultFieldAccess[_, _])*): Values = new Values(resultField, funcs)
 }

@@ -25,13 +25,13 @@
 package de.l3s.archivespark.enrich.grouping
 
 import de.l3s.archivespark.ArchiveSpark
-import de.l3s.archivespark.enrich.{Derivatives, EnrichRoot, RootEnrichFunc, SingleField}
+import de.l3s.archivespark.enrich._
 import org.apache.spark.rdd.RDD
 
 import scala.annotation.meta.param
 import scala.reflect.ClassTag
 
-class GroupAggregation[Root <: EnrichRoot, T : ClassTag] private[grouping] (@(transient @param) context: GroupContext[Root], field: String, map: Root => Option[T], reduce: (T, T) => T) extends RootEnrichFunc[GroupRecord] with SingleField[T] {
+class GroupAggregation[Root <: EnrichRoot, T : ClassTag] private[grouping] (@(transient @param) context: GroupContext[Root], field: String, map: Root => Option[T], reduce: (T, T) => T) extends RootEnrichFunc[GroupRecord] with EnrichFuncWithDefaultField[GroupRecord, Any, T, T] with SingleField[T] {
   override def resultField: String = field
 
   override def prepareGlobal(rdd: RDD[GroupRecord]): RDD[Any] = {

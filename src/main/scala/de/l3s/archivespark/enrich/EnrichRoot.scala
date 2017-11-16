@@ -29,7 +29,13 @@ import de.l3s.archivespark.utils.Json._
 trait TypedEnrichRoot[+Meta] extends EnrichRoot with TypedEnrichable[Meta]
 
 trait EnrichRoot extends Enrichable { this: TypedEnrichRoot[_] =>
-  _root = this
+  setHierarchy(null, null, this)
+
+  override def copy() = {
+    val copy = super.copy().asInstanceOf[EnrichRoot]
+    copy.setHierarchy(null, null, copy)
+    copy
+  }
 
   def metaKey: String = "record"
 

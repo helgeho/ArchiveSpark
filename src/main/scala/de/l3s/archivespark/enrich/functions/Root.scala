@@ -26,7 +26,7 @@ package de.l3s.archivespark.enrich.functions
 
 import de.l3s.archivespark.enrich._
 
-class Root[Source] private () extends EnrichFunc[TypedEnrichRoot[Source], Source] with SingleField[String] {
+class Root[Source] private () extends EnrichFuncWithDefaultField[TypedEnrichRoot[Source], Source, Source, Source] with SingleField[Source] {
   def source: Seq[String] = Seq()
   override def resultField: String = ""
 

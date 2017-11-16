@@ -71,7 +71,7 @@ class EnrichableRDD[Root <: EnrichRoot : ClassTag](rdd: RDD[Root]) {
   def filterExists(path: String): RDD[Root] = rdd.filter(r => r(path).isDefined)
   def filterExists[SpecificRoot >: Root <: EnrichRoot](f: EnrichFunc[SpecificRoot, _]): RDD[Root] = rdd.filter(r => f.isEnriched(r))
 
-  def filterNoException(): RDD[Root] = rdd.filter(r => r.lastException.isDefined)
+  def filterNoException(): RDD[Root] = rdd.filter(r => r.lastException.isEmpty)
   def lastException: Option[Exception] = Try{rdd.filter(r => r.lastException.isDefined).take(1).head.lastException.get}.toOption
   def throwLastException(): Unit = lastException match {
     case Some(e) => throw e

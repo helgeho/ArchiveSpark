@@ -53,13 +53,13 @@ object Json extends Serializable {
     case _ => obj
   }
 
-  def mapToEnrichable(jsonMap: Map[String, Any], parent: Enrichable): Enrichable = {
+  def mapToEnrichable(jsonMap: Map[String, Any], parent: Enrichable, field: String): Enrichable = {
     val json = de.l3s.archivespark.utils.Json.mapToJson(jsonMap)
-    var enrichable: Enrichable = SingleValueEnrichable[String](json, parent, if (parent != null) parent.root else null)
+    var enrichable: Enrichable = SingleValueEnrichable[String](json, parent, field, if (parent != null) parent.root else null)
     enrichable.excludeFromOutput()
     for ((key, value) <- jsonMap) {
       enrichable = Try{value.asInstanceOf[Map[String, Any]]} match {
-        case Success(valueMap) => enrichable.enrich(key, mapToEnrichable(valueMap, enrichable))
+        case Success(valueMap) => enrichable.enrich(key, mapToEnrichable(valueMap, enrichable, key))
         case _ => enrichable.enrichValue(key, value)
       }
     }

@@ -28,34 +28,68 @@ import de.l3s.archivespark.utils.Json._
 
 import scala.reflect.ClassTag
 
-class MultiValueEnrichable[T] private (val children: Seq[TypedEnrichable[T]]) extends TypedEnrichable[Seq[T]] {
+class MultiValueEnrichable[T] private (private var _children: Seq[TypedEnrichable[T]]) extends TypedEnrichable[Seq[T]] {
+  def children: Seq[TypedEnrichable[T]] = _children
   def get: Seq[T] = children.map(e => e.get)
 
+  override protected[enrich] def copy(cloned: Map[String, Enrichable]): Enrichable = {
+    val copy = super.copy(cloned).asInstanceOf[MultiValueEnrichable[T]]
+    copy._children = _children.zipWithIndex.map{case (c, i) =>
+      val child = c.copy().asInstanceOf[TypedEnrichable[T]]
+      child.setHierarchy(copy, s"[$i]", root)
+      child
+    }
+    copy
+  }
+
+  protected[enrich] def copy(children: Seq[TypedEnrichable[T]]): Enrichable = {
+    val copy = super.copy().asInstanceOf[MultiValueEnrichable[T]]
+    copy._children = children.zipWithIndex.map{case (c, i) =>
+      c.setHierarchy(copy, s"[$i]", root)
+      c
+    }
+    copy
+  }
+
+  override protected[enrich] def setHierarchy(parent: Enrichable, field: String, root: EnrichRoot): Unit = {
+    super.setHierarchy(parent, field, root)
+    for ((child, i) <- _children.zipWithIndex) child.setHierarchy(this, s"[$i]", root)
+  }
+
   override protected[archivespark] def excludeFromOutput(value: Boolean, overwrite: Boolean): Unit = {
-    for (child <- children) child.excludeFromOutput(value, overwrite)
     super.excludeFromOutput(value, overwrite)
+    for (child <- children) child.excludeFromOutput(value, overwrite)
   }
 
   override def enrich[D](path: Seq[String], func: EnrichFunc[_, D], excludeFromOutput: Boolean): Enrichable = {
     if (path.nonEmpty && path.head == "*") {
       var hasEnriched = false
+      var lastException: Option[Exception] = None
       val enriched = children.map{c =>
         val enriched = c.enrich(path.tail, func, excludeFromOutput)
-        hasEnriched = hasEnriched || enriched != c
-        enriched.asInstanceOf[TypedEnrichable[T]]
+        if (enriched != c) {
+          hasEnriched = true
+          lastException = enriched._lastException.orElse(lastException)
+          (enriched.asInstanceOf[TypedEnrichable[T]], true)
+        } else {
+          (c, false)
+        }
       }
       if (hasEnriched) {
-        val clone = new MultiValueEnrichable(enriched)
-        clone._root = _root
-        clone._parent = _parent
+        val clone = copy(enriched.map{case (enriched, cloned) => if (cloned) enriched else enriched.copy().asInstanceOf[TypedEnrichable[T]]})
+        clone._lastException = lastException
         clone
       } else this
     } else if (path.nonEmpty && path.head.matches("\\[\\d+\\]")) {
       val index = path.head.substring(1, path.head.length - 1).toInt
       if (index < children.length) {
-        val enriched = children.zipWithIndex.map{case (c, i) => if (i == index) c.enrich(path.tail, func, excludeFromOutput).asInstanceOf[TypedEnrichable[T]] else c}
-        if (children(index) == enriched(index)) this
-        else new MultiValueEnrichable(enriched)
+        val enriched = children(index).enrich(path.tail, func, excludeFromOutput).asInstanceOf[TypedEnrichable[T]]
+        if (children(index) == enriched) this
+        else {
+          val clone = copy(children.zipWithIndex.map{case (c, i) => if (i == index) enriched else c.copy().asInstanceOf[TypedEnrichable[T]]})
+          clone._lastException = enriched.lastException
+          clone
+        }
       } else this
     } else super.enrich(path, func, excludeFromOutput)
   }
@@ -69,19 +103,21 @@ class MultiValueEnrichable[T] private (val children: Seq[TypedEnrichable[T]]) ex
       val values = children.map(c => c(path.tail)).filter(_.isDefined).map(_.get)
       if (values.isEmpty) None else {
         val clone = new MultiValueEnrichable(values)
-        clone._root = _root
-        clone._parent = _parent
+        clone.setHierarchy(parent, field, root)
         Some(clone.asInstanceOf[TypedEnrichable[D]])
       }
     } else if (path.nonEmpty && path.head.matches("\\[\\d+\\]")) {
       val index = path.head.substring(1, path.head.length - 1).toInt
-      if (index < children.length) children(index)(path.tail) else None
+      if (index < children.length) children(index).apply(path.tail) else None
     } else super.apply(path)
   }
 
-  def toJson: Map[String, Any] = (if (isExcludedFromOutput) Map() else Map(
-    null.asInstanceOf[String] -> children.map(c => mapToJsonValue(c.toJson))
-  )) ++ enrichments.map{e => (e, mapToJsonValue(enrichment(e).get.toJson)) }.filter{ case (_, field) => field != null }
+  def toJson: Map[String, Any] = {
+    val children = _children.map(c => c.toJson).filter(_.nonEmpty).map(mapToJsonValue)
+    (if (isExcludedFromOutput && children.isEmpty) Map() else Map(
+      null.asInstanceOf[String] -> children
+    )) ++ enrichments.map{e => (e, mapToJsonValue(enrichment(e).get.toJson)) }.filter{ case (_, field) => field != null }
+  }
 }
 
 object MultiValueEnrichable {

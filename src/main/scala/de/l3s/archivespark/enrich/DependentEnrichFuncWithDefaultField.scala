@@ -24,7 +24,7 @@
 
 package de.l3s.archivespark.enrich
 
-trait DependentEnrichFuncWithDefaultField[Root <: EnrichRoot, Source, InternalFieldType, ExternalFieldType] extends EnrichFuncWithDefaultField[Root, Source, InternalFieldType, ExternalFieldType] with DependentEnrichFunc[Root, Source] {
+trait DependentEnrichFuncWithDefaultField[Root <: EnrichRoot, Source, InternalFieldType, ExternalFieldType] extends DependentEnrichFunc[Root, Source] with EnrichFuncWithDefaultField[Root, Source, InternalFieldType, ExternalFieldType] {
   override def onMulti[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _]): EnrichFunc[DependencyRoot, Source] with DefaultFieldAccess[InternalFieldType, Seq[ExternalFieldType]] with MultiVal = {
     onMulti(dependency, if (dependency.hasField(dependencyField)) dependencyField else dependency.asInstanceOf[DefaultFieldAccess[Source, _]].defaultField)
   }

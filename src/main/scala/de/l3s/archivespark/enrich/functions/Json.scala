@@ -30,15 +30,15 @@ import scala.util.Try
 
 private object JsonNamespace extends IdentityEnrichFunction(Root[String], "json")
 
-class Json private (path: Seq[String], fieldName: String) extends BoundEnrichFunc[TypedEnrichRoot[String], String](JsonNamespace) with SingleField[Any] {
-  override def fields = Seq(fieldName)
+class Json private (path: Seq[String], fieldName: String) extends BoundEnrichFunc[TypedEnrichRoot[String], String](JsonNamespace) with DependentEnrichFuncWithDefaultField[TypedEnrichRoot[String], String, Any, Any] with SingleField[Any] {
+  override def resultField: String = fieldName
 
   override def derive(source: TypedEnrichable[String], derivatives: Derivatives): Unit = {
     var jsonSource = Try{de.l3s.archivespark.utils.Json.jsonToMap(source.get)}
     for (key <- path if jsonSource.isSuccess) {
       jsonSource = jsonSource.map(_(key).asInstanceOf[Map[String, Any]])
     }
-    if (jsonSource.isSuccess) derivatives.setNext(de.l3s.archivespark.utils.Json.mapToEnrichable(jsonSource.get, source))
+    if (jsonSource.isSuccess) derivatives.setNext(de.l3s.archivespark.utils.Json.mapToEnrichable(jsonSource.get, source, fieldName))
   }
 }
 

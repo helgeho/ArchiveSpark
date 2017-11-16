@@ -26,7 +26,7 @@ package de.l3s.archivespark.enrich
 
 import de.l3s.archivespark.utils.SelectorUtil
 
-trait EnrichFuncWithDefaultField[Root <: EnrichRoot, Source, InternalFieldType, ExternalFieldType] extends EnrichFunc[Root, Source] with DefaultFieldAccess[InternalFieldType, ExternalFieldType] {
+trait EnrichFuncWithDefaultField[Root <: EnrichRoot, Source, +InternalFieldType, +ExternalFieldType] extends EnrichFunc[Root, Source] with DefaultFieldAccess[InternalFieldType, ExternalFieldType] {
   override def onRoot: EnrichFunc[EnrichRoot, Source] with DefaultFieldAccess[InternalFieldType, ExternalFieldType] = on(Seq.empty)
   override def ofRoot: EnrichFunc[EnrichRoot, Source] with DefaultFieldAccess[InternalFieldType, ExternalFieldType] = onRoot
 
