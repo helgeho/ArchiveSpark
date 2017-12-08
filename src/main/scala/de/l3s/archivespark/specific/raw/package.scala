@@ -22,33 +22,38 @@
  * SOFTWARE.
  */
 
-package de.l3s.archivespark.utils
+package de.l3s.archivespark.specific
 
-import org.apache.hadoop.fs.{FileSystem, Path}
-import org.apache.spark.deploy.SparkHadoopUtil
+import java.io.PrintStream
+import java.util.zip.GZIPOutputStream
 
-import scala.util.Try
+import de.l3s.archivespark.utils.SparkIO
+import org.apache.spark.rdd.RDD
 
-case class FilePathMap(path: String, patterns: Seq[String] = Seq.empty) {
-  val pathMap: Map[String, String] = {
-    var map = collection.mutable.Map[String, String]()
+package object raw {
+  implicit class RawTextRDD(rdd: RDD[String]) {
+    def saveAsRawText(path: String): Long = {
+      val gz = path.toLowerCase.endsWith(".gz")
+      SparkIO.save(path, rdd) { (idx, records, open) =>
+        val id = idx.toString.reverse.padTo(5, '0').reverse.mkString
+        val filename = s"part-$id${if (gz) ".gz" else ""}"
 
-    val fs = FileSystem.get(SparkHadoopUtil.get.conf)
-    val files = fs.listFiles(new Path(path), true)
-    while (files.hasNext) {
-      val path = files.next.getPath
-      val filename = path.getName
-      if (patterns.isEmpty || patterns.exists(filename.matches)) {
-        if (map.contains(filename)) throw new RuntimeException("duplicate filename: " + filename)
-        map += filename -> path.getParent.toString.intern
+        var processed = 0L
+        if (records.nonEmpty) {
+          open(filename) { stream =>
+            val compressed = if (gz) Some(new GZIPOutputStream(stream)) else None
+            val out = new PrintStream(compressed.getOrElse(stream))
+
+            processed = records.map { record =>
+              out.println(record)
+              1L
+            }.sum
+
+            if (compressed.isDefined) compressed.get.finish()
+          }
+        }
+        processed
       }
     }
-
-    map.toMap
-  }
-
-  def pathToFile(file: String): Option[Path] = Try {new Path(file).getName}.toOption match {
-    case Some(f) => pathMap.get(f).map(dir => new Path(dir, f))
-    case None => None
   }
 }

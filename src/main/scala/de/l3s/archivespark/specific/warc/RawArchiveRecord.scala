@@ -25,8 +25,11 @@
 package de.l3s.archivespark.specific.warc
 
 import java.io.{ByteArrayOutputStream, InputStream}
+import java.util.zip.GZIPInputStream
 
+import de.l3s.archivespark.ArchiveSpark
 import de.l3s.archivespark.http.HttpResponse
+import org.apache.commons.io.input.BoundedInputStream
 import org.archive.io.arc.ARCReaderFactory
 import org.archive.io.warc.WARCReaderFactory
 import org.archive.io.{ArchiveReader, ArchiveRecord}
@@ -35,12 +38,23 @@ import scala.collection.JavaConverters._
 import scala.util.Try
 
 object RawArchiveRecord {
+  lazy val maxGzipDecompressionSize: Long = 0 //ArchiveSpark.conf.maxWarcDecompressionSize
+
   def apply(filename: String, stream: InputStream): RawArchiveRecord = {
     var reader: ArchiveReader = null
     var record: RawArchiveRecord = null
     try {
-      val isArc = ARCReaderFactory.isARCSuffix(filename)
-      reader = if (isArc) ARCReaderFactory.get(filename, stream, false) else WARCReaderFactory.get(filename, stream, false)
+      var compressed = filename.endsWith(".gz")
+      val filenameDecompressed = if (compressed) filename.dropRight(3) else filename
+      val streamDecompressed = if (compressed) {
+        if (maxGzipDecompressionSize > 0) {
+          new BoundedInputStream(new GZIPInputStream(stream), maxGzipDecompressionSize)
+        } else {
+          new GZIPInputStream(stream)
+        }
+      } else stream
+      val isArc = ARCReaderFactory.isARCSuffix(filenameDecompressed)
+      reader = if (isArc) ARCReaderFactory.get(filenameDecompressed, streamDecompressed, false) else WARCReaderFactory.get(filenameDecompressed, streamDecompressed, false)
       record = new RawArchiveRecord(reader.get)
     } finally {
       if (reader != null) Try{reader.close()}
@@ -50,7 +64,7 @@ object RawArchiveRecord {
 }
 
 class RawArchiveRecord private (val record: ArchiveRecord) {
-  val header = {
+  val header: Map[String, String] = {
     val header = record.getHeader
     Try { header.getHeaderFields.asScala.mapValues(o => o.toString).toMap }.getOrElse(Map.empty)
   }

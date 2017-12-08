@@ -4,7 +4,7 @@ import sbt.Keys._
 lazy val commonSettings = Seq(
   name := "archivespark",
   organization := "com.github.helgeho",
-  version := "2.6",
+  version := "2.6.2",
   scalaVersion := "2.11.7",
   fork := true
 )
@@ -14,23 +14,22 @@ lazy val archivespark = (project in file(".")).
   settings(
     libraryDependencies ++= Seq(
       "org.apache.spark" %% "spark-core" % "2.2.0" % "provided" excludeAll(
-        ExclusionRule(organization = "org.scala-lang", name = "scala-library"),
-        ExclusionRule(organization = "org.apache.hadoop", name = "hadoop-core"),
-        ExclusionRule(organization = "com.google.guava", name = "guava")),
-      "org.apache.hadoop" % "hadoop-client" % "2.5.0" % "provided",
-      "org.netpreserve.commons" % "webarchive-commons" % "1.1.8" excludeAll(
-        ExclusionRule(organization = "org.apache.hadoop", name = "hadoop-core"),
-        ExclusionRule(organization = "com.google.guava", name = "guava")),
-      "commons-io" % "commons-io" % "2.4",
-      "com.google.protobuf" % "protobuf-java" % "2.6.1",
-      "org.apache.httpcomponents" % "httpclient" % "4.5.1",
-      "org.apache.httpcomponents" % "httpcore" % "4.4.4",
+        ExclusionRule(organization = "org.apache.httpcomponents", name = "httpclient"),
+        ExclusionRule(organization = "org.apache.httpcomponents", name = "httpcore")),
+      "org.apache.hadoop" % "hadoop-client" % "2.6.0" % "provided"  excludeAll(
+        ExclusionRule(organization = "org.apache.httpcomponents", name = "httpclient"),
+        ExclusionRule(organization = "org.apache.httpcomponents", name = "httpcore")),
       "edu.stanford.nlp" % "stanford-corenlp" % "3.5.1" % "provided",
       "org.elasticsearch" %% "elasticsearch-spark" % "2.2.0" % "provided",
+      "org.json4s" %% "json4s-native" % "3.5.3",
+      "org.apache.httpcomponents" % "httpclient" % "4.2.2",
+      "org.apache.httpcomponents" % "httpcore" % "4.2.2",
+      "org.netpreserve.commons" % "webarchive-commons" % "1.1.8" excludeAll(
+        ExclusionRule(organization = "org.apache.hadoop", name = "hadoop-core"),
+        ExclusionRule(organization = "com.google.guava", name = "guava"),
+        ExclusionRule(organization = "org.apache.httpcomponents", name = "httpcore")),
       "org.scalatest" %% "scalatest" % "2.2.6" % Test,
-      "it.unimi.dsi" % "fastutil" % "8.1.0",
-      "org.jsoup" % "jsoup" % "1.11.1",
-      "org.json4s" %% "json4s-native" % "3.5.3" excludeAll ExclusionRule(organization = "org.scala-lang", name = "scala-library")
+      "org.jsoup" % "jsoup" % "1.11.2"
     ),
     publishTo := Some(
       if (isSnapshot.value)

@@ -26,29 +26,45 @@ package de.l3s.archivespark.enrich.functions
 
 import de.l3s.archivespark.enrich._
 
-class Values private (override val resultField: String, funcs: Seq[EnrichFunc[_, _] with DefaultFieldAccess[_, _]]) extends EnrichFuncWithDefaultField[EnrichRoot, Any, Array[_], Array[_]] with SingleField[Array[_]] {
+class Values private (override val resultField: String, funcs: Seq[EnrichFunc[_, _] with DefaultFieldAccess[_, _]], defaultValues: Seq[Option[_]]) extends EnrichFuncWithDefaultField[EnrichRoot, Any, Array[_], Array[_]] with SingleField[Array[_]] {
   override def source: Seq[String] = Seq.empty
 
   override protected[enrich] def derive(source: TypedEnrichable[Any], derivatives: Derivatives): Unit = {
     val chain = source.chain
-    val values = for (func <- funcs) yield {
-      var commonParent = chain.head
-      val valueSuffix = func.source.zipWithIndex.dropWhile{case (s, i) =>
-        if (i + 1 < chain.size) {
-          val field = commonParent.field(s)
-          val next = chain(i + 1)
-          if (next.field == field || (field == "*" && next.field.matches("\\[\\d+\\]"))) {
-            commonParent = next
-            true
+    val values = for ((func, idx) <- funcs.zipWithIndex) yield {
+      try {
+        var commonParent = chain.head
+        val valueSuffix = func.source.zipWithIndex.dropWhile { case (s, i) =>
+          if (i + 1 < chain.size) {
+            val field = commonParent.field(s)
+            val next = chain(i + 1)
+            if (next.field == field || (field == "*" && next.field.matches("\\[\\d+\\]"))) {
+              commonParent = next
+              true
+            } else false
           } else false
-        } else false
-      }.map(_._1)
-      commonParent(valueSuffix).flatMap(_.get[Any](func.defaultField)).get
+        }.map(_._1)
+        commonParent(valueSuffix).flatMap(_.get[Any](func.defaultField)).get
+      } catch {
+        case e: Exception =>
+          if (idx < defaultValues.length && defaultValues(idx).isDefined) defaultValues(idx).get
+          else throw e;
+      }
     }
     derivatives << values.toArray
   }
 }
 
 object Values {
-  def apply(resultField: String, funcs: (EnrichFunc[_, _] with DefaultFieldAccess[_, _])*): Values = new Values(resultField, funcs)
+  def apply(resultField: String, funcs: (EnrichFunc[_, _] with DefaultFieldAccess[_, _])*): Values = new Values(resultField, funcs, Seq.empty)
+  def withDefaults(resultField: String, funcs: (EnrichFunc[_, _] with DefaultFieldAccess[_, _])*)(defaultValues: Option[_]*): Values = new Values(resultField, funcs, defaultValues)
+
+  def apply(funcs: (EnrichFunc[_, _] with DefaultFieldAccess[_, _])*): Values = {
+    val resultField = funcs.map(_.defaultField).mkString("_")
+    new Values(resultField, funcs, Seq.empty)
+  }
+  def withDefaults(funcs: (EnrichFunc[_, _] with DefaultFieldAccess[_, _])*)(defaultValues: Option[_]*): Values = {
+    val resultField = funcs.map(_.defaultField).mkString("_")
+    new Values(resultField, funcs, defaultValues)
+  }
 }

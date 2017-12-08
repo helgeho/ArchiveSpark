@@ -27,12 +27,22 @@ package de.l3s.archivespark.specific.raw
 import de.l3s.archivespark.dataspecs.DataSpec
 import de.l3s.archivespark.dataspecs.access.HdfsFileAccessor
 import de.l3s.archivespark.utils.{FilePathMap, RddUtil}
+import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.SparkContext
+import org.apache.spark.deploy.SparkHadoopUtil
 import org.apache.spark.rdd.RDD
 
 class HdfsFileSpec private(path: String, filePatterns: Seq[String], decompress: Boolean, maxPartitions: Int, retryDelayMs: Option[Int]) extends DataSpec[String, FileStreamRecord] {
   override def load(sc: SparkContext, minPartitions: Int): RDD[String] = {
-    val paths = FilePathMap(path, filePatterns).paths.map(_.toString)
+    val fs = FileSystem.get(SparkHadoopUtil.get.conf)
+    val files = fs.listFiles(new Path(path), true)
+    var paths = collection.mutable.Seq.empty[String]
+    while (files.hasNext) {
+      val path = files.next.getPath
+      if (filePatterns.isEmpty || filePatterns.exists(path.getName.matches)) {
+        paths :+= path.toString
+      }
+    }
     RddUtil.parallelize(sc, paths, if (maxPartitions == 0) minPartitions else maxPartitions.min(minPartitions))
   }
 

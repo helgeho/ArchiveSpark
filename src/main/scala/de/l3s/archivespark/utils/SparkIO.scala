@@ -42,7 +42,7 @@ object SparkIO {
 
     rdd.mapPartitionsWithIndex{case (idx, records) =>
       def open(filename: String)(action: => OutputStream => Unit): Unit = {
-        val fs = FileSystem.newInstance(SparkHadoopUtil.get.conf)
+        val fs = FileSystem.get(SparkHadoopUtil.get.conf)
         var stream: OutputStream = null
         try {
           lazy val lazyStream = {

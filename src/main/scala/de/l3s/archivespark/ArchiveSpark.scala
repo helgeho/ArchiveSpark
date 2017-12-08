@@ -40,22 +40,28 @@ import org.apache.spark.{SparkConf, SparkContext}
 import scala.reflect.ClassTag
 
 object ArchiveSpark {
-  val appName = "ArchiveSpark"
+  val AppName = "ArchiveSpark"
+  val Namespace = "de.l3s.archivespark"
 
-  private var initialized = false
+  def prop(key: String): String = if (key.startsWith(Namespace)) key else s"$Namespace.$key"
+  def setProp(conf: SparkConf, key: String, value: Any): Unit = conf.set(prop(key), value.toString)
+
+  object props {
+    val initialized: String = prop("initialized")
+  }
 
   var parallelism = 0
-  var catchExceptions = true
 
   def partitions(sc: SparkContext): Int = if (parallelism > 0) parallelism else sc.defaultParallelism
 
-  def initialize(sc: SparkContext): Unit = {
-    if (initialized) return
-    initialized = true
-    initialize(sc.getConf)
-  }
+//  private var distributedConfig = new DistributedConfig()
+//  def conf: DistributedConfig = distributedConfig
 
+  def initialize(sc: SparkContext): Unit = initialize(sc.getConf)
   def initialize(conf: SparkConf): Unit = {
+    if (conf.getBoolean(props.initialized, defaultValue = false)) return
+    setProp(conf, props.initialized, true)
+    conf.setAppName(AppName)
     conf.registerKryoClasses(Array(
       classOf[DataSpec[_, _]],
       classOf[DataAccessor[_]],
@@ -98,6 +104,8 @@ object ArchiveSpark {
     ))
   }
 
+  def load[Raw, Parsed : ClassTag](spec: DataSpec[Raw, Parsed]): RDD[Parsed] = load(SparkContext.getOrCreate, spec)
+
   def load[Raw, Parsed : ClassTag](sc: SparkContext, spec: DataSpec[Raw, Parsed]): RDD[Parsed] = {
     initialize(sc)
     spec.initialize(sc)
@@ -105,13 +113,11 @@ object ArchiveSpark {
     val specBc = sc.broadcast(spec)
     raw.mapPartitions{records =>
       val spec = specBc.value
-      records.flatMap { record =>
-        spec.parse(record)
-      }
+      records.flatMap(spec.parse)
     }
   }
 
-  def hdfs(cdxPath: String, warcPath: String)(implicit sc: SparkContext): RDD[WarcRecord] = load(sc, WarcCdxHdfsSpec(cdxPath, warcPath))
+  def hdfs(cdxPath: String, warcPath: String)(implicit sc: SparkContext = SparkContext.getOrCreate): RDD[WarcRecord] = load(sc, WarcCdxHdfsSpec(cdxPath, warcPath))
 
-  def cdx(path: String)(implicit sc: SparkContext): RDD[CdxRecord] = load(sc, CdxHdfsSpec(path))
+  def cdx(path: String)(implicit sc: SparkContext = SparkContext.getOrCreate): RDD[CdxRecord] = load(sc, CdxHdfsSpec(path))
 }

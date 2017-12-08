@@ -26,16 +26,12 @@ package de.l3s.archivespark.http
 
 import java.io.{ByteArrayOutputStream, InputStream}
 import java.net.URI
-import java.security.cert.X509Certificate
 
 import org.apache.commons.compress.utils.IOUtils
 import org.apache.http.HttpHost
-import org.apache.http.client.entity.{DeflateDecompressingEntity, GzipDecompressingEntity}
-import org.apache.http.client.methods.{CloseableHttpResponse, HttpGet, HttpUriRequest}
-import org.apache.http.conn.ssl.SSLConnectionSocketFactory
-import org.apache.http.impl.client.HttpClientBuilder
-import org.apache.http.protocol.{BasicHttpContext, HttpCoreContext}
-import org.apache.http.ssl.{SSLContexts, TrustStrategy}
+import org.apache.http.client.methods.{HttpGet, HttpUriRequest}
+import org.apache.http.impl.client.SystemDefaultHttpClient
+import org.apache.http.protocol.{BasicHttpContext, ExecutionContext}
 
 import scala.collection.immutable.ListMap
 import scala.util.Try
@@ -45,12 +41,7 @@ object HttpClient {
     "Accept" -> "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
   )
 
-  @transient lazy val client = {
-    val sslContext = SSLContexts.custom().loadTrustMaterial(null, new TrustStrategy() {
-      def isTrusted(chain: Array[X509Certificate], authType: String): Boolean = true
-    }).build()
-    HttpClientBuilder.create().useSystemProperties().setSSLSocketFactory(new SSLConnectionSocketFactory(sslContext)).build()
-  }
+  lazy val client = new SystemDefaultHttpClient()
 
   def get(url: String, headers: Map[String, String] = defaultHeaders): Option[HttpRecord] = {
     val uri = URI.create(url)
@@ -58,14 +49,13 @@ object HttpClient {
     val request = new HttpGet(uri)
     for ((k,v) <- headers) request.addHeader(k, v)
 
-    var response: CloseableHttpResponse = null
     var entityStream: InputStream = null
     try {
       val context = new BasicHttpContext()
-      response = client.execute(request, context)
+      val response = client.execute(request, context)
 
-      val finalRequest = context.getAttribute(HttpCoreContext.HTTP_REQUEST).asInstanceOf[HttpUriRequest]
-      val finalHost = context.getAttribute(HttpCoreContext.HTTP_TARGET_HOST).asInstanceOf[HttpHost]
+      val finalRequest = context.getAttribute(ExecutionContext.HTTP_REQUEST).asInstanceOf[HttpUriRequest]
+      val finalHost = context.getAttribute(ExecutionContext.HTTP_TARGET_HOST).asInstanceOf[HttpHost]
 
       val finalUri = URI.create(finalHost.toURI).resolve(finalRequest.getURI)
 
@@ -82,7 +72,6 @@ object HttpClient {
 
       Some(HttpResponse(finalUri, response.getStatusLine.toString.trim, headers, responseBytes.toByteArray))
     } finally {
-      if (response != null) Try {response.close()}
       if (entityStream != null) Try {entityStream.close()}
     }
   }

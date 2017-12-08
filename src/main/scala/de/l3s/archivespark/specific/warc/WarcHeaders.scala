@@ -49,7 +49,7 @@ object WarcHeaders {
     header.append("Content-Type: application/warc-fields").append(Br)
 
     val headerBody = StringBuilder.newBuilder
-    headerBody.append("software: " + ArchiveSpark.appName).append(Br)
+    headerBody.append("software: " + ArchiveSpark.AppName).append(Br)
     headerBody.append("format: WARC File Format 1.0").append(Br)
     headerBody.append("conformsTo: http://bibnum.bnf.fr/WARC/WARC_ISO_28500_version1_latestdraft.pdf").append(Br)
     headerBody.append("publisher: " + info.publisher).append(Br)

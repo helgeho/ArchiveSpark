@@ -28,12 +28,12 @@ import de.l3s.archivespark.dataspecs.DataEnrichRoot
 import de.l3s.archivespark.enrich.RootEnrichFunc
 import de.l3s.archivespark.enrich.dataloads.ByteContentLoad
 import de.l3s.archivespark.http.{HttpClient, HttpRecord}
-import de.l3s.archivespark.specific.warc.enrichfunctions.WarcPayload
+import de.l3s.archivespark.specific.warc.enrichfunctions.HttpPayload
 
 class WaybackRecord(cdx: CdxRecord) extends DataEnrichRoot[CdxRecord, HttpRecord](cdx) with ByteContentLoad with WarcLikeRecord {
   val WaybackUrl = "http://web.archive.org/web/$timestampid_/$url"
 
-  def waybackUrl(timestamp: String, url: String) = {
+  def waybackUrl(timestamp: String, url: String): String = {
     WaybackUrl.replace("$timestamp", timestamp).replace("$url", url)
   }
 
@@ -46,7 +46,7 @@ class WaybackRecord(cdx: CdxRecord) extends DataEnrichRoot[CdxRecord, HttpRecord
 
   override def defaultEnrichFunction(field: String): Option[RootEnrichFunc[_]] = {
     field match {
-      case ByteContentLoad.Field => Some(WarcPayload)
+      case ByteContentLoad.Field => Some(HttpPayload)
       case _ => None
     }
   }

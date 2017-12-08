@@ -35,7 +35,7 @@ import scala.util.Try
 private[specs] abstract class WarcHdfsSpecBase[Raw] extends DataSpec[Raw, WarcRecord] {
   protected def filePathMap(warcPath: String) = FilePathMap(warcPath, Seq("(?i).*\\.arc\\.gz", "(?i).*\\.warc\\.gz", "(?i).*\\.wat\\.gz"))
 
-  protected def parse(cdx: CdxRecord, path: Path) = {
+  protected def parse(cdx: CdxRecord, path: Path): Option[WarcRecord] = {
     Try {
       val offset = cdx.additionalFields.head.toLong
       new WarcRecord(cdx, path.getName, new HdfsStreamAccessor(HdfsLocationInfo(path.toString, offset, cdx.compressedSize)))

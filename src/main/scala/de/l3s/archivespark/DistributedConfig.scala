@@ -22,33 +22,9 @@
  * SOFTWARE.
  */
 
-package de.l3s.archivespark.utils
+package de.l3s.archivespark
 
-import org.apache.hadoop.fs.{FileSystem, Path}
-import org.apache.spark.deploy.SparkHadoopUtil
-
-import scala.util.Try
-
-case class FilePathMap(path: String, patterns: Seq[String] = Seq.empty) {
-  val pathMap: Map[String, String] = {
-    var map = collection.mutable.Map[String, String]()
-
-    val fs = FileSystem.get(SparkHadoopUtil.get.conf)
-    val files = fs.listFiles(new Path(path), true)
-    while (files.hasNext) {
-      val path = files.next.getPath
-      val filename = path.getName
-      if (patterns.isEmpty || patterns.exists(filename.matches)) {
-        if (map.contains(filename)) throw new RuntimeException("duplicate filename: " + filename)
-        map += filename -> path.getParent.toString.intern
-      }
-    }
-
-    map.toMap
-  }
-
-  def pathToFile(file: String): Option[Path] = Try {new Path(file).getName}.toOption match {
-    case Some(f) => pathMap.get(f).map(dir => new Path(dir, f))
-    case None => None
-  }
+class DistributedConfig extends Serializable {
+  var catchExceptions = true
+  var maxWarcDecompressionSize = 0L
 }
