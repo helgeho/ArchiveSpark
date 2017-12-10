@@ -26,14 +26,12 @@ package de.l3s.archivespark.enrich
 
 import de.l3s.archivespark.utils.Json._
 
-class SingleValueEnrichable[T] private (override val get: T, parentEnrichable: Enrichable = null, field: String = null, enrichRoot: EnrichRoot = null) extends TypedEnrichable[T] {
-  setHierarchy(parentEnrichable, field, enrichRoot)
-
+class SingleValueEnrichable[T] private (override val get: T) extends TypedEnrichable[T] {
   def toJson: Map[String, Any] = (if (isExcludedFromOutput) Map() else Map(
     null.asInstanceOf[String] -> json(this.get)
   )) ++ enrichments.map{e => (e, mapToJsonValue(enrichment(e).get.toJson))}.filter{ case (_, field) => field != null }
 }
 
 object SingleValueEnrichable {
-  def apply[T](value: T, parent: Enrichable = null, field: String = null, root: EnrichRoot = null): SingleValueEnrichable[T] = new SingleValueEnrichable[T](value, parent, field, root)
+  def apply[T](value: T): SingleValueEnrichable[T] = new SingleValueEnrichable[T](value)
 }

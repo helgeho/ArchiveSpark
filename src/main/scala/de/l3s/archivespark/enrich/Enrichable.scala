@@ -37,18 +37,6 @@ trait Enrichable extends Serializable with Copyable[Enrichable] with JsonConvert
   def get: Any
   def typed[T]: TypedEnrichable[T] = this.asInstanceOf[TypedEnrichable[T]]
 
-  override def copy(): Enrichable = copy(Map.empty)
-
-  protected[enrich] def copy(cloned: Map[String, Enrichable]): Enrichable = {
-    val copy = super.copy()
-    copy._enrichments = (_enrichments.keySet ++ cloned.keySet).map{field =>
-      val enrichable = cloned.getOrElse(field, _enrichments(field).copy())
-      enrichable.setHierarchy(copy, field, _root)
-      (field, enrichable)
-    }.toMap
-    copy
-  }
-
   private var excludeFromOutput: Option[Boolean] = None
   def isExcludedFromOutput: Boolean = excludeFromOutput match {
     case Some(value) => value
@@ -63,19 +51,19 @@ trait Enrichable extends Serializable with Copyable[Enrichable] with JsonConvert
     case None => excludeFromOutput = Some(value)
   }
 
-  private var _field: String = _
+  @transient private var _field: String = _
   def field: String = _field
 
-  private var _parent: Enrichable = _
+  @transient private var _parent: Enrichable = _
   def parent[A]: TypedEnrichable[A] = _parent.asInstanceOf[TypedEnrichable[A]]
 
-  private var _root: EnrichRoot = _
+  @transient private var _root: EnrichRoot = _
   def root[A]: TypedEnrichRoot[A] = _root.asInstanceOf[TypedEnrichRoot[A]]
 
   def path: Seq[String] = if (_parent == null) Seq.empty else _parent.path :+ _field
   def chain: Seq[Enrichable] = if (_parent == null) Seq(this) else _parent.chain :+ this
 
-  protected[enrich] def setHierarchy(parent: Enrichable, field: String, root: EnrichRoot = null): Unit = {
+  protected[enrich] def setHierarchy(parent: Enrichable, field: String, root: EnrichRoot): Unit = {
     _field = field
     _parent = parent
     _root = root
@@ -92,21 +80,29 @@ trait Enrichable extends Serializable with Copyable[Enrichable] with JsonConvert
     clone
   }
 
-  def enrichment[D : ClassTag](key: String): Option[TypedEnrichable[D]] = _enrichments.get(field(key)).map(_.asInstanceOf[TypedEnrichable[D]])
+  def enrichment[D : ClassTag](key: String): Option[TypedEnrichable[D]] = {
+    val fieldname = field(key)
+    _enrichments.get(fieldname) match {
+      case Some(enrichable) =>
+        enrichable.setHierarchy(this, fieldname, root)
+        Some(enrichable.asInstanceOf[TypedEnrichable[D]])
+      case None => None
+    }
+  }
 
   def enrich(fieldName: String, enrichment: Enrichable): Enrichable = {
-    val clone = copy(Map(fieldName -> enrichment))
+    val clone = copy()
+    clone._enrichments = clone._enrichments.updated(fieldName, enrichment)
     clone._lastException = enrichment._lastException
     clone._aliases -= fieldName
     clone
   }
 
   def enrichValue[Value](fieldName: String, value: Value): Enrichable = {
-    val enrichable = SingleValueEnrichable[Value](value, this, fieldName, _root)
-    enrich(fieldName, enrichable)
+    enrich(fieldName, SingleValueEnrichable[Value](value))
   }
 
-  private[enrich] def enrich[D](func: EnrichFunc[_, D], excludeFromOutput: Boolean = false): Enrichable = {
+  private def enrich[D](func: EnrichFunc[_, D], excludeFromOutput: Boolean = false): Enrichable = {
     if (!func.exists(this)) {
       val derivatives = new Derivatives(func.fields, func.aliases)
       var lastException: Option[Exception] = None
@@ -118,20 +114,28 @@ trait Enrichable extends Serializable with Copyable[Enrichable] with JsonConvert
 //          if (ArchiveSpark.conf.catchExceptions) lastException = Some(exception)
 //          else throw exception
       }
-      val clone = copy(derivatives.get)
+      val clone = copy()
       clone._lastException = lastException
       clone._aliases ++= derivatives.aliases
       for ((field, enrichment) <- derivatives.get) {
         enrichment.excludeFromOutput(excludeFromOutput, overwrite = false)
+        clone._enrichments = clone._enrichments.updated(field, enrichment)
         clone._aliases -= field
       }
       clone
-    } else if (!excludeFromOutput && func.fields.exists(f => enrichment(f).get.isExcludedFromOutput)) {
-      val clone = copy()
-      for (field <- func.fields if enrichment(field).get.isExcludedFromOutput) {
-        clone.enrichment(field).get.excludeFromOutput(value = false)
+    } else if (!excludeFromOutput) {
+      val excluded = func.fields.map(enrichment).filter(_.isDefined).map(_.get).filter(_.isExcludedFromOutput)
+      if (excluded.nonEmpty) {
+        val clone = copy()
+        for (enrichment <- excluded) {
+          val enrichmentClone = enrichment.copy()
+          enrichmentClone.excludeFromOutput(value = false)
+          clone._enrichments = clone._enrichments.updated(enrichment.field, enrichmentClone)
+        }
+        clone
+      } else {
+        this
       }
-      clone
     } else {
       this
     }
@@ -158,10 +162,11 @@ trait Enrichable extends Serializable with Copyable[Enrichable] with JsonConvert
         val remaining = path.tail
         enrichment(remaining.head) match {
           case Some(child) => child(remaining.tail)
-          case None => for (child <- _enrichments.values) {
-            val target: Option[TypedEnrichable[D]] = child[D](path)
-            if (target.isDefined) return target
-          }
+          case None =>
+            for (child <- _enrichments.values) {
+              val target: Option[TypedEnrichable[D]] = child[D](path)
+              if (target.isDefined) return target
+            }
             None
         }
       } else if (path.head.matches("\\[\\d+\\]")) {

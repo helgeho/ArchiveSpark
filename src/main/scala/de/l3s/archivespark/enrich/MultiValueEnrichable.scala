@@ -32,28 +32,9 @@ class MultiValueEnrichable[T] private (private var _children: Seq[TypedEnrichabl
   def children: Seq[TypedEnrichable[T]] = _children
   def get: Seq[T] = children.map(e => e.get)
 
-  override protected[enrich] def copy(cloned: Map[String, Enrichable]): Enrichable = {
-    val copy = super.copy(cloned).asInstanceOf[MultiValueEnrichable[T]]
-    copy._children = _children.zipWithIndex.map{case (c, i) =>
-      val child = c.copy().asInstanceOf[TypedEnrichable[T]]
-      child.setHierarchy(copy, s"[$i]", root)
-      child
-    }
-    copy
-  }
-
-  protected[enrich] def copy(children: Seq[TypedEnrichable[T]]): Enrichable = {
-    val copy = super.copy().asInstanceOf[MultiValueEnrichable[T]]
-    copy._children = children.zipWithIndex.map{case (c, i) =>
-      c.setHierarchy(copy, s"[$i]", root)
-      c
-    }
-    copy
-  }
-
   override protected[enrich] def setHierarchy(parent: Enrichable, field: String, root: EnrichRoot): Unit = {
     super.setHierarchy(parent, field, root)
-    for ((child, i) <- _children.zipWithIndex) child.setHierarchy(this, s"[$i]", root)
+    for ((c, i) <- _children.zipWithIndex) c.setHierarchy(this, s"[$i]", root)
   }
 
   override protected[archivespark] def excludeFromOutput(value: Boolean, overwrite: Boolean): Unit = {
@@ -70,13 +51,12 @@ class MultiValueEnrichable[T] private (private var _children: Seq[TypedEnrichabl
         if (enriched != c) {
           hasEnriched = true
           lastException = enriched._lastException.orElse(lastException)
-          (enriched.asInstanceOf[TypedEnrichable[T]], true)
-        } else {
-          (c, false)
-        }
+          enriched.asInstanceOf[TypedEnrichable[T]]
+        } else c
       }
       if (hasEnriched) {
-        val clone = copy(enriched.map{case (enriched, cloned) => if (cloned) enriched else enriched.copy().asInstanceOf[TypedEnrichable[T]]})
+        val clone = copy().asInstanceOf[MultiValueEnrichable[T]]
+        clone._children = enriched
         clone._lastException = lastException
         clone
       } else this
@@ -86,7 +66,8 @@ class MultiValueEnrichable[T] private (private var _children: Seq[TypedEnrichabl
         val enriched = children(index).enrich(path.tail, func, excludeFromOutput).asInstanceOf[TypedEnrichable[T]]
         if (children(index) == enriched) this
         else {
-          val clone = copy(children.zipWithIndex.map{case (c, i) => if (i == index) enriched else c.copy().asInstanceOf[TypedEnrichable[T]]})
+          val clone = copy().asInstanceOf[MultiValueEnrichable[T]]
+          clone._children = children.zipWithIndex.map{case (c, i) => if (i == index) enriched else c}
           clone._lastException = enriched.lastException
           clone
         }

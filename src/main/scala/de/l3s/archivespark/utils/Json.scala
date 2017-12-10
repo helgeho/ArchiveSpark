@@ -55,7 +55,7 @@ object Json extends Serializable {
 
   def mapToEnrichable(jsonMap: Map[String, Any], parent: Enrichable, field: String): Enrichable = {
     val json = de.l3s.archivespark.utils.Json.mapToJson(jsonMap)
-    var enrichable: Enrichable = SingleValueEnrichable[String](json, parent, field, if (parent != null) parent.root else null)
+    var enrichable: Enrichable = SingleValueEnrichable[String](json)
     enrichable.excludeFromOutput()
     for ((key, value) <- jsonMap) {
       enrichable = Try{value.asInstanceOf[Map[String, Any]]} match {
