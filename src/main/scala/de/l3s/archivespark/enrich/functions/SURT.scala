@@ -24,12 +24,12 @@
 
 package de.l3s.archivespark.enrich.functions
 
+import de.l3s.archivespark.enrich._
 import de.l3s.archivespark.enrich.dataloads.TextLoad
-import de.l3s.archivespark.enrich.{EnrichFunc, _}
 import de.l3s.archivespark.specific.warc.CdxRecord
+import de.l3s.archivespark.utils.{SURT => surt}
 
 import scala.util.Try
-import de.l3s.archivespark.utils.{SURT ⇒ surt}
 
 object SURT extends BasicEnrichFunc(TextLoad, "SURT", (in: TypedEnrichable[String]) => Some {
   Try{in.root[CdxRecord].get.originalUrl}.toOption match {

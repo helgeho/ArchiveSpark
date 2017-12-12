@@ -41,8 +41,9 @@ In order to use this enrich function, please make sure have Stanford CoreNLP mod
 class Entities private (properties: Properties, tagFieldMapping: Seq[(String, String)]) extends BoundEnrichFuncWithDefaultField[EnrichRoot with ByteContentLoad, String, Seq[String]](EntitiesNamespace) with SingleField[Seq[String]] {
   override def fields = tagFieldMapping.map{case (tag, field) => field}
 
+  @transient lazy val pipeline: StanfordCoreNLP = new StanfordCoreNLP(properties)
+
   override def derive(source: TypedEnrichable[String], derivatives: Derivatives): Unit = {
-    val pipeline = new StanfordCoreNLP(properties)
     val doc = new Annotation(source.get)
     pipeline.annotate(doc)
     val sentences = doc.get(classOf[SentencesAnnotation]).asScala

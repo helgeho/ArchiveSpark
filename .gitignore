@@ -41,3 +41,4 @@ project/boot/
 ## Put local stuff here that you don't want to commit
 ignore/
 *.ignore.*
+docs/
