@@ -4,7 +4,7 @@ import sbt.Keys._
 lazy val commonSettings = Seq(
   name := "archivespark",
   organization := "com.github.helgeho",
-  version := "2.7.1",
+  version := "2.7.2",
   scalaVersion := "2.11.7",
   fork := true
 )
@@ -21,7 +21,7 @@ lazy val archivespark = (project in file(".")).
         ExclusionRule(organization = "org.apache.httpcomponents", name = "httpcore")),
       "edu.stanford.nlp" % "stanford-corenlp" % "3.5.1" % "provided",
       "org.elasticsearch" %% "elasticsearch-spark" % "2.2.0" % "provided",
-      "org.json4s" %% "json4s-native" % "3.5.3",
+      "org.json4s" %% "json4s-jackson" % "3.2.11" % "provided",
       "org.apache.httpcomponents" % "httpclient" % "4.2.2",
       "org.apache.httpcomponents" % "httpcore" % "4.2.2",
       "org.netpreserve.commons" % "webarchive-commons" % "1.1.8" excludeAll(
@@ -29,7 +29,8 @@ lazy val archivespark = (project in file(".")).
         ExclusionRule(organization = "com.google.guava", name = "guava"),
         ExclusionRule(organization = "org.apache.httpcomponents", name = "httpcore")),
       "org.scalatest" %% "scalatest" % "2.2.6" % Test,
-      "org.jsoup" % "jsoup" % "1.11.2"
+      "org.jsoup" % "jsoup" % "1.11.2",
+      "com.github.helgeho" % "hadoop-concat-gz" % "1.2.1"
     ),
     publishTo := Some(
       if (isSnapshot.value)

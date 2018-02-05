@@ -24,8 +24,6 @@
 
 package de.l3s.archivespark
 
-import javax.swing.text.StringContent
-
 import de.l3s.archivespark.dataspecs.DataSpec
 import de.l3s.archivespark.dataspecs.access._
 import de.l3s.archivespark.enrich.dataloads.DataLoadBase
@@ -35,7 +33,7 @@ import de.l3s.archivespark.specific.warc.specs.{CdxHdfsSpec, WarcCdxHdfsSpec}
 import de.l3s.archivespark.specific.warc.{CdxRecord, WarcRecord}
 import de.l3s.archivespark.utils._
 import org.apache.spark.rdd.RDD
-import org.apache.spark.{SparkConf, SparkContext}
+import org.apache.spark.{SparkConf, SparkContext, SparkEnv}
 
 import scala.reflect.ClassTag
 
@@ -52,6 +50,7 @@ object ArchiveSpark {
 
   var parallelism = 0
 
+  def partitions: Int = partitions(SparkContext.getOrCreate)
   def partitions(sc: SparkContext): Int = if (parallelism > 0) parallelism else sc.defaultParallelism
 
 //  private var distributedConfig = new DistributedConfig()
@@ -100,7 +99,7 @@ object ArchiveSpark {
       classOf[RootEnrichFunc[_]],
       classOf[SingleValueEnrichable[_]],
       classOf[Data[_]], classOf[DataLoad[_]], classOf[Entities], classOf[HtmlTag], classOf[HtmlTags], classOf[HtmlAttribute], classOf[Json],
-      classOf[Root[_]], classOf[StringContent], classOf[Values]
+      classOf[Root[_]], classOf[Values]
     ))
   }
 

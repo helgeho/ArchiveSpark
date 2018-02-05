@@ -26,8 +26,8 @@ package de.l3s.archivespark.utils
 
 import de.l3s.archivespark.enrich.{Enrichable, SingleValueEnrichable}
 import org.json4s.DefaultFormats
-import org.json4s.native.JsonMethods._
-import org.json4s.native.Serialization._
+import org.json4s.jackson.JsonMethods._
+import org.json4s.jackson.Serialization._
 
 import scala.util.{Success, Try}
 

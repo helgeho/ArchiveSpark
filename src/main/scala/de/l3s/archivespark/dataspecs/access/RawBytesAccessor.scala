@@ -22,33 +22,25 @@
  * SOFTWARE.
  */
 
-package de.l3s.archivespark.utils
+package de.l3s.archivespark.dataspecs.access
 
-import org.apache.spark.rdd.RDD
-import org.apache.spark.{Partitioner, SparkContext}
+import java.io.InputStream
+import java.util.zip.GZIPInputStream
 
-import scala.reflect.ClassTag
+import com.sun.xml.internal.messaging.saaj.util.ByteInputStream
 
-object RddUtil {
-  class ItemParitioner(override val numPartitions: Int) extends Partitioner {
-    override def getPartition(key: Any): Int = key match {
-      case k: Int => k % numPartitions
-      case _ => key.hashCode % numPartitions
+class RawBytesAccessor(bytes: Array[Byte], gz: Boolean = false) extends CloseableDataAccessor[InputStream] {
+  override def get: Option[InputStream] = {
+    var stream: InputStream = null
+    try {
+      val raw = new ByteInputStream(bytes, bytes.length)
+      stream = if (gz) new GZIPInputStream(stream) else raw
+      Some(stream)
+    } catch {
+      case e: Exception =>
+        e.printStackTrace()
+        if (stream != null) stream.close()
+        None
     }
-  }
-
-  def repartition[T : ClassTag](sc: SparkContext, rdd: RDD[T], numPartitions: Int): RDD[T] = {
-    val partitioner = new ItemParitioner(numPartitions)
-    rdd.zipWithIndex.map{case (v, i) => (i, v)}.partitionBy(partitioner).values
-  }
-
-  def parallelize(sc: SparkContext, items: Int): RDD[Int] = parallelize(sc, items, items)
-
-  def parallelize(sc: SparkContext, items: Int, partitions: Int): RDD[Int] = parallelize(sc, 0 until items, partitions)
-
-  def parallelize[T : ClassTag](sc: SparkContext, items: Seq[T]): RDD[T] = parallelize(sc, items, items.size)
-
-  def parallelize[T : ClassTag](sc: SparkContext, items: Seq[T], partitions: Int): RDD[T] = {
-    repartition(sc, sc.parallelize(items), partitions.min(items.size))
   }
 }

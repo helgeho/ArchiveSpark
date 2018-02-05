@@ -43,4 +43,5 @@ class JsonConvertibleRDD[Record <: JsonConvertible : ClassTag](rdd: RDD[Record])
   def saveToEs(resource: String): Unit = EsSpark.saveJsonToEs(rdd.map(r => r.toJsonString(pretty = false)), resource)
 
   def peekJson: String = rdd.peek.toJsonString
+  def peekJson(index: Int): String = rdd.peek(index).toJsonString
 }

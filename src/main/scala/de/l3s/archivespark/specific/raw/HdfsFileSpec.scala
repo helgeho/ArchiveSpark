@@ -47,7 +47,6 @@ class HdfsFileSpec private(path: String, filePatterns: Seq[String], decompress: 
   }
 
   override def parse(data: String): Option[FileStreamRecord] = {
-    println(this.getClass.getCanonicalName + ": Reading file " + data)
     Some(new FileStreamRecord(data, new HdfsFileAccessor(data, decompress), retryDelayMs))
   }
 }
