@@ -24,4 +24,6 @@
 
 package de.l3s.archivespark.enrich
 
-trait MultiVal
+trait MultiVal { this: EnrichFunc[_, _] with DefaultFieldAccess[_, Seq[_]] =>
+
+}

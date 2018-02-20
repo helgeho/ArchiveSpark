@@ -26,6 +26,8 @@ package de.l3s.archivespark.enrich
 
 import de.l3s.archivespark.utils.Json._
 
+import scala.collection.immutable.ListMap
+
 trait TypedEnrichRoot[+Meta] extends EnrichRoot with TypedEnrichable[Meta]
 
 trait EnrichRoot extends Enrichable { this: TypedEnrichRoot[_] =>
@@ -33,7 +35,7 @@ trait EnrichRoot extends Enrichable { this: TypedEnrichRoot[_] =>
 
   override def root[A]: TypedEnrichRoot[A] = this.asInstanceOf[TypedEnrichRoot[A]]
 
-  def toJson: Map[String, Any] = Map(
+  def toJson: Map[String, Any] = ListMap(
     metaKey -> json(this.get)
   ) ++ enrichments.map{e => (e, mapToJsonValue(enrichment(e).get.toJson))}.filter{ case (_, field) => field != null }
 }

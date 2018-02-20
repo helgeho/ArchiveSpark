@@ -26,6 +26,7 @@ package de.l3s.archivespark.enrich
 
 import de.l3s.archivespark.utils.Json._
 
+import scala.collection.immutable.ListMap
 import scala.reflect.ClassTag
 
 class MultiValueEnrichable[T] private (private var _children: Seq[TypedEnrichable[T]]) extends TypedEnrichable[Seq[T]] {
@@ -95,7 +96,7 @@ class MultiValueEnrichable[T] private (private var _children: Seq[TypedEnrichabl
 
   def toJson: Map[String, Any] = {
     val children = _children.map(c => c.toJson).filter(_.nonEmpty).map(mapToJsonValue)
-    (if (isExcludedFromOutput && children.isEmpty) Map() else Map(
+    (if (isExcludedFromOutput && children.isEmpty) Map() else ListMap(
       null.asInstanceOf[String] -> children
     )) ++ enrichments.map{e => (e, mapToJsonValue(enrichment(e).get.toJson)) }.filter{ case (_, field) => field != null }
   }

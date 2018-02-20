@@ -104,4 +104,7 @@ trait EnrichFuncWithDefaultField[Root <: EnrichRoot, Source, +InternalFieldType,
   override def of[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _]): EnrichFunc[DependencyRoot, Source] with DefaultFieldAccess[InternalFieldType, ExternalFieldType] = on(dependency)
   override def of[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _], index: Int): EnrichFunc[DependencyRoot, Source] with DefaultFieldAccess[InternalFieldType, ExternalFieldType] = on(dependency, index)
   override def ofEach[DependencyRoot <: EnrichRoot](dependency: EnrichFunc[DependencyRoot, _]): EnrichFunc[DependencyRoot, Source] with DefaultFieldAccess[InternalFieldType, Seq[ExternalFieldType]] with MultiVal = onEach(dependency)
+
+  def toMulti(target: String): EnrichFunc[Root, Seq[Source]] with SingleField[Seq[InternalFieldType]] = toMulti[InternalFieldType](defaultField, target)
+  def toMulti: EnrichFunc[Root, Seq[Source]] with SingleField[Seq[InternalFieldType]] = toMulti[InternalFieldType](defaultField, defaultField + "s")
 }

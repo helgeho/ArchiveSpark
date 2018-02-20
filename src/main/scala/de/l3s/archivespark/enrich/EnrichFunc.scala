@@ -130,4 +130,21 @@ trait EnrichFunc[Root <: EnrichRoot, Source] extends Serializable {
       }
     }
   }
+
+  def toMulti[Field](field: String, target: String): EnrichFunc[Root, Seq[Source]] with SingleField[Seq[Field]] = {
+    val self = this
+    type MultiSource = Seq[Source]
+    new EnrichFunc[Root, MultiSource] with SingleField[Seq[Field]] {
+      override def source: Seq[String] = self.source
+      override def resultField: String = target
+      protected[enrich] def derive(source: TypedEnrichable[MultiSource], derivatives: Derivatives): Unit = {
+        val multi = source.asInstanceOf[MultiValueEnrichable[Source]]
+        derivatives.setNext(MultiValueEnrichable(multi.children.flatMap{ c =>
+          val childDerivatives = new Derivatives(self.fields)
+          self.derive(c, childDerivatives)
+          childDerivatives.get.get(field)
+        }))
+      }
+    }
+  }
 }

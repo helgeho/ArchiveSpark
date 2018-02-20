@@ -38,8 +38,6 @@ import scala.collection.JavaConverters._
 import scala.util.Try
 
 object RawArchiveRecord {
-  lazy val maxGzipDecompressionSize: Long = 0 //ArchiveSpark.conf.maxWarcDecompressionSize
-
   def apply(filename: String, stream: InputStream): RawArchiveRecord = {
     var reader: ArchiveReader = null
     var record: RawArchiveRecord = null
@@ -47,6 +45,7 @@ object RawArchiveRecord {
       var compressed = filename.endsWith(".gz")
       val filenameDecompressed = if (compressed) filename.dropRight(3) else filename
       val streamDecompressed = if (compressed) {
+        val maxGzipDecompressionSize = ArchiveSpark.conf.maxWarcDecompressionSize
         if (maxGzipDecompressionSize > 0) {
           new BoundedInputStream(new GZIPInputStream(stream), maxGzipDecompressionSize)
         } else {
@@ -63,7 +62,7 @@ object RawArchiveRecord {
   }
 }
 
-class RawArchiveRecord private (val record: ArchiveRecord) {
+class RawArchiveRecord (val record: ArchiveRecord) {
   val header: Map[String, String] = {
     val header = record.getHeader
     Try { header.getHeaderFields.asScala.mapValues(o => o.toString).toMap }.getOrElse(Map.empty)

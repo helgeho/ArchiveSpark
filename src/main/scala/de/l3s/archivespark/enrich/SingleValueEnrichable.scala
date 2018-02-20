@@ -26,8 +26,10 @@ package de.l3s.archivespark.enrich
 
 import de.l3s.archivespark.utils.Json._
 
+import scala.collection.immutable.ListMap
+
 class SingleValueEnrichable[T] private (override val get: T) extends TypedEnrichable[T] {
-  def toJson: Map[String, Any] = (if (isExcludedFromOutput) Map() else Map(
+  def toJson: Map[String, Any] = (if (isExcludedFromOutput) Map() else ListMap(
     null.asInstanceOf[String] -> json(this.get)
   )) ++ enrichments.map{e => (e, mapToJsonValue(enrichment(e).get.toJson))}.filter{ case (_, field) => field != null }
 }

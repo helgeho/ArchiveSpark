@@ -37,9 +37,9 @@ import scala.collection.JavaConverters._
 
 import scala.util.Try
 
-class WarcGzHdfsSpec private(path: String) extends DataSpec[(NullWritable, WarcWritable), WarcRecord] {
+class WarcGzHdfsSpec private(paths: String) extends DataSpec[(NullWritable, WarcWritable), WarcRecord] {
   def load(sc: SparkContext, minPartitions: Int): RDD[(NullWritable, WarcWritable)] = {
-    sc.newAPIHadoopFile(path + "/*.warc.gz", classOf[WarcGzInputFormat], classOf[NullWritable], classOf[WarcWritable])
+    sc.newAPIHadoopFile(paths, classOf[WarcGzInputFormat], classOf[NullWritable], classOf[WarcWritable])
   }
 
   override def parse(raw: (NullWritable, WarcWritable)): Option[WarcRecord] = {
@@ -47,15 +47,21 @@ class WarcGzHdfsSpec private(path: String) extends DataSpec[(NullWritable, WarcW
       val (_, warc) = raw
       val record = warc.getRecord
       val header = record.getHeader
+      val bytes = warc.getBytes.read
       val url = header.getUrl
       val redirect = record.getHttpHeaders.asScala.find{case (k,v) => v.toLowerCase == "location"}.map(_._2).getOrElse("-")
-      val bytes = warc.getBytes.read
-      val cdx = CdxRecord(SURT.fromUrl(url), header.getDate, url, header.getMimetype, record.getHttpResponse.getMessage.getStatus, header.getDigest, redirect, "-", bytes.length.toLong)
-      new WarcRecord(cdx, warc.getFilename, new RawBytesAccessor(bytes, gz = true))
+      val mime = Option(record.getHttpMimeType).getOrElse("-")
+      val status = record.getHttpResponse.getMessage.getStatus
+      val archiveRecord = record.getRecord
+      archiveRecord.close()
+      val digest = Option(archiveRecord.getDigestStr).getOrElse("-")
+      var date = header.getDate.replaceAll("[^\\d]", "").take(14)
+      val cdx = CdxRecord(SURT.fromUrl(url), date, url, mime, status, digest, redirect, "-", bytes.length.toLong)
+      new WarcRecord(cdx, warc.getFilename, new RawBytesAccessor(bytes))
     }.toOption
   }
 }
 
 object WarcGzHdfsSpec {
-  def apply(path: String) = new WarcGzHdfsSpec(path)
+  def apply(paths: String) = new WarcGzHdfsSpec(paths)
 }

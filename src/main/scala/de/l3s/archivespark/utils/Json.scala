@@ -29,6 +29,7 @@ import org.json4s.DefaultFormats
 import org.json4s.jackson.JsonMethods._
 import org.json4s.jackson.Serialization._
 
+import scala.collection.immutable.ListMap
 import scala.util.{Success, Try}
 
 object Json extends Serializable {
@@ -42,7 +43,7 @@ object Json extends Serializable {
   def mapToJsonValue(map: Map[String, Any]): AnyRef = {
     if (map == null || map.isEmpty) return null
     if (map.size == 1 && map.keys.head == null) map.values.head.asInstanceOf[AnyRef]
-    else map.map{ case (key, value) => if (key == null) (SingleValueKey, value) else (key, value) }
+    else ListMap(map.toSeq.map{ case (key, value) => if (key == null) (SingleValueKey, value) else (key, value) }: _*)
   }
 
   def json[A](obj: A): Any = obj match {

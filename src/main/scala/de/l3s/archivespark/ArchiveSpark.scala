@@ -53,8 +53,7 @@ object ArchiveSpark {
   def partitions: Int = partitions(SparkContext.getOrCreate)
   def partitions(sc: SparkContext): Int = if (parallelism > 0) parallelism else sc.defaultParallelism
 
-//  private var distributedConfig = new DistributedConfig()
-//  def conf: DistributedConfig = distributedConfig
+  var conf: DistributedConfig = new DistributedConfig()
 
   def initialize(sc: SparkContext): Unit = initialize(sc.getConf)
   def initialize(conf: SparkConf): Unit = {
@@ -62,6 +61,7 @@ object ArchiveSpark {
     setProp(conf, props.initialized, true)
     conf.setAppName(AppName)
     conf.registerKryoClasses(Array(
+      classOf[DistributedConfig],
       classOf[DataSpec[_, _]],
       classOf[DataAccessor[_]],
       classOf[CloseableDataAccessor[_]],

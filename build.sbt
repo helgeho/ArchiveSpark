@@ -4,7 +4,7 @@ import sbt.Keys._
 lazy val commonSettings = Seq(
   name := "archivespark",
   organization := "com.github.helgeho",
-  version := "2.7.3",
+  version := "2.7.5",
   scalaVersion := "2.11.7",
   fork := true
 )
@@ -59,6 +59,7 @@ lazy val archivespark = (project in file(".")).
   )
 
 assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = false, includeDependency = false)
+assemblyOption in assemblyPackageDependency := (assemblyOption in assemblyPackageDependency).value.copy(includeScala = false)
 
 assemblyMergeStrategy in assembly := {
   case PathList("META-INF", xs @ _*) => MergeStrategy.discard

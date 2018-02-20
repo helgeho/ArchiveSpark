@@ -37,7 +37,7 @@ import org.apache.commons.codec.digest.DigestUtils
 object WarcHeaders {
   val UTF8 = Charset.forName("UTF-8")
 
-  private val Br = "\r\n"
+  val Br = "\r\n"
 
   def file(info: WarcMeta, fileSuffix: String): Array[Byte] = {
     val header = StringBuilder.newBuilder

@@ -2,30 +2,20 @@
 
 ![ArchiveSpark Logo](./logo.png)
 
-An Apache Spark framework (not only) for Web Archives that enables easy data processing, extraction as well as derivation.
+An Apache Spark framework for easy data processing, extraction as well as derivation for archival collections. Originally developed for the use with Web archives, it has now been extended to support any archival dataset through Data Specifications.
 
-Get it from Maven Central:
-```
-libraryDependencies += "com.github.helgeho" %% "archivespark" % "2.5"
-``` 
-
-To get you started, please find more information in our [wiki](https://github.com/helgeho/ArchiveSpark/wiki).
-
-Dataspecs and basic enrich functions for Web Archives are included in this core project.
-The [IABooksOnArchiveSpark](https://github.com/helgeho/IABooksOnArchiveSpark) project is an extension to work with books from the Internet Archive. 
-It was created to demonstrate how easily [ArchiveSpark](https://github.com/helgeho/ArchiveSpark) can be extended and can be used as a template to add support for new data types to [ArchiveSpark](https://github.com/helgeho/ArchiveSpark) as well as to implement new enrich functions separated from the core project.
+For more information and instructions, please read the **[ArchiveSpark Documentation](docs/README.md)** (in progress).
 
 ## Cite
 
 ArchiveSpark has been published as a research paper at [JCDL 2016](http://www.jcdl2016.org), where it was nominated for the Best Paper Award.
 If you use ArchiveSpark in your work, please cite:
 
-*[Helge Holzmann, Vinay Goel, Avishek Anand. ArchiveSpark: Efficient Web Archive Access, Extraction and Derivation. In Proceedings of the Joint Conference on Digital Libraries, Newark, New Jersey, USA, 2016.](http://dl.acm.org/citation.cfm?id=2910902)*
-**[Download PDF](http://www.helgeholzmann.de/papers/JCDL_2016_ArchiveSpark.pdf)**
+[H. Holzmann, V. Goel and A. Anand. *ArchiveSpark: Efficient Web Archive Access, Extraction and Derivation.* 16th ACM/IEEE-CS Joint Conference on Digital Libraries (JCDL). Newark, New Jersey, USA. June 2016.](http://dl.acm.org/citation.cfm?id=2910902) [**Get full-text PDF**](http://www.helgeholzmann.de/papers/JCDL_2016_ArchiveSpark.pdf)
 
-More information can be found in the slides presented at the [WebSci`16 Hackathon](http://www.websci16.org/hackathon):
+The extensions to make it a more universal / generic data processing platform for any archival collection were presented at IEEE BigData 2017 (Short Paper):
 
-http://www.slideshare.net/HelgeHolzmann/archivespark-introduction-websci-2016-hackathon
+[H. Holzmann, Emily Novak Gustainis and Vinay Goel. *Universal Distant Reading through Metadata Proxies with ArchiveSpark*. 5th IEEE International Conference on Big Data (BigData). Boston, MA, USA. December 2017.](http://cci.drexel.edu/bigdata/bigdata2017/AcceptedPapers.html) [**Get full-text PDF**](http://www.helgeholzmann.de/papers/BIGDATA_2017.pdf)
 
 ## Related projects
 
@@ -39,11 +29,15 @@ __[Web2Warc](https://github.com/helgeho/Web2Warc)__
 
 If you do not have Web archive data available to use it with ArchiveSpark, easily create your own from any collection of websites with [Web2Warc](https://github.com/helgeho/Web2Warc).
 
+__[HadoopConcatGz](https://github.com/helgeho/HadoopConcatGz)__
+
+A Splitable Hadoop InputFormat for Concatenated GZIP Files and *.(w)arc.gz, also used by ArchiveSpark.
+
 ## License
 
 The MIT License (MIT)
 
-Copyright (c) 2015-2017 [Helge Holzmann](http://www.HelgeHolzmann.de) ([L3S](http://www.L3S.de)) and Vinay Goel ([Internet Archive](http://www.archive.org))
+Copyright (c) 2015-2018 [Helge Holzmann](http://www.HelgeHolzmann.de) ([L3S](http://www.L3S.de)) and Vinay Goel ([Internet Archive](http://www.archive.org))
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

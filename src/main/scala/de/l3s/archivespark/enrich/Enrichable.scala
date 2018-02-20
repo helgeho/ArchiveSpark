@@ -27,6 +27,7 @@ package de.l3s.archivespark.enrich
 import de.l3s.archivespark.ArchiveSpark
 import de.l3s.archivespark.utils.{Copyable, JsonConvertible, SelectorUtil}
 
+import scala.collection.immutable.ListMap
 import scala.reflect.ClassTag
 
 trait TypedEnrichable[+T] extends Enrichable {
@@ -69,7 +70,7 @@ trait Enrichable extends Serializable with Copyable[Enrichable] with JsonConvert
     _root = root
   }
 
-  private var _enrichments = Map[String, Enrichable]()
+  private var _enrichments: Map[String, Enrichable] = ListMap[String, Enrichable]()
   def enrichments: Set[String] = _enrichments.keySet
 
   private var _aliases = Map[String, String]()
@@ -110,9 +111,8 @@ trait Enrichable extends Serializable with Copyable[Enrichable] with JsonConvert
         func.derive(this.asInstanceOf[TypedEnrichable[D]], derivatives)
       } catch {
         case exception: Exception =>
-          lastException = Some(exception)
-//          if (ArchiveSpark.conf.catchExceptions) lastException = Some(exception)
-//          else throw exception
+          if (ArchiveSpark.conf.catchExceptions) lastException = Some(exception)
+          else throw exception
       }
       val clone = copy()
       clone._lastException = lastException

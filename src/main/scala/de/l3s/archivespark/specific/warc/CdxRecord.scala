@@ -29,6 +29,7 @@ import java.time.format.DateTimeFormatter
 
 import de.l3s.archivespark.utils.JsonConvertible
 
+import scala.collection.immutable.ListMap
 import scala.util.Try
 
 object CdxRecord {
@@ -73,7 +74,7 @@ case class CdxRecord(surtUrl: String,
 
   def toCdxString: String = toCdxString()
 
-  def toJson: Map[String, Any] = Map[String, Any](
+  def toJson: Map[String, Any] = ListMap[String, Any](
     "surtUrl" -> surtUrl,
     "timestamp" -> timestamp,
     "originalUrl" -> originalUrl,

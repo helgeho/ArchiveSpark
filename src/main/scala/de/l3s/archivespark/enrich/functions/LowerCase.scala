@@ -24,8 +24,8 @@
 
 package de.l3s.archivespark.enrich.functions
 
+import de.l3s.archivespark.enrich._
 import de.l3s.archivespark.enrich.dataloads.TextLoad
-import de.l3s.archivespark.enrich.{EnrichFunc, _}
 
 object LowerCase extends BasicEnrichFunc(TextLoad, "lowercase", (in: TypedEnrichable[String]) => Some {
   in.get.toLowerCase

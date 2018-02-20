@@ -36,14 +36,16 @@ import scala.util.Try
 
 class EnrichableRDD[Root <: EnrichRoot : ClassTag](rdd: RDD[Root]) {
   def enrich[SpecificRoot >: Root <: EnrichRoot : ClassTag](func: EnrichFunc[SpecificRoot, _]): RDD[Root] = {
+    val conf = ArchiveSpark.conf
     func.prepareGlobal(rdd.map(_.asInstanceOf[SpecificRoot])).mapPartitions { records =>
+      ArchiveSpark.conf = conf
       records.map(r =>
         func.enrich(func.prepareLocal(r)).asInstanceOf[Root]
       )
     }
   }
 
-  def group(fields: (String, Root => Any)*) = {
+  def group(fields: (String, Root => Any)*): (RDD[GroupRecord], GroupContext[Root]) = {
     val keyRecordPairs = rdd.mapPartitions { records =>
       records.map{r =>
         val meta = fields.map{case (k, f) => (k, f(r))}.toMap
@@ -68,7 +70,9 @@ class EnrichableRDD[Root <: EnrichRoot : ClassTag](rdd: RDD[Root]) {
   def mapEnrich[SpecificRoot >: Root <: EnrichRoot : ClassTag, Source, Target](dependencyFunc: EnrichFunc[SpecificRoot, _], sourceField: String, target: String)(f: Source => Target): RDD[Root] = mapEnrich(dependencyFunc, sourceField, target, target)(f)
   def mapEnrich[SpecificRoot >: Root <: EnrichRoot : ClassTag, Source, Target](dependencyFunc: EnrichFunc[SpecificRoot, _], sourceField: String, target: String, alias: String)(f: Source => Target): RDD[Root] = rdd.enrich(dependencyFunc.map(sourceField, target, alias)(f))
 
+  def filterExists(path: Seq[String]): RDD[Root] = rdd.filter(r => r(path).isDefined)
   def filterExists(path: String): RDD[Root] = rdd.filter(r => r(path).isDefined)
+  def filterExists[SpecificRoot >: Root <: EnrichRoot](f: EnrichFunc[SpecificRoot, _], field: String): RDD[Root] = filterExists(f.pathTo(field))
   def filterExists[SpecificRoot >: Root <: EnrichRoot](f: EnrichFunc[SpecificRoot, _]): RDD[Root] = rdd.filter(r => f.isEnriched(r))
 
   def filterNoException(): RDD[Root] = rdd.filter(r => r.lastException.isEmpty)
