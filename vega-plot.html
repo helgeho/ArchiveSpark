@@ -11,7 +11,12 @@
         <div class="vega-embed" id="canvas"></div>
         <script>
             var vegaSpec = URI().search(true).spec;
-            vg.embed("#canvas", vegaSpec, function(error, result) {});
+            var embedSpec = {
+                mode: "vega-lite",
+                spec: JSON.parse(vegaSpec)
+            };
+            vg.embed("#canvas", embedSpec, function(error, result) {});
+            $(".vega-actions").remove();
         </script>
     </body>
 </html>
