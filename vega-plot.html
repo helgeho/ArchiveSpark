@@ -13,10 +13,10 @@
             var vegaSpec = URI().search(true).spec;
             var embedSpec = {
                 mode: "vega-lite",
-                spec: JSON.parse(vegaSpec)
+                spec: JSON.parse(vegaSpec),
+                actions: false
             };
             vg.embed("#canvas", embedSpec, function(error, result) {});
-            $(".vega-actions").remove();
         </script>
     </body>
 </html>
