@@ -7,11 +7,11 @@ Besides the interactive use of ArchiveSpark as a data analysis / corpus building
 
 ## Dependency
 
-The recommended way to include ArchiveSpark as a library in your project is through Maven. For this purpose, we have published ArchiveSpark to [Maven Central](https://search.maven.org/#search%7Cga%7C1%7Carchivespark).
+The recommended way to include ArchiveSpark as a library in your project is through Maven. For this purpose, we have published ArchiveSpark on [Maven Central](https://search.maven.org/#search%7Cga%7C1%7Carchivespark).
 
-To include it from Maven Central in your Scala SBT project, add the following line to your `build.sbt` file (please check for the latest version):
+To include it from Maven Central in your Scala SBT project, add the following line to your `build.sbt` file (please [check for the latest version](https://search.maven.org/#search%7Cga%7C1%7Carchivespark)):
 ```
-libraryDependencies += "com.github.helgeho" %% "archivespark" % "2.7.5"
+libraryDependencies += "com.github.helgeho" %% "archivespark" % "2.7.6"
 ```
 
 In addition to that, there are releases with the plain JAR files available on GitHub: https://github.com/helgeho/ArchiveSpark/releases.
