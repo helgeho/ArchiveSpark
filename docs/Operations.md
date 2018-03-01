@@ -3,7 +3,7 @@
 
 # ArchiveSpark Operations
 
-ArchiveSpark extends the existing Spark [*transformations*](https://spark.apache.org/docs/2.2.0/rdd-programming-guide.html#transformations) and [*actions*](https://spark.apache.org/docs/2.2.0/rdd-programming-guide.html#actions) with additional operations on a dataset (RDDs), single records (an item in an RDD), as well as Enrich Functions:
+ArchiveSpark extends the existing Spark [*transformations*](https://spark.apache.org/docs/latest/rdd-programming-guide.html#transformations) and [*actions*](https://spark.apache.org/docs/latest/rdd-programming-guide.html#actions) with additional operations on a dataset (RDDs), single records (an item in an RDD), as well as [Enrich Functions](EnrichFuncs.md):
 
 ## Dataset Operations
 

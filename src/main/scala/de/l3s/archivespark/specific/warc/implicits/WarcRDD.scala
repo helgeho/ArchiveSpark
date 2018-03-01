@@ -78,10 +78,10 @@ class WarcRDD[WARC <: WarcLikeRecord : ClassTag](rdd: RDD[WARC]) {
             lazy val cdxCompressed = new GZIPOutputStream(cdxStream)
             lazy val cdxOut = if (gz) new PrintStream(cdxCompressed) else new PrintStream(cdxStream)
 
-            processed = records.map { record =>
+            processed = records.flatMap(record => record.value[WarcLikeRecord, Array[Byte]](payloadEnrichFunc, HttpPayload.PayloadField).map { payload =>
               val warcHeadersOpt = record.value[WarcLikeRecord, Map[String, String]](payloadEnrichFunc, WarcPayload.RecordHeaderField)
               val recordInfo = WarcRecordInfo(record.get.originalUrl, record.get.time, warcHeadersOpt.flatMap(_.get(WarcIpField)))
-              val payload = record.value[WarcLikeRecord, Array[Byte]](payloadEnrichFunc, HttpPayload.PayloadField).get
+
               val recordHeader = WarcHeaders.responseRecord(info, recordInfo, payload)
 
               val httpStatusOpt = record.value[WarcLikeRecord, String](payloadEnrichFunc, HttpPayload.StatusLineField)
@@ -99,7 +99,7 @@ class WarcRDD[WARC <: WarcLikeRecord : ClassTag](rdd: RDD[WARC]) {
               offset += recordBytes.length
 
               1L
-            }.sum
+            }).sum
 
             if (generateCdx && gz) cdxCompressed.finish()
           }

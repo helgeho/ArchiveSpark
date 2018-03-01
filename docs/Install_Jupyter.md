@@ -3,7 +3,7 @@
 
 # Install ArchiveSpark with Jupyter
 
-In order to get you started more easily, we provide a pre-packaged and pre-configured **[Docker](https://www.docker.com/) container** with ArchiveSpark and Jupyter ready to run, just one command away: https://github.com/helgeho/ArchiveSpark-docker
+In order to get you started more easily, we provide a pre-packaged and pre-configured [Docker](https://www.docker.com/) container with ArchiveSpark and Jupyter ready to run, just one command away: https://github.com/helgeho/ArchiveSpark-docker
 
 ## Manual Installation
 
@@ -13,7 +13,7 @@ The following steps explain how to install ArchiveSpark on your cluster or local
 It can be downloaded from here: https://spark.apache.org/downloads.html.
 Please unpack it and remember the location as you will need it in the following.
 
-2. Next, you need to install Jupyter.
+2. Next, you need to install [Jupyter](http://jupyter.org).
 Please follow the official instruction to do so:
 https://jupyter.readthedocs.io/en/latest/install.html
 
@@ -46,7 +46,7 @@ Inside this folder, create a `kernel.json` file with the following content:
      ],
      "codemirror_mode": "scala",
      "env": {
-         "SPARK_OPTS": "--master=yarn --deploy-mode client --conf spark.default.parallelism=100 --conf spark.serializer=org.apache.spark.serializer.KryoSerializer",
+         "SPARK_OPTS": "--master=yarn --deploy-mode client --conf spark.default.parallelism=100 --conf spark.serializer=org.apache.spark.serializer.KryoSerializer --conf spark.executor.userClassPathFirst=true",
          "CAPTURE_STANDARD_OUT": "true",
          "CAPTURE_STANDARD_ERR": "true",
          "SEND_EMPTY_OUTPUT": "false",
@@ -65,7 +65,9 @@ If you want to run it locally on your own machine, remove the `HADOOP_CONF_DIR` 
 Additional Spark options that can be specified in the `SPARK_OPTS` are listed on
 https://spark.apache.org/docs/latest/configuration.html
 
-To run Jupter, go to a directory of your choice and run `jupyter notebook`.
+*Please note: The following non-default parameters should always be used in ArchiveSpark to avoid serialization issues and dependency conflicts: `--conf spark.serializer=org.apache.spark.serializer.KryoSerializer --conf spark.executor.userClassPathFirst=true`*
+
+6. To run Jupter, go to a directory of your choice, where your notebooks will be placed, and run `jupyter notebook`.
 More on the use of ArchiveSpark with Jupyter can be found under [Use ArchiveSpark with Jupyter](Use_Jupyter.md).
 
 [< Table of Contents](README.md) | [Use ArchiveSpark with Jupyter >](Use_Jupyter.md)

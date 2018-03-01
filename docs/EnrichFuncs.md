@@ -26,7 +26,7 @@ EnrichFunc | Description
 &nbsp; | *Example:* `val enriched = rdd.enrich(LowerCase.of(HtmlText.of(Html.first("title")))` 
 **[SURT](../src/main/scala/de/l3s/archivespark/enrich/functions/SURT.scala)** | Converts an URL to its canonicalized [SURT form](http://crawler.archive.org/articles/user_manual/glossary.html#surt) without the protocol, e.g., `http://archive.org/web` -> `org,archive)/web`. For relative URLs extracted from a record, it automatically attempts to resolve the absolute form before conversion.
 &nbsp; | *Example:* `val enriched = rdd.enrich(SURT.of(HtmlAttribute("href").ofEach(Html.all("a")))` 
-**[Entities](../src/main/scala/de/l3s/archivespark/enrich/functions/Entities.scala)** | Extracts *persons*, *organizations*, *locations* and *dates* from text. By default, it depends on the `HtmlText` extracted from a webpage. In order to use this Enrich Function you need to add `edu.stanford.nlp:stanford-corenlp:3.5.1` with corresponding models to your classpath.
+**[Entities](../src/main/scala/de/l3s/archivespark/enrich/functions/Entities.scala)** | Extracts *persons*, *organizations*, *locations* and *dates* from text. By default, it depends on the `HtmlText` extracted from a webpage. In order to use this Enrich Function you need to add [`edu.stanford.nlp:stanford-corenlp:3.4.1`](http://central.maven.org/maven2/edu/stanford/nlp/stanford-corenlp/3.4.1/) with corresponding models to your classpath. See at the bottom of this article for another Enrich Function for more accurate Entity Linking ([FEL4ArchiveSpark](https://github.com/helgeho/FEL4ArchiveSpark)).
 &nbsp; | *Example:* `val enriched = rdd.enrich(Entities.of(Html.first("title")))`
 **[Root](../src/main/scala/de/l3s/archivespark/enrich/functions/Root.scala)**[*M*] | Provides access to the root value of a record. This is commonly the meta data, e.g., the `CdxRecord` in case of a Web archive record. The type of this data (*M*) needs to be specified.
 &nbsp; | *Example:* `val enriched = rdd.mapValues(Root[CdxRecord].map("year")(_.timestamp.take(4)))`  
@@ -43,6 +43,12 @@ EnrichFunc | Description
 &nbsp; | *Example:* `val enriched = rdd.enrich(WarcPayload)` 
 **[HttpPayload](../src/main/scala/de/l3s/archivespark/specific/warc/enrichfunctions/HttpPayload.scala)** | The same as `WarcPayload` but for plain HTTP records without WARC headers, e.g., when loaded remotely from the Wayback Machine. 
 &nbsp; | *Example:* `val rdd = ArchiveSpark.load(WaybackSpec("http://l3s.de")).enrich(HttpPayload)`
+
+## More Enrich Functions
+
+Additional Enrich Functions may be found in external projects, which is the recommended way to [share your Enrich Functions](Dev_EnrichFuncs.md), such as:
+
+* An Enrich Function to use [Yahoo's Fast Entity Linker](https://github.com/yahoo/FEL) (FEL) with ArchiveSpark: [FEL4ArchiveSpark](https://github.com/helgeho/FEL4ArchiveSpark).
 
 [< Table of Contents](README.md) | [Contribute >](Contribute.md)
 :---|---: 

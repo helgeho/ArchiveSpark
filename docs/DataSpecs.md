@@ -45,6 +45,7 @@ DataSpec| Description
 More DataSpecs for additional data types can be found in the following projects:
 
 * Also for Web archives, but starting from the temporal Web archive search engine [Tempas](http://tempas.L3S.de/v2) to fetch metadata by keywords with data records loaded remotely from the Internet Archive's Wayback Machine: [Tempas2ArchiveSpark](https://github.com/helgeho/Tempas2ArchiveSpark)
+* [Boris Smidt](https://github.com/borissmidt) has implemented a DataSpec to load Web archive collections that use the JSON-based CDX format *JCDX*: [ArchiveSparkJCDX](https://github.com/trafficdirect/ArchiveSparkJCDX)
 * DataSpecs to analyze digitized books from the Internet Archive remotely with ArchiveSpark using local XML meta data. The main purpose of this project is to demonstrate how easily ArchiveSpark can be extended: [IABooksOnArchiveSpark](https://github.com/helgeho/IABooksOnArchiveSpark)
 * The [Medical Heritage Library (MHL)](http://www.medicalheritage.org/) on ArchiveSpark project contains the required components for ArchiveSpark to work with MHL collections. It includes three DataSpecs to load data remotely through MHL's full-text search as well as from local files: [MHLonArchiveSpark](https://github.com/helgeho/MHLonArchiveSpark)
 

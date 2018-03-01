@@ -24,6 +24,8 @@
 
 package de.l3s.archivespark.utils
 
+import java.net.URLEncoder
+
 import org.apache.spark.rdd.RDD
 
 import scala.util.Random
@@ -34,7 +36,7 @@ object JupyterHelpers {
   def printHtml(html: String) = Left(Map("text/html" -> html))
   def printText(text: String) = Left(Map("text/plain" -> text))
 
-  def initRenderJson() = {
+  def initRenderJson(): Left[Map[String, String], Nothing] = {
     renderJsonInitialized = true
     printHtml("""
       <script type="text/javascript" src="https://rawgit.com/caldwell/renderjson/master/renderjson.js"></script>
@@ -50,7 +52,7 @@ object JupyterHelpers {
     """)
   }
 
-  def renderJson(json: String, showToLevel: Int = 1) = {
+  def renderJson(json: String, showToLevel: Int = 1): Left[Map[String, String], Nothing] = {
     val id = Random.nextInt(Int.MaxValue)
     printHtml(s"""
       <div id="$id"></div>
@@ -65,7 +67,7 @@ object JupyterHelpers {
     """)
   }
 
-  def peek[T <: JsonConvertible](rdd: RDD[T], showToLevel: Int = 1) = {
+  def peek[T <: JsonConvertible](rdd: RDD[T], showToLevel: Int = 1): Left[Map[String, String], Nothing] = {
     if (renderJsonInitialized) {
       val json = rdd.take(1).headOption.map(_.toJsonString(false)).getOrElse("")
       renderJson(json, showToLevel)

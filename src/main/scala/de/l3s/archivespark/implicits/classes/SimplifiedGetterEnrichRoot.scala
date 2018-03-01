@@ -30,12 +30,12 @@ import de.l3s.archivespark.utils.SelectorUtil
 import scala.reflect.ClassTag
 
 class SimplifiedGetterEnrichRoot[Root <: EnrichRoot](root: Root) {
-  def getValue[SpecificRoot >: Root <: EnrichRoot, T : ClassTag](f: EnrichFunc[SpecificRoot, _] with DefaultFieldAccess[_, T]): T = value(f).get
-  def getValue[SpecificRoot >: Root <: EnrichRoot, T : ClassTag](f: EnrichFunc[SpecificRoot, _], field: String): T = value(f, field).get
-
   def value[SpecificRoot >: Root <: EnrichRoot, T : ClassTag](f: EnrichFunc[SpecificRoot, _] with DefaultFieldAccess[_, T]): Option[T] = root.get[T](f.pathToDefaultField)
   def value[SpecificRoot >: Root <: EnrichRoot, T : ClassTag](f: EnrichFunc[SpecificRoot, _], field: String): Option[T] = root.get[T](f.pathTo(field))
 
-  def valueOrElse[SpecificRoot >: Root <: EnrichRoot, T : ClassTag](f: EnrichFunc[SpecificRoot, _] with DefaultFieldAccess[_, T], elseValue: => T): T = root.get[T](f.pathToDefaultField).getOrElse(elseValue)
-  def valueOrElse[SpecificRoot >: Root <: EnrichRoot, T : ClassTag](f: EnrichFunc[SpecificRoot, _], field: String, elseValue: => T): T = root.get[T](f.pathTo(field)).getOrElse(elseValue)
+  def getValue[SpecificRoot >: Root <: EnrichRoot, T : ClassTag](f: EnrichFunc[SpecificRoot, _] with DefaultFieldAccess[_, T]): T = value(f).get
+  def getValue[SpecificRoot >: Root <: EnrichRoot, T : ClassTag](f: EnrichFunc[SpecificRoot, _], field: String): T = value(f, field).get
+
+  def valueOrElse[SpecificRoot >: Root <: EnrichRoot, T : ClassTag](f: EnrichFunc[SpecificRoot, _] with DefaultFieldAccess[_, T], elseValue: => T): T = value(f).getOrElse(elseValue)
+  def valueOrElse[SpecificRoot >: Root <: EnrichRoot, T : ClassTag](f: EnrichFunc[SpecificRoot, _], field: String, elseValue: => T): T = value(f, field).getOrElse(elseValue)
 }

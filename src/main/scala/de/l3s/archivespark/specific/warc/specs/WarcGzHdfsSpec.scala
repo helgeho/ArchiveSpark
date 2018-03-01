@@ -56,7 +56,7 @@ class WarcGzHdfsSpec private(paths: String) extends DataSpec[(NullWritable, Warc
       archiveRecord.close()
       val digest = Option(archiveRecord.getDigestStr).getOrElse("-")
       var date = header.getDate.replaceAll("[^\\d]", "").take(14)
-      val cdx = CdxRecord(SURT.fromUrl(url), date, url, mime, status, digest, redirect, "-", bytes.length.toLong)
+      val cdx = CdxRecord(SURT.fromUrl(url), date, url, mime, status, digest, redirect, "-", bytes.length.toLong, Seq(warc.getOffset.toString, warc.getFilename))
       new WarcRecord(cdx, warc.getFilename, new RawBytesAccessor(bytes))
     }.toOption
   }

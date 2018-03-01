@@ -1,15 +1,27 @@
 [< Table of Contents](README.md) | [Build ArchiveSpark (advanced) >](Build.md)
 :---|---:
 
-# ArchiveSpark Recipes
+# Recipes / Examples
 
 To get common tasks done more quickly, we have prepared a few recipes that you can copy and customize for your needs.
 In most cases, all you need to do is to change the paths to locate your data or replace the Data Specification to be used.
 More about the provided Data Specifications can be found here: [DataSpecs](DataSpecs.md).
 
-* [Extracting title + text from a selected set of URLs](../notebooks/Selected_Title-and-Text.ipynb)
-* [Loading and resolving a dataset that contains revisit records](../notebooks/Resolve_Revisit_Records.ipynb)
-* to be extended soon ...
+* [Building a corpus with title + text for a selected set of URLs](../notebooks/Selected_Title-and-Text.ipynb)
+* [Analyzing term / entity distributions in a dataset](../notebooks/Analyze_Term-Distributions.ipynb)
+* [Extracting hyperlinks from webpages](../notebooks/Link_Extraction.ipynb)
+* [Extracting embedded resources from webpages](../notebooks/Extract_Embeds.ipynb)
+* [Loading WARC / Generating CDX (enable more efficient processing)](../notebooks/Generate_CDX.ipynb)
+* [Loading and resolving  *revisit* records in Web archive datasets](../notebooks/Resolve_Revisit_Records.ipynb)
+* [Downloading a Web archive dataset as WARC/CDX from the Wayback Machine](../notebooks/Download_WARC_from_Wayback.ipynb)
+
+These recipes are supposed to serve as templates for your tasks. In order to tailor them for your needs, feel free to combine elements from different recipes.
+
+More application-specific examples can be found in the related projects, such as:
+
+* Create semantic Web triples from ArchiveSpark records with [ArchiveSpark2Triples](https://github.com/helgeho/ArchiveSpark2Triples).
+* Analyze medical journals at the Medical Heritage Library (MHL) with [MHLonArchiveSpark](https://github.com/helgeho/MHLonArchiveSpark).
+* Start analyzing the temporal Web starting from keywords issued to [Tempas](http://tempas.L3S.de/v2) (Temporal Archive Search) with [Tempas2ArchiveSpark](https://github.com/helgeho/Tempas2ArchiveSpark).
 
 ## Interoperability
 

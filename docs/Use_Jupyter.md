@@ -3,7 +3,7 @@
 
 # Use ArchiveSpark with Jupyter
 
-Please first install Jupyter as described under [Install ArchiveSpark with Jupyter](Install_Juyter.md).
+Please first install [Jupyter](http://jupyter.org) as described under [Install ArchiveSpark with Jupyter](Install_Juyter.md).
 
 In order to start Jupyter, create a directory in which you want to store your Jupyter notebooks and open that path. From within this directory run
 ```

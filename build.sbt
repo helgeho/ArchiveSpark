@@ -4,7 +4,7 @@ import sbt.Keys._
 lazy val commonSettings = Seq(
   name := "archivespark",
   organization := "com.github.helgeho",
-  version := "2.7.5",
+  version := "2.7.6",
   scalaVersion := "2.11.7",
   fork := true
 )
@@ -19,6 +19,7 @@ lazy val archivespark = (project in file(".")).
       "org.apache.hadoop" % "hadoop-client" % "2.6.0" % "provided"  excludeAll(
         ExclusionRule(organization = "org.apache.httpcomponents", name = "httpclient"),
         ExclusionRule(organization = "org.apache.httpcomponents", name = "httpcore")),
+      "commons-codec" % "commons-codec" % "1.8",
       "edu.stanford.nlp" % "stanford-corenlp" % "3.5.1" % "provided",
       "org.elasticsearch" %% "elasticsearch-spark" % "2.2.0" % "provided",
       "org.json4s" %% "json4s-jackson" % "3.2.11" % "provided",
