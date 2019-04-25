@@ -9,7 +9,7 @@ ArchiveSpark extends the existing Spark [*transformations*](https://spark.apache
 
 Dataset operations that require a *source* (e.g., `mapValues`) or a *field* (e.g., `filterExists`) can commonly be called with either a path (in dot notation, e.g., `rdd.mapValues("payload.string.html.title")`), an Enrich Function with default field (e.g., `rdd.mapValues(HtmlText)`) or an Enrich Function with specified field (e.g., `rdd.mapValues(WarcPayload, "recordHeader")`). In case an Enrich Function with a single or default result field is used as a field pointer, the value of that field can often be inferred automatically, otherwise it needs to be specified, e.g., `rdd.filterValue(StringContent)(v => v.get.length > 10)` vs. `rdd.filterValue("payload.string") {v: Option[String] => v.get.length > 10)`. 
 
-These operations become available by the following import `import de.l3s.archivespark.implicits._`
+These operations become available by the following import `import org.archive.archivespark.implicits._`
 
 Operation| Description
 :--------|:---
@@ -40,7 +40,7 @@ Operation| Description
 
 ### Web Archive-specific Dataset Operations
 
-These operations are specific to Web archive dataset and become available through `import de.l3s.archivespark.specific.warc._`
+These operations are specific to Web archive dataset and become available through `import org.archive.archivespark.specific.warc._`
 
 Operation| Description
 :--------|:---

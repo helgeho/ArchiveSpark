@@ -12,7 +12,7 @@ For more information on the usage of DataSpecs, please read [General Usage](Gene
 
 ## Web Archive DataSpecs
 
-The following DataSpecs are specific to Web archive datasets. These become available by this import: `import de.l3s.archivespark.specific.warc.specs._`
+The following DataSpecs are specific to Web archive datasets. These become available by this import: `import org.archive.archivespark.specific.warc.specs._`
 
 DataSpec| Description
 :-------|:---
@@ -35,7 +35,7 @@ DataSpec| Description
 
 ## Additional DataSpecs for more data types 
 
-In addition to the Web archive specs we also provide some additional specs for raw files, availble through `import de.l3s.archivespark.specific.raw._`
+In addition to the Web archive specs we also provide some additional specs for raw files, availble through `import org.archive.archivespark.specific.raw._`
 
 DataSpec| Description
 :-------|:---
