@@ -24,30 +24,33 @@
 
 package org.archive.archivespark.specific.warc
 
-import org.archive.archivespark.dataspecs.DataEnrichRoot
-import org.archive.archivespark.enrich.RootEnrichFunc
-import org.archive.archivespark.enrich.dataloads.ByteContentLoad
-import org.archive.archivespark.http.{HttpClient, HttpRecord}
-import org.archive.archivespark.specific.warc.enrichfunctions.HttpPayload
+import org.archive.archivespark.functions.StringContent
+import org.archive.archivespark.model.dataloads.{ByteLoad, DataLoad, TextLoad}
+import org.archive.archivespark.model.pointers.FieldPointer
+import org.archive.archivespark.model.{DataEnrichRoot, EnrichRootCompanion}
+import org.archive.archivespark.sparkling.cdx.CdxRecord
+import org.archive.archivespark.sparkling.http.{HttpClient, HttpMessage}
+import org.archive.archivespark.specific.warc.functions.HttpPayload
 
-class WaybackRecord(cdx: CdxRecord) extends DataEnrichRoot[CdxRecord, HttpRecord](cdx) with ByteContentLoad with WarcLikeRecord {
+class WaybackRecord(cdx: CdxRecord) extends DataEnrichRoot[CdxRecord, HttpMessage](cdx) with WarcLikeRecord {
   val WaybackUrl = "http://web.archive.org/web/$timestampid_/$url"
 
   def waybackUrl(timestamp: String, url: String): String = {
     WaybackUrl.replace("$timestamp", timestamp).replace("$url", url)
   }
 
-  override def access[R >: Null](action: HttpRecord => R): R = {
-    HttpClient.get(waybackUrl(cdx.timestamp, cdx.originalUrl)) match {
-      case Some(record) => action(record)
-      case None => null
-    }
+  override def access[R >: Null](action: HttpMessage => R): R = {
+    val url = waybackUrl(cdx.timestamp, cdx.originalUrl)
+    HttpClient.requestMessage(url)(msg => action(msg))
   }
 
-  override def defaultEnrichFunction(field: String): Option[RootEnrichFunc[_]] = {
-    field match {
-      case ByteContentLoad.Field => Some(HttpPayload)
-      case _ => None
-    }
-  }
+  override def companion: EnrichRootCompanion[WaybackRecord] = WaybackRecord
+}
+
+object WaybackRecord extends EnrichRootCompanion[WaybackRecord] {
+  override def dataLoad[T](load: DataLoad[T]): Option[FieldPointer[WaybackRecord, T]] = (load match {
+    case ByteLoad => Some(HttpPayload)
+    case TextLoad => Some(StringContent)
+    case _ => None
+  }).map(_.asInstanceOf[FieldPointer[WaybackRecord, T]])
 }

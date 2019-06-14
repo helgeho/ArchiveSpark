@@ -25,10 +25,10 @@
 package org.archive.archivespark.dataspecs.access
 
 import java.io.InputStream
-import java.util.zip.GZIPInputStream
 
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.deploy.SparkHadoopUtil
+import org.archive.archivespark.sparkling.io.IOUtil
 
 class HdfsFileAccessor(path: String, decompress: Boolean = true) extends CloseableDataAccessor[InputStream] {
   override def get: Option[InputStream] = {
@@ -36,7 +36,7 @@ class HdfsFileAccessor(path: String, decompress: Boolean = true) extends Closeab
     var stream: InputStream = null
     try {
       val raw = fs.open(new Path(path))
-      stream = if (decompress) HdfsFileAccessor.decompress(path, raw) else raw
+      stream = if (decompress) IOUtil.decompress(raw, Some(path)) else raw
       Some(stream)
     } catch {
       case e: Exception =>
@@ -44,12 +44,5 @@ class HdfsFileAccessor(path: String, decompress: Boolean = true) extends Closeab
         if (stream != null) stream.close()
         None
     }
-  }
-}
-
-object HdfsFileAccessor {
-  def decompress(path: String, stream: InputStream): InputStream = {
-    if (path.toLowerCase.endsWith(".gz")) new GZIPInputStream(stream)
-    else stream
   }
 }

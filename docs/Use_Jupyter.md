@@ -3,16 +3,17 @@
 
 # Use ArchiveSpark with Jupyter
 
-Please first install [Jupyter](http://jupyter.org) as described under [Install ArchiveSpark with Jupyter](Install_Juyter.md).
+Please first install [Jupyter](http://jupyter.org) as described under [Install ArchiveSpark with Jupyter](Install_Jupyter.md) or use our pre-packed Docker image (https://github.com/helgeho/ArchiveSpark-docker).
 
-In order to start Jupyter, create a directory in which you want to store your Jupyter notebooks and open that path. From within this directory run
+In order to start Jupyter, create a directory to store your Jupyter notebooks.  
+From within this directory run:
 ```
 jupyter notebook
 ```
 
 Jupyter will show you the port that it is listening on for connections. You can open Jupyter in your browser under `http://HOST:PORT`. The host is the hostname or IP address of the server that you are running it on or `localhost` if you are running it on your local machine. If you would like to specify a port yourself or change other configurations, please find more information in the official Jupyter documentation: http://jupyter-notebook.readthedocs.io/en/stable/config.html
 
-Once you open Jupyter in your browser you should be presented with a screen like shown in the following screenshot. To create a new notebook and start ArchiveSpark, please click `New > ArchiveSpark`. In case `ArchiveSpark` is not shown here, please check [your setup](Install_Jupyter.md).
+Once you open Jupyter in your browser, you should be presented with a screen like shown in the following screenshot. To create a new notebook and start ArchiveSpark, please click `New > ArchiveSpark`. In case `ArchiveSpark` is not shown here, please check [your setup](Install_Jupyter.md).
 
 ![Jupyter](screenshots/Jupyter.png)
 
@@ -26,19 +27,14 @@ You are now ready to execute ArchiveSpark instructions. These can be entered in 
 
 ![ArchiveSpark imports](screenshots/Jupyter_imports.png)
 
-By default, the required imports are the following:
+By default, the required imports are the following. The first two are the general ArchiveSpark imports that are almost always needed. The last three are specific to web archive datasets and may not be required if you use ArchiveSpark with different kinds of collections. In that case, you might need different or additional imports to get access to different datasets or additional enrich functions (the corresponding JAR files should be put into your libraries folder, s. [Install ArchiveSpark with Jupyter](Install_Juyter.md), and the notebook needs to be restarted).
 ```scala
 import org.archive.archivespark._
-import org.archive.archivespark.implicits._
-import org.archive.archivespark.enrich.functions._
-import org.archive.archivespark.specific.warc.implicits._
-import org.archive.archivespark.specific.warc.specs._
-import org.archive.archivespark.specific.warc.enrichfunctions._
+import org.archive.archivespark.functions._
+import org.archive.archivespark.specific.warc._
 ```
 
-The first three here are the general ArchiveSpark imports that are almost always needed. The last three are specific to Web archive datasets and may not be required if you use ArchiveSpark with different kinds of collections. In that case, you might need different or additional imports to get access to different datasets or additional enrich functions (the corresponding JAR files should be put into your libraries folder, s. [Install ArchiveSpark with Jupyter](Install_Juyter.md), and the notebook needs to be restarted).
-
-Now you can load your data, apply filters and enrich functions provided by ArchiveSpark as well as any operations provided by Spark. The following example shows how a Web archive dataset is loaded from HDFS (`WarcCdxHdfsSpec`), filtered by type and status and enriched with the title of the page:
+Now you can load your data, apply filters and enrichment functions provided by ArchiveSpark as well as any operations provided by Spark. The following example shows how a Web archive dataset is loaded from HDFS (`WarcCdxHdfsSpec`), filtered by type and status and enriched with the title of the page:
 
 ![ArchiveSpark example](screenshots/Jupyter_example.png)
 

@@ -26,19 +26,28 @@ package org.archive.archivespark.specific.raw
 
 import java.io.InputStream
 
-import org.archive.archivespark.dataspecs.DataEnrichRoot
 import org.archive.archivespark.dataspecs.access.DataAccessor
-import org.archive.archivespark.utils.CleanupIterator
+import org.archive.archivespark.model.{DataEnrichRoot, EnrichRootCompanion}
+import org.archive.archivespark.sparkling.io.IOUtil
+import org.archive.archivespark.sparkling.util.{IteratorUtil, StringUtil}
 
 import scala.io.Source
 
 class FileStreamRecord(path: String, accessor: DataAccessor[InputStream], retryDelayMs: Option[Int] = None) extends DataEnrichRoot[String, InputStream](path) {
   override def access[R >: Null](action: InputStream => R): R = accessor.access(action)
 
-  def accessSource[R >: Null](action: Source => R): R = access { stream => action(Source.fromInputStream(stream)) }
+  def accessSource[R >: Null](action: Source => R): R = access { stream =>
+    StringUtil.source(stream) { source =>
+      action(source)
+    }
+  }
 
   def lineIterator: Iterator[String] = accessor.get match {
-    case Some(stream) => CleanupIterator(Source.fromInputStream(stream).getLines.map(_.stripLineEnd), () => stream.close(), retryDelayMs)
+    case Some(stream) => IteratorUtil.cleanup(IOUtil.lines(stream), () => stream.close())
     case None => Iterator.empty
   }
+
+  override def companion: EnrichRootCompanion[FileStreamRecord] = FileStreamRecord
 }
+
+object FileStreamRecord extends EnrichRootCompanion[FileStreamRecord]

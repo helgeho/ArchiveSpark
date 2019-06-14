@@ -24,36 +24,11 @@
 
 package org.archive.archivespark.specific
 
-import java.io.PrintStream
-import java.util.zip.GZIPOutputStream
-
-import org.archive.archivespark.utils.SparkIO
 import org.apache.spark.rdd.RDD
+import org.archive.archivespark.sparkling.util.RddUtil
 
 package object raw {
   implicit class RawTextRDD(rdd: RDD[String]) {
-    def saveAsRawText(path: String): Long = {
-      val gz = path.toLowerCase.endsWith(".gz")
-      SparkIO.save(path, rdd) { (idx, records, open) =>
-        val id = idx.toString.reverse.padTo(5, '0').reverse.mkString
-        val filename = s"part-$id${if (gz) ".gz" else ""}"
-
-        var processed = 0L
-        if (records.nonEmpty) {
-          open(filename) { stream =>
-            val compressed = if (gz) Some(new GZIPOutputStream(stream)) else None
-            val out = new PrintStream(compressed.getOrElse(stream))
-
-            processed = records.map { record =>
-              out.println(record)
-              1L
-            }.sum
-
-            if (compressed.isDefined) compressed.get.finish()
-          }
-        }
-        processed
-      }
-    }
+    def saveAsRawText(path: String): Long = RddUtil.saveAsTextFile(rdd, path)
   }
 }

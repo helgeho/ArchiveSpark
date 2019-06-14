@@ -24,22 +24,21 @@
 
 package org.archive.archivespark.specific.warc.specs
 
-import java.nio.file.Paths
-
-import org.archive.archivespark.specific.warc.{CdxRecord, WarcRecord}
 import org.apache.hadoop.fs.Path
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
+import org.archive.archivespark.sparkling.cdx.CdxRecord
+import org.archive.archivespark.specific.warc.WarcRecord
 
-class WarcHdfsCdxPathRddSpec private(cdx: RDD[(CdxRecord, String)]) extends WarcHdfsSpecBase[(CdxRecord, String)] {
+class WarcHdfsCdxPathRddSpec private(cdx: RDD[(CdxRecord, String)]) extends WarcHdfsCdxSpecBase[(CdxRecord, String)] {
   override def load(sc: SparkContext, minPartitions: Int): RDD[(CdxRecord, String)] = cdx
 
   override def parse(cdxPath: (CdxRecord, String)): Option[WarcRecord] = {
     val (cdx, dir) = cdxPath
-    parse(cdx, new Path(dir, cdx.additionalFields(1)))
+    parse(cdx, new Path(dir, cdx.locationFromAdditionalFields._1))
   }
 }
 
 object WarcHdfsCdxPathRddSpec {
-  def apply(cdx: RDD[(CdxRecord, String)]) = new WarcHdfsCdxPathRddSpec(cdx)
+  def apply(cdxWarcPaths: RDD[(CdxRecord, String)]) = new WarcHdfsCdxPathRddSpec(cdxWarcPaths)
 }

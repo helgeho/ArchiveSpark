@@ -24,9 +24,10 @@
 
 package org.archive.archivespark.dataspecs.access
 
-import scala.io.Source
+import org.archive.archivespark.sparkling.util.StringUtil
+
 import scala.util.Try
 
 class HdfsTextAccessor(location: HdfsLocationInfo) extends DataAccessor[String] {
-  override def get: Option[String] = Try{new HdfsStreamAccessor(location).access(Source.fromInputStream(_).mkString)}.toOption
+  override def get: Option[String] = Try{new HdfsStreamAccessor(location).access(StringUtil.fromInputStream(_))}.toOption
 }

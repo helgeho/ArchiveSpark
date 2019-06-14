@@ -24,10 +24,10 @@
 
 package org.archive.archivespark.specific.warc.specs
 
-import org.archive.archivespark.dataspecs.{DataSpec, TextDataLoader}
-import org.archive.archivespark.specific.warc.CdxRecord
+import org.archive.archivespark.dataspecs.TextDataSpec
+import org.archive.archivespark.sparkling.cdx.CdxRecord
 
-class CdxHdfsSpec private (val dataPath: String) extends DataSpec[String, CdxRecord] with TextDataLoader {
+class CdxHdfsSpec private (val dataPath: String) extends TextDataSpec[CdxRecord] {
   override def parse(data: String): Option[CdxRecord] = CdxRecord.fromString(data)
 }
 

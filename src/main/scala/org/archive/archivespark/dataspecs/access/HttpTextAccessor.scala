@@ -28,5 +28,10 @@ import scala.io.Source
 import scala.util.Try
 
 class HttpTextAccessor(url: String) extends DataAccessor[String] {
-  override def get: Option[String] = Try{Source.fromURL(url).mkString}.toOption
+  override def get: Option[String] = Try {
+    val source = Source.fromURL(url)
+    val str = source.mkString
+    source.close()
+    str
+  }.toOption
 }

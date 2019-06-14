@@ -1,6 +1,6 @@
 # ArchiveSpark Documentation
 
-ArchiveSpark is a Java/JVM library, written in Scala, based on [Apache Spark](https://spark.apache.org), which can be used as an API in any Java/Scala/JVM program for easy and efficient access to Web archives and other supported datasets. In addition to that, it can be used stand-alone using Scala's interactive shell or notebook tools, such as [Jupyter](http://jupyter.org).
+ArchiveSpark is a Java/JVM library, written in Scala, based on [Apache Spark](https://spark.apache.org), which can be used as an API for easy and efficient access to Web archives and other supported datasets, as part of your own project or stand-alone, using Scala's interactive shell or notebook tools, such as [Jupyter](http://jupyter.org).
 
 To get familiar with ArchiveSpark, but also for most of the common use cases, we recommend the use with Jupyter. In order to get you started more easily, we provide a pre-packaged and pre-configured [Docker](https://www.docker.com/) container with ArchiveSpark and Jupyter ready to run, just one command away: https://github.com/helgeho/ArchiveSpark-docker
 

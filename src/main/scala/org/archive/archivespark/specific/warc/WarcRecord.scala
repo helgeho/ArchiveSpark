@@ -26,25 +26,30 @@ package org.archive.archivespark.specific.warc
 
 import java.io.InputStream
 
-import org.archive.archivespark.dataspecs.DataEnrichRoot
 import org.archive.archivespark.dataspecs.access.DataAccessor
-import org.archive.archivespark.enrich.{DefaultField, RootEnrichFunc}
-import org.archive.archivespark.enrich.dataloads.ByteContentLoad
-import org.archive.archivespark.specific.warc.enrichfunctions.WarcPayload
+import org.archive.archivespark.functions.StringContent
+import org.archive.archivespark.model.dataloads.{ByteLoad, DataLoad, TextLoad}
+import org.archive.archivespark.model.pointers.FieldPointer
+import org.archive.archivespark.model.{DataEnrichRoot, EnrichRootCompanion}
+import org.archive.archivespark.sparkling.cdx.CdxRecord
+import org.archive.archivespark.sparkling.warc.{WarcRecord => WARC}
+import org.archive.archivespark.specific.warc.functions.WarcPayload
 
-class WarcRecord(cdx: CdxRecord, filename: String, data: DataAccessor[InputStream]) extends DataEnrichRoot[CdxRecord, RawArchiveRecord](cdx) with ByteContentLoad with WarcLikeRecord {
-  override def access[R >: Null](action: RawArchiveRecord => R): R = {
-    data.access{ stream =>
-      val record = RawArchiveRecord(filename, stream)
-      if (record != null) action(record)
-      else null
+class WarcRecord(cdx: CdxRecord, val data: DataAccessor[InputStream]) extends DataEnrichRoot[CdxRecord, WARC](cdx) with WarcLikeRecord {
+  override def access[R >: Null](action: WARC => R): R = data.access { stream =>
+    WARC.get(stream) match {
+      case Some(record) => action(record)
+      case None => null
     }
   }
 
-  override def defaultEnrichFunction(field: String): Option[RootEnrichFunc[_]] = {
-    field match {
-      case ByteContentLoad.Field => Some(WarcPayload)
-      case _ => None
-    }
-  }
+  override def companion: EnrichRootCompanion[WarcRecord] = WarcRecord
+}
+
+object WarcRecord extends EnrichRootCompanion[WarcRecord] {
+  override def dataLoad[T](load: DataLoad[T]): Option[FieldPointer[WarcRecord, T]] = (load match {
+    case ByteLoad => Some(WarcPayload)
+    case TextLoad => Some(StringContent)
+    case _ => None
+  }).map(_.asInstanceOf[FieldPointer[WarcRecord, T]])
 }

@@ -24,16 +24,15 @@
 
 package org.archive.archivespark
 
+import org.apache.spark.rdd.RDD
+import org.apache.spark.{SparkConf, SparkContext}
 import org.archive.archivespark.dataspecs.DataSpec
 import org.archive.archivespark.dataspecs.access._
-import org.archive.archivespark.enrich.dataloads.DataLoadBase
-import org.archive.archivespark.enrich.functions._
-import org.archive.archivespark.enrich.{EnrichRoot, _}
-import org.archive.archivespark.specific.warc.specs.{CdxHdfsSpec, WarcCdxHdfsSpec}
-import org.archive.archivespark.specific.warc.{CdxRecord, WarcRecord}
-import org.archive.archivespark.utils._
-import org.apache.spark.rdd.RDD
-import org.apache.spark.{SparkConf, SparkContext, SparkEnv}
+import org.archive.archivespark.functions._
+import org.archive.archivespark.model.pointers._
+import org.archive.archivespark.model.{EnrichRoot, _}
+import org.archive.archivespark.sparkling.Sparkling
+import org.archive.archivespark.util._
 
 import scala.reflect.ClassTag
 
@@ -48,15 +47,10 @@ object ArchiveSpark {
     val initialized: String = prop("initialized")
   }
 
-  var parallelism = 0
+  var conf: DistributedConfig = Sparkling.prop(new DistributedConfig())(conf, conf = _)
 
-  def partitions: Int = partitions(SparkContext.getOrCreate)
-  def partitions(sc: SparkContext): Int = if (parallelism > 0) parallelism else sc.defaultParallelism
-
-  var conf: DistributedConfig = new DistributedConfig()
-
-  def initialize(sc: SparkContext): Unit = initialize(sc.getConf)
-  def initialize(conf: SparkConf): Unit = {
+  def initialize(): Unit = {
+    val conf = SparkContext.getOrCreate.getConf
     if (conf.getBoolean(props.initialized, defaultValue = false)) return
     setProp(conf, props.initialized, true)
     conf.setAppName(AppName)
@@ -69,54 +63,44 @@ object ArchiveSpark {
       classOf[HdfsStreamAccessor],
       classOf[HdfsTextAccessor],
       classOf[HttpTextAccessor],
-      classOf[DataLoadBase],
       classOf[Enrichable],
       classOf[EnrichRoot],
-      classOf[EnrichFunc[_, _]],
-      classOf[EnrichFuncWithDefaultField[_, _, _, _]],
-      classOf[BoundEnrichFunc[_, _]],
-      classOf[BoundEnrichFuncWithDefaultField[_, _, _]],
-      classOf[DependentEnrichFunc[_, _]],
-      classOf[DependentEnrichFuncWithDefaultField[_, _, _, _]],
+      classOf[EnrichFunc[_, _, _]],
+      classOf[MultiEnrichFunc[_, _, _]],
+      classOf[BoundEnrichFunc[_, _, _]],
+      classOf[BoundMultiEnrichFunc[_, _, _]],
       classOf[JsonConvertible],
       classOf[Copyable[_]],
       classOf[SingleValueEnrichable[_]],
       classOf[MultiValueEnrichable[_]],
-      classOf[BasicEnrichFunc[_, _, _]],
-      classOf[BasicDependentEnrichFunc[_, _, _]],
-      classOf[BasicMultiValEnrichFunc[_, _, _]],
-      classOf[BasicMultiValDependentEnrichFunc[_, _, _]],
-      classOf[DefaultFieldAccess[_, _]],
-      classOf[DefaultField[_]],
-      classOf[SingleField[_]],
-      classOf[Derivatives],
-      classOf[IdentityEnrichFunction[_, _]],
+      classOf[FieldPointer[_, _]],
+      classOf[MultiFieldPointer[_, _]],
+      classOf[DependentFieldPointer[_, _]],
+      classOf[MultiToSingleFieldPointer[_, _]],
+      classOf[SingleToMultiFieldPointer[_, _]],
+      classOf[NamedFieldPointer[_, _]],
+      classOf[PathFieldPointer[_, _]],
       classOf[IdentityField[_]],
-      classOf[MultiVal],
       classOf[MultiValueEnrichable[_]],
-      classOf[PipedDependentEnrichFunc[_, _]],
-      classOf[PipedEnrichFunc[_]],
-      classOf[RootEnrichFunc[_]],
       classOf[SingleValueEnrichable[_]],
-      classOf[Data[_]], classOf[DataLoad[_]], classOf[Entities], classOf[HtmlTag], classOf[HtmlTags], classOf[HtmlAttribute], classOf[Json],
-      classOf[Root[_]], classOf[Values]
+      classOf[Data[_]],
+      classOf[Entities],
+      classOf[HtmlTag],
+      classOf[HtmlTags],
+      classOf[HtmlAttribute],
+      classOf[Values[_]]
     ))
   }
 
-  def load[Raw, Parsed : ClassTag](spec: DataSpec[Raw, Parsed]): RDD[Parsed] = load(SparkContext.getOrCreate, spec)
-
-  def load[Raw, Parsed : ClassTag](sc: SparkContext, spec: DataSpec[Raw, Parsed]): RDD[Parsed] = {
-    initialize(sc)
+  def load[Raw : ClassTag, Parsed : ClassTag](spec: DataSpec[Raw, Parsed]): RDD[Parsed] = {
+    initialize()
+    val sc = SparkContext.getOrCreate
     spec.initialize(sc)
-    val raw = spec.load(sc, partitions(sc))
+    val raw = spec.load(sc, Sparkling.parallelism)
     val specBc = sc.broadcast(spec)
-    raw.mapPartitions{records =>
+    Sparkling.initPartitions(raw).mapPartitions{records =>
       val spec = specBc.value
       records.flatMap(spec.parse)
     }
   }
-
-  def hdfs(cdxPath: String, warcPath: String)(implicit sc: SparkContext = SparkContext.getOrCreate): RDD[WarcRecord] = load(sc, WarcCdxHdfsSpec(cdxPath, warcPath))
-
-  def cdx(path: String)(implicit sc: SparkContext = SparkContext.getOrCreate): RDD[CdxRecord] = load(sc, CdxHdfsSpec(path))
 }

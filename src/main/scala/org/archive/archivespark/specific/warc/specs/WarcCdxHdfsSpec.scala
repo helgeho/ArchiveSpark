@@ -24,24 +24,26 @@
 
 package org.archive.archivespark.specific.warc.specs
 
-import org.archive.archivespark.dataspecs.TextDataLoader
-import org.archive.archivespark.specific.warc.{CdxRecord, WarcRecord}
+import org.archive.archivespark.dataspecs.TextDataSpec
+import org.archive.archivespark.sparkling.cdx.CdxRecord
+import org.archive.archivespark.specific.warc.WarcRecord
+import org.archive.archivespark.util.FilePathMap
 
 import scala.util.Try
 
-class WarcCdxHdfsSpec private(cdxPath: String, warcPath: String) extends WarcHdfsSpecBase[String] with TextDataLoader {
+class WarcCdxHdfsSpec private(cdxPath: String, warcPath: String) extends TextDataSpec[WarcRecord] with WarcHdfsCdxSpecBase[String] {
   override def dataPath: String = cdxPath
 
-  val warcPathMap = filePathMap(warcPath)
+  val warcPathMap: FilePathMap = filePathMap(warcPath)
 
   override def parse(data: String): Option[WarcRecord] = {
     CdxRecord.fromString(data).flatMap{cdx =>
-      Try{cdx.additionalFields(1)}.toOption.flatMap(warcPathMap.pathToFile).flatMap(parse(cdx, _))
+      Try{cdx.locationFromAdditionalFields._1}.toOption.flatMap(warcPathMap.pathToFile).flatMap(parse(cdx, _))
     }
   }
 }
 
 object WarcCdxHdfsSpec {
   def apply(cdxPath: String, warcPath: String) = new WarcCdxHdfsSpec(cdxPath, warcPath)
-  def apply(path: String) = new WarcCdxHdfsSpec(path + "/*.cdx", path)
+  def apply(path: String) = new WarcCdxHdfsSpec(path + "/@(*.cdx|*.cdx.gz)", path)
 }

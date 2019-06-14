@@ -24,37 +24,26 @@
 
 package org.archive.archivespark.specific.raw
 
+import org.apache.hadoop.fs.Path
+import org.apache.spark.SparkContext
+import org.apache.spark.rdd.RDD
 import org.archive.archivespark.dataspecs.DataSpec
 import org.archive.archivespark.dataspecs.access.HdfsFileAccessor
-import org.archive.archivespark.utils.{FilePathMap, RddUtil}
-import org.apache.hadoop.fs.{FileSystem, Path}
-import org.apache.spark.SparkContext
-import org.apache.spark.deploy.SparkHadoopUtil
-import org.apache.spark.rdd.RDD
+import org.archive.archivespark.sparkling.io.HdfsIO
+import org.archive.archivespark.sparkling.util.RddUtil
 
-class HdfsFileSpec private(path: String, filePatterns: Seq[String], decompress: Boolean, maxPartitions: Int, retryDelayMs: Option[Int]) extends DataSpec[String, FileStreamRecord] {
+class HdfsFileSpec private(path: String, filePatterns: Seq[String], decompress: Boolean, maxPartitions: Int) extends DataSpec[String, FileStreamRecord] {
   override def load(sc: SparkContext, minPartitions: Int): RDD[String] = {
-    val fs = FileSystem.get(SparkHadoopUtil.get.conf)
-    val files = fs.listFiles(new Path(path), true)
-    var paths = collection.mutable.Seq.empty[String]
-    while (files.hasNext) {
-      val path = files.next.getPath
-      if (filePatterns.isEmpty || filePatterns.exists(path.getName.matches)) {
-        paths :+= path.toString
-      }
-    }
-    RddUtil.parallelize(sc, paths, if (maxPartitions == 0) minPartitions else maxPartitions.min(minPartitions))
+    val files = HdfsIO.files(path, recursive = true)
+    val filtered = if (filePatterns.isEmpty) files.toSeq else files.filter(path => filePatterns.exists(new Path(path).getName.matches)).toSeq
+    RddUtil.parallelize(filtered, if (maxPartitions == 0) minPartitions else maxPartitions.min(minPartitions))
   }
 
-  override def parse(data: String): Option[FileStreamRecord] = {
-    Some(new FileStreamRecord(data, new HdfsFileAccessor(data, decompress), retryDelayMs))
-  }
+  override def parse(file: String): Option[FileStreamRecord] = Some(new FileStreamRecord(file, new HdfsFileAccessor(file, decompress)))
 }
 
 object HdfsFileSpec {
-  val DefaultRetryDelay: Int = 1000
-
-  def apply(path: String, filePatterns: Seq[String] = Seq.empty, decompress: Boolean = true, maxPartitions: Int = 0, retryDelayMs: Option[Int] = Some(DefaultRetryDelay)): HdfsFileSpec = {
-    new HdfsFileSpec(path, filePatterns, decompress, maxPartitions, retryDelayMs)
+  def apply(path: String, filePatterns: Seq[String] = Seq.empty, decompress: Boolean = true, maxPartitions: Int = 0): HdfsFileSpec = {
+    new HdfsFileSpec(path, filePatterns, decompress, maxPartitions)
   }
 }

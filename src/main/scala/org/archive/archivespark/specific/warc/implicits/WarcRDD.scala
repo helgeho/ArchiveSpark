@@ -24,32 +24,33 @@
 
 package org.archive.archivespark.specific.warc.implicits
 
-import java.io.{ByteArrayOutputStream, PrintStream, PrintWriter}
-import java.util.zip.GZIPOutputStream
+import java.io.{ByteArrayOutputStream, PrintWriter}
 
-import org.archive.archivespark.enrich.EnrichFunc
-import org.archive.archivespark.enrich.dataloads.ByteContentLoad
-import org.archive.archivespark.enrich.functions.DataLoad
-import org.archive.archivespark.implicits._
-import org.archive.archivespark.specific.warc.enrichfunctions.{HttpPayload, WarcPayload}
-import org.archive.archivespark.specific.warc.{WarcHeaders, WarcLikeRecord, WarcMeta, WarcRecordInfo}
-import org.archive.archivespark.utils.{GZipBytes, SparkIO}
-import org.apache.hadoop.io.compress.GzipCodec
+import org.apache.hadoop.fs.Path
 import org.apache.spark.rdd.RDD
+import org.archive.archivespark.model.dataloads.ByteLoad
+import org.archive.archivespark.sparkling.io.{GzipBytes, HdfsIO, IOUtil}
+import org.archive.archivespark.sparkling.util.{Common, RddUtil, StringUtil}
+import org.archive.archivespark.sparkling.warc.{WarcHeaders, WarcRecordMeta}
+import org.archive.archivespark.specific.warc.functions.{HttpPayload, WarcPayloadFields}
+import org.archive.archivespark.specific.warc.{WarcFileMeta, WarcLikeRecord}
 
 import scala.reflect.ClassTag
 
 object WarcRDD {
   val WarcIpField = "WARC-IP-Address"
+  val WarcRecordIdField = "WARC-Record-ID"
 }
 
 class WarcRDD[WARC <: WarcLikeRecord : ClassTag](rdd: RDD[WARC]) {
   import WarcRDD._
+  import org.archive.archivespark.sparkling.Sparkling._
 
-  def saveAsWarc(path: String, info: WarcMeta, generateCdx: Boolean = true): Long = {
-    val payloadEnrichFunc: EnrichFunc[WarcLikeRecord, _] = DataLoad(ByteContentLoad.Field)
+  def saveAsWarc(path: String, meta: org.archive.archivespark.sparkling.warc.WarcFileMeta = WarcFileMeta(), generateCdx: Boolean = true): Long = {
+    HdfsIO.ensureOutDir(path)
 
-    val gz = path.toLowerCase.endsWith(".gz")
+    val gz = path.toLowerCase.trim.endsWith(GzipExt)
+    val filePrefix = StringUtil.stripSuffixes(new Path(path).getName, GzipExt, WarcExt, ArcExt)
 
     val emptyLines = {
       val bytes = new ByteArrayOutputStream()
@@ -60,57 +61,61 @@ class WarcRDD[WARC <: WarcLikeRecord : ClassTag](rdd: RDD[WARC]) {
       bytes.toByteArray
     }
 
-    SparkIO.save(path, rdd.enrich(payloadEnrichFunc)) { (idx, records, open) =>
-      val id = idx.toString.reverse.padTo(5, '0').reverse.mkString
-      val warcSuffix = s"-$id.warc${if (gz) ".gz" else ""}"
-      val cdxSuffix = s"-$id.cdx${if (gz) ".gz" else ""}"
+    rdd.mapPartitionsWithIndex { case (idx, records) =>
+      val warcPrefix = filePrefix + "_" + StringUtil.padNum(idx, 5)
+      val warcFile = warcPrefix + WarcExt + (if (gz) GzipExt else "")
+      val warcPath = new Path(path, warcFile).toString
+      val warcCdxPath = new Path(path, warcPrefix + WarcExt + CdxExt + (if (gz) GzipExt else "")).toString
 
-      var processed = 0L
-      if (records.nonEmpty) {
-        val warcFilename = info.filename(warcSuffix)
-        open(warcFilename) { warcStream =>
-          val header = WarcHeaders.file(info, warcSuffix)
-          val headerBytes = if (gz) GZipBytes(header) else header
-          warcStream.write(headerBytes)
+      var warcPosition = 0L
+      val warcOut = Common.lazyValWithCleanup({
+        val out = HdfsIO.out(warcPath, compress = false)
+        val headerBytes = WarcHeaders.warcFile(meta, warcFile)
+        val compressedHeader = if (gz) GzipBytes(headerBytes) else headerBytes
+        out.write(compressedHeader)
+        warcPosition += compressedHeader.length
+        out
+      })(_.close)
 
-          var offset = headerBytes.length.toLong
-          open(info.filename(cdxSuffix)) { cdxStream =>
-            lazy val cdxCompressed = new GZIPOutputStream(cdxStream)
-            lazy val cdxOut = if (gz) new PrintStream(cdxCompressed) else new PrintStream(cdxStream)
+      val cdxOut = Common.lazyValWithCleanup(IOUtil.print(HdfsIO.out(warcCdxPath)))(_.close)
 
-            processed = records.flatMap(record => record.value[WarcLikeRecord, Array[Byte]](payloadEnrichFunc, HttpPayload.PayloadField).map { payload =>
-              val warcHeadersOpt = record.value[WarcLikeRecord, Map[String, String]](payloadEnrichFunc, WarcPayload.RecordHeaderField)
-              val recordInfo = WarcRecordInfo(record.get.originalUrl, record.get.time, warcHeadersOpt.flatMap(_.get(WarcIpField)))
+      val processed = records.map { record =>
+        val payloadPointer = record.dataLoad(ByteLoad).get
+        val enriched = payloadPointer.init(record, excludeFromOutput = false)
 
-              val recordHeader = WarcHeaders.responseRecord(info, recordInfo, payload)
+        val warcHeadersOpt = payloadPointer.sibling[Map[String, String]](WarcPayloadFields.RecordHeader).get(enriched)
+        val recordMeta = WarcRecordMeta(enriched.get.originalUrl, enriched.get.time.toInstant, warcHeadersOpt.flatMap(_.get(WarcRecordIdField)), warcHeadersOpt.flatMap(_.get(WarcIpField)))
 
-              val httpStatusOpt = record.value[WarcLikeRecord, String](payloadEnrichFunc, HttpPayload.StatusLineField)
-              val httpHeadersOpt = record.value[WarcLikeRecord, Map[String, String]](payloadEnrichFunc, HttpPayload.HeaderField)
-              val httpHeader = if (httpStatusOpt.isDefined && httpHeadersOpt.isDefined) WarcHeaders.http(httpStatusOpt.get, httpHeadersOpt.get) else Array.empty[Byte]
+        val httpStatusOpt = payloadPointer.sibling[String](HttpPayload.StatusLineField).get(enriched)
+        val httpHeadersOpt = payloadPointer.sibling[Map[String, String]](HttpPayload.HeaderField).get(enriched)
+        val httpHeader = if (httpStatusOpt.isDefined && httpHeadersOpt.isDefined) WarcHeaders.http(httpStatusOpt.get, httpHeadersOpt.get) else Array.empty[Byte]
 
-              val recordBytes = if (gz) GZipBytes(recordHeader ++ httpHeader ++ payload ++ emptyLines) else recordHeader ++ httpHeader ++ payload ++ emptyLines
-              warcStream.write(recordBytes)
+        val payload = payloadPointer.get(enriched).get
+        val content = httpHeader ++ payload
+        val recordHeader = WarcHeaders.warcResponseRecord(recordMeta, content, payload)
 
-              if (generateCdx) {
-                val locationInfo = Array(offset.toString, warcFilename)
-                cdxOut.println(record.get.copy(compressedSize = recordBytes.length).toCdxString(locationInfo))
-              }
+        val recordBytes = if (gz) GzipBytes(recordHeader ++ content ++ emptyLines) else recordHeader ++ content ++ emptyLines
+        warcOut.get.write(recordBytes)
 
-              offset += recordBytes.length
-
-              1L
-            }).sum
-
-            if (generateCdx && gz) cdxCompressed.finish()
-          }
+        if (generateCdx) {
+          val locationInfo = Array(warcPosition.toString, warcFile)
+          cdxOut.get.println(enriched.get.copy(compressedSize = recordBytes.length).toCdxString(locationInfo))
         }
-      }
-      processed
+
+        warcPosition += recordBytes.length
+
+        1L
+      }.sum
+
+      warcOut.clear(true)
+      cdxOut.clear(true)
+
+      Iterator(processed)
     }
-  }
+  }.reduce(_ + _)
 
   def toCdxStrings: RDD[String] = toCdxStrings()
   def toCdxStrings(includeAdditionalFields: Boolean = true): RDD[String] = rdd.map(_.toCdxString(includeAdditionalFields))
 
-  def saveAsCdx(path: String): Unit = if (path.endsWith(".gz")) toCdxStrings.saveAsTextFile(path, classOf[GzipCodec]) else toCdxStrings.saveAsTextFile(path)
+  def saveAsCdx(path: String): Unit = RddUtil.saveAsTextFile(toCdxStrings, path)
 }

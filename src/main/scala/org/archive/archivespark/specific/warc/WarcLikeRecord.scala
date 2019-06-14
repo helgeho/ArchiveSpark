@@ -24,7 +24,6 @@
 
 package org.archive.archivespark.specific.warc
 
-import org.archive.archivespark.enrich.TypedEnrichRoot
-import org.archive.archivespark.enrich.dataloads.ByteContentLoad
+import org.archive.archivespark.model.dataloads.{ByteLoad, TextLoad}
 
-trait WarcLikeRecord extends TypedEnrichRoot[CdxRecord] with ByteContentLoad with CdxBasedRecord
+trait WarcLikeRecord extends CdxBasedRecord with ByteLoad.Root with TextLoad.Root

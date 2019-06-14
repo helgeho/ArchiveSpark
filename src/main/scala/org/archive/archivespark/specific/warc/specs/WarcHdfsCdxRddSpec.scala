@@ -24,14 +24,16 @@
 
 package org.archive.archivespark.specific.warc.specs
 
-import org.archive.archivespark.specific.warc.{CdxRecord, WarcRecord}
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
+import org.archive.archivespark.sparkling.cdx.CdxRecord
+import org.archive.archivespark.specific.warc.WarcRecord
+import org.archive.archivespark.util.FilePathMap
 
 import scala.util.Try
 
-class WarcHdfsCdxRddSpec private(cdx: RDD[CdxRecord], warcPath: String) extends WarcHdfsSpecBase[CdxRecord] {
-  val warcPathMap = filePathMap(warcPath)
+class WarcHdfsCdxRddSpec private(cdx: RDD[CdxRecord], warcPath: String) extends WarcHdfsCdxSpecBase[CdxRecord] {
+  val warcPathMap: FilePathMap = filePathMap(warcPath)
 
   override def load(sc: SparkContext, minPartitions: Int): RDD[CdxRecord] = cdx
 

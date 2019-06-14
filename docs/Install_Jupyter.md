@@ -3,11 +3,13 @@
 
 # Install ArchiveSpark with Jupyter
 
-In order to get you started more easily, we provide a pre-packaged and pre-configured [Docker](https://www.docker.com/) container with ArchiveSpark and Jupyter ready to run, just one command away: https://github.com/helgeho/ArchiveSpark-docker
+## Pre-Packed Docker Image
+
+In order to get you started more easily, we provide a pre-packaged and pre-configured [Docker](https://www.docker.com/) image including ArchiveSpark and Jupyter, just one command away: https://github.com/helgeho/ArchiveSpark-docker
 
 ## Manual Installation
 
-The following steps explain how to install ArchiveSpark on your cluster or local environemnt:
+The following steps explain how to install ArchiveSpark on your cluster or local environment:
 
 1. Since ArchiveSpark is based on Apache Spark, as a first step you need to download and unpack Spark.
 It can be downloaded from here: https://spark.apache.org/downloads.html.
@@ -22,16 +24,13 @@ We recommend the use of [Apache Toree](https://toree.apache.org/) for this.
 As the setup of Toree is not very straight-forward, we provide a pre-configured package under:
 http://www.l3s.de/~holzmann/toree2_dynamic_lib.tar.gz.
 
-4. Now, you will need to create a libraries folder in which you store ArchiveSpark as well as all required dependencies.
-Create this directory in any path of your choice and copy the JAR files required by ArchiveSpark to it.
-The latest main JAR can be downloaded from [Maven Central](https://search.maven.org/#search%7Cga%7C1%7Carchivespark) or the released version on GitHub: https://github.com/helgeho/ArchiveSpark/releases
-In addition to that, we also provide a pre-packaged JAR that includes all required dependencies there.
+4. Now, create a libraries folder in which you store ArchiveSpark with dependencies as well as additional libraries.
+Create this directory in any path of your choice and copy the JAR files there (see https://github.com/helgeho/ArchiveSpark/releases).
 
 5. Finally, you will need to configure the Jupyter kernel by creating a *kernel spec*.
 This has to be stored in Jupyter's `kernels` directory, which is located in its data path.
 Under Linux, this path by default is `~/.local/share/jupyter/kernels`.
-To find the path on your system, you can run the `jupyter --paths`.
-More details can be found here: http://jupyter.readthedocs.io/en/latest/projects/jupyter-directories.html
+To find the path on your system, you can run the `jupyter --paths` command (see http://jupyter.readthedocs.io/en/latest/projects/jupyter-directories.html)
 Now create a directory inside the `kernels` directory, and name it, e.g., `ArchiveSpark`.
 Inside this folder, create a `kernel.json` file with the following content:
 

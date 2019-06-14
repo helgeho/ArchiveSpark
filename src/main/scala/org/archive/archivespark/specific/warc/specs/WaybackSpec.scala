@@ -26,11 +26,13 @@ package org.archive.archivespark.specific.warc.specs
 
 import java.net.URLEncoder
 
-import org.archive.archivespark.dataspecs.DataSpec
-import org.archive.archivespark.specific.warc.{CdxRecord, WaybackRecord}
-import org.archive.archivespark.utils.RddUtil
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
+import org.archive.archivespark.dataspecs.DataSpec
+import org.archive.archivespark.sparkling.Sparkling
+import org.archive.archivespark.sparkling.cdx.CdxRecord
+import org.archive.archivespark.sparkling.util.{IteratorUtil, RddUtil, StringUtil}
+import org.archive.archivespark.specific.warc.WaybackRecord
 
 import scala.io.Source
 
@@ -48,9 +50,10 @@ class WaybackSpec private (url: String, matchPrefix: Boolean, from: Long, to: Lo
   }
 
   override def load(sc: SparkContext, minPartitions: Int): RDD[String] = {
-    RddUtil.parallelize(sc, pages, if (maxPartitions == 0) minPartitions else maxPartitions.min(minPartitions)).flatMap{page =>
+    RddUtil.parallelize(pages, if (maxPartitions == 0) minPartitions else maxPartitions.min(minPartitions)).flatMap{page =>
       try {
-        Source.fromURL(cdxServerUrl(page)).getLines()
+        val source = Source.fromURL(cdxServerUrl(page))(StringUtil.codec(Sparkling.DefaultCharset))
+        IteratorUtil.cleanup(source.getLines, source.close)
       } catch {
         case e: Exception =>
           e.printStackTrace()
@@ -59,13 +62,11 @@ class WaybackSpec private (url: String, matchPrefix: Boolean, from: Long, to: Lo
     }.cache
   }
 
-  override def parse(data: String): Option[WaybackRecord] = {
-    CdxRecord.fromString(data).map(cdx => new WaybackRecord(cdx))
-  }
+  override def parse(data: String): Option[WaybackRecord] = CdxRecord.fromString(data).map(cdx => new WaybackRecord(cdx))
 }
 
 object WaybackSpec {
-  def apply(url: String, matchPrefix: Boolean = false, from: Long = 0, to: Long = 0, blocksPerPage: Int = 5, pages: Int = 50, maxPartitions: Int = 0) = {
+  def apply(url: String, matchPrefix: Boolean = false, from: Long = 0, to: Long = 0, blocksPerPage: Int = 5, pages: Int = 50, maxPartitions: Int = 0): WaybackSpec = {
     new WaybackSpec(url, matchPrefix, from, to, blocksPerPage, pages, maxPartitions)
   }
 }

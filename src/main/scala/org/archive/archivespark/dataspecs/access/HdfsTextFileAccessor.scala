@@ -24,9 +24,6 @@
 
 package org.archive.archivespark.dataspecs.access
 
-import org.apache.hadoop.fs.{FSDataInputStream, FileSystem, Path}
-import org.apache.spark.deploy.SparkHadoopUtil
-
 import scala.io.Source
 
 class HdfsTextFileAccessor(path: String, decompress: Boolean = true) extends DataAccessor[String] {

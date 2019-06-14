@@ -24,8 +24,28 @@
 
 package org.archive.archivespark.specific.warc
 
-trait CdxBasedRecord {
-  def get: CdxRecord
+import io.circe.Json
+import org.archive.archivespark.model.TypedEnrichRoot
+import org.archive.archivespark.sparkling.cdx.CdxRecord
+import org.archive.archivespark.util.Json._
+
+import scala.collection.immutable.ListMap
+
+trait CdxBasedRecord extends TypedEnrichRoot[CdxRecord] {
+  override def metaToJson: Json = {
+    val cdx = get
+    json(ListMap[String, Any](
+      "surtUrl" -> cdx.surtUrl,
+      "timestamp" -> cdx.timestamp,
+      "originalUrl" -> cdx.originalUrl,
+      "mime" -> cdx.mime,
+      "status" -> cdx.status,
+      "digest" -> cdx.digest,
+      "redirectUrl" -> cdx.redirectUrl,
+      "meta" -> cdx.meta,
+      "compressedSize" -> cdx.compressedSize
+    ))
+  }
 }
 
 object CdxBasedRecord {

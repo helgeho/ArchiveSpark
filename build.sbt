@@ -3,37 +3,37 @@ import sbt.Keys._
 
 lazy val commonSettings = Seq(
   name := "archivespark",
-  organization := "com.github.helgeho",
-  version := "2.7.7",
-  scalaVersion := "2.11.7",
-  fork := true
+  organization := "org.archive",
+  version := "3.0",
+  scalaVersion := "2.11.12",
+  fork := true,
+  exportJars := true
 )
 
-lazy val archivespark = (project in file(".")).
-  settings(commonSettings: _*).
-  settings(
+val circeVersion = "0.10.0"
+
+lazy val archivespark = (project in file("."))
+  .settings(
+    commonSettings,
     libraryDependencies ++= Seq(
-      "org.apache.spark" %% "spark-core" % "2.2.0" % "provided" excludeAll(
-        ExclusionRule(organization = "org.apache.httpcomponents", name = "httpclient"),
-        ExclusionRule(organization = "org.apache.httpcomponents", name = "httpcore")),
-      "org.apache.spark" %% "spark-sql" % "2.2.0" % "provided",
-      "org.apache.hadoop" % "hadoop-client" % "2.6.0" % "provided"  excludeAll(
-        ExclusionRule(organization = "org.apache.httpcomponents", name = "httpclient"),
-        ExclusionRule(organization = "org.apache.httpcomponents", name = "httpcore")),
-      "commons-codec" % "commons-codec" % "1.8",
-      "edu.stanford.nlp" % "stanford-corenlp" % "3.5.1" % "provided",
-      "org.elasticsearch" %% "elasticsearch-spark" % "2.2.0" % "provided",
-      "org.json4s" %% "json4s-jackson" % "3.2.11" % "provided",
-      "org.apache.httpcomponents" % "httpclient" % "4.2.2",
-      "org.apache.httpcomponents" % "httpcore" % "4.2.2",
+      "org.apache.hadoop" % "hadoop-client" % "2.5.0" % "provided",
+      "org.apache.spark" %% "spark-core" % "2.1.3" % "provided",
+      "org.apache.spark" %% "spark-sql" % "2.1.3" % "provided",
+      "joda-time" % "joda-time" % "2.10",
+      "org.apache.httpcomponents" % "httpclient" % "4.5.6",
       "org.netpreserve.commons" % "webarchive-commons" % "1.1.8" excludeAll(
         ExclusionRule(organization = "org.apache.hadoop", name = "hadoop-core"),
         ExclusionRule(organization = "com.google.guava", name = "guava"),
-        ExclusionRule(organization = "org.apache.httpcomponents", name = "httpcore")),
-      "org.scalatest" %% "scalatest" % "2.2.6" % Test,
-      "org.jsoup" % "jsoup" % "1.11.2",
-      "com.github.helgeho" % "hadoop-concat-gz" % "1.2.2"
-    ),
+        ExclusionRule(organization = "org.apache.httpcomponents", name = "httpcore"),
+        ExclusionRule(organization = "org.apache.httpcomponents", name = "httpclient"),
+        ExclusionRule(organization = "joda-time", name = "joda-time")),
+      "edu.stanford.nlp" % "stanford-corenlp" % "3.5.1" % "provided",
+      "org.jsoup" % "jsoup" % "1.11.2"
+    ) ++ Seq(
+      "io.circe" %% "circe-core",
+      "io.circe" %% "circe-generic",
+      "io.circe" %% "circe-parser"
+    ).map(_ % circeVersion),
     publishTo := Some(
       if (isSnapshot.value)
         Opts.resolver.sonatypeSnapshots
@@ -53,17 +53,12 @@ lazy val archivespark = (project in file(".")).
       Developer(
         id    = "helgeho",
         name  = "Helge Holzmann",
-        email = "holzmann@L3S.de",
+        email = "helge@archive.org",
         url   = url("http://www.HelgeHolzmann.de")
       )
     ),
     licenses := Seq("MIT" -> url("http://www.opensource.org/licenses/mit-license.php"))
   )
 
-assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = false, includeDependency = false)
-assemblyOption in assemblyPackageDependency := (assemblyOption in assemblyPackageDependency).value.copy(includeScala = false)
-
-assemblyMergeStrategy in assembly := {
-  case PathList("META-INF", xs @ _*) => MergeStrategy.discard
-  case _ => MergeStrategy.first
-}
+assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = false) //, includeDependency = false)
+//assemblyOption in assemblyPackageDependency := (assemblyOption in assemblyPackageDependency).value.copy(includeScala = false)
