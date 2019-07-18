@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015-2018 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
+ * Copyright (c) 2015-2019 Helge Holzmann (Internet Archive) <helge@archive.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,7 +25,7 @@
 package org.archive.archivespark.util
 
 object SelectorUtil {
-  def parse(path: String): Array[String] = path.split("\\.").map(_.trim).flatMap{ k =>
+  def parse(path: String): Array[String] = path.split("\\.").map(_.trim).filter(_.nonEmpty).flatMap{ k =>
     var split = -1
     if (k.endsWith("]")) split = k.lastIndexOf('[')
     else if(k.endsWith("*")) split = k.length - 1

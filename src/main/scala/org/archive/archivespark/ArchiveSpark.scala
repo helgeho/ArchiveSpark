@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015-2018 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
+ * Copyright (c) 2015-2019 Helge Holzmann (Internet Archive) <helge@archive.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -48,6 +48,9 @@ object ArchiveSpark {
   }
 
   var conf: DistributedConfig = Sparkling.prop(new DistributedConfig())(conf, conf = _)
+
+  def parallelism: Int = Sparkling.parallelism
+  def parallelism_=(value: Int): Unit = Sparkling.parallelism = value
 
   def initialize(): Unit = {
     val conf = SparkContext.getOrCreate.getConf

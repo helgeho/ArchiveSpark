@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015-2018 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
+ * Copyright (c) 2015-2019 Helge Holzmann (Internet Archive) <helge@archive.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,5 +27,6 @@ package org.archive.archivespark.model.pointers
 import org.archive.archivespark.model.{EnrichRoot, EnrichRootCompanion}
 
 class RelativeFieldPointer[Root <: EnrichRoot, T] (relativeTo: FieldPointer[Root, _], drop: Int, add: Seq[String]) extends FieldPointer[Root, T] {
+  override def init[R <: Root](root: R, excludeFromOutput: Boolean): R = relativeTo.init(root, excludeFromOutput)
   override def path[R <: Root](root: EnrichRootCompanion[R]): Seq[String] = relativeTo.path(root).dropRight(drop) ++ add
 }

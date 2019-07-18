@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015-2018 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
+ * Copyright (c) 2015-2019 Helge Holzmann (Internet Archive) <helge@archive.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,47 +27,39 @@ package org.archive.archivespark.functions
 import org.archive.archivespark.model._
 import org.archive.archivespark.model.dataloads.ByteLoad
 import org.archive.archivespark.model.pointers.DependentFieldPointer
-import org.archive.archivespark.sparkling.cdx.CdxRecord
-import org.jsoup.Jsoup
-
-import scala.collection.JavaConverters._
-import scala.util.Try
+import org.archive.archivespark.sparkling.html.HtmlProcessor
+import org.archive.archivespark.sparkling.util.IteratorUtil
 
 object HtmlNamespace {
   def get: DependentFieldPointer[ByteLoad.Root, String] = StringContent.mapIdentity("html").get[String]("html")
 }
 
-object Html extends HtmlTag("body", 0, "body") {
-  def apply(selector: String): HtmlTags = all(selector)
-  def apply(selector: String, fieldName: String): HtmlTags = all(selector, fieldName)
-  def apply(selector: String, index: Int, fieldName: String): HtmlTag = new HtmlTag(selector, index, fieldName)
-  def apply(selector: String, index: Int): HtmlTag = new HtmlTag(selector, index, selector)
+object Html extends HtmlTag("html", 0, "html") {
+  def apply(tagName: String): HtmlTags = all(tagName)
+  def apply(tagName: String, fieldName: String): HtmlTags = all(tagName, fieldName)
+  def apply(tagName: String, index: Int): HtmlTag = apply(tagName, index, tagName)
+  def apply(tagName: String, index: Int, fieldName: String): HtmlTag = new HtmlTag(tagName, index, fieldName)
 
-  def first(selector: String): HtmlTag = new HtmlTag(selector, 0, selector)
+  def first(selector: String): HtmlTag = first(selector, selector)
   def first(selector: String, fieldName: String): HtmlTag = new HtmlTag(selector, 0, fieldName)
 
-  def all(selector: String): HtmlTags = new HtmlTags(selector, selector)
+  def all(selector: String): HtmlTags = all(selector, selector)
   def all(selector: String, fieldName: String): HtmlTags = new HtmlTags(selector, fieldName)
 }
 
-class HtmlTag (selector: String, index: Int, field: String) extends BoundEnrichFunc[ByteLoad.Root, String, String](HtmlNamespace.get) {
+class HtmlTag(tagName: String, index: Int, field: String) extends BoundEnrichFunc[ByteLoad.Root, String, String](HtmlNamespace.get) {
   override def fields: Seq[String] = Seq(field)
 
   override def derive(source: TypedEnrichable[String], derivatives: Derivatives): Unit = {
-    val url = Try {source.root[CdxRecord].get.originalUrl}.getOrElse("")
-    val doc = Jsoup.parse(source.get, url)
-    val elements = doc.select(selector)
-    if (elements.size() > index) derivatives << elements.get(index).toString
+    val tag = IteratorUtil.last(HtmlProcessor.printTags(source.get, Set(tagName)).take(index + 1).zipWithIndex)
+    if (tag.isDefined && tag.get._2 == index) derivatives << tag.get._1
   }
 }
 
-class HtmlTags (selector: String, field: String) extends BoundMultiEnrichFunc[ByteLoad.Root, String, String](HtmlNamespace.get) {
+class HtmlTags(tagName: String, field: String) extends BoundMultiEnrichFunc[ByteLoad.Root, String, String](HtmlNamespace.get) {
   override def fields: Seq[String] = Seq(field)
 
   override def derive(source: TypedEnrichable[String], derivatives: Derivatives): Unit = {
-    val url = Try {source.root[CdxRecord].get.originalUrl}.getOrElse("")
-    val doc = Jsoup.parse(source.get, url)
-    val elements = doc.select(selector)
-    derivatives.setNext(MultiValueEnrichable(elements.iterator.asScala.toList.map(e => e.toString)))
+    derivatives.setNext(MultiValueEnrichable(HtmlProcessor.printTags(source.get, Set(tagName)).toList))
   }
 }

@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015-2018 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
+ * Copyright (c) 2015-2019 Helge Holzmann (Internet Archive) <helge@archive.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -30,10 +30,10 @@ import org.archive.archivespark.sparkling.util.{Common, IteratorUtil, RegexUtil}
 import scala.util.matching.Regex
 
 object HtmlProcessor {
-  var maxHtmlStackDepth: Int = prop(300)(maxHtmlStackDepth, maxHtmlStackDepth = _) // empirically determined, amazon.com ~ 180
+  var maxHtmlStackDepth: Int = prop(500)(maxHtmlStackDepth, maxHtmlStackDepth = _) // empirically determined, amazon.com ~ 180
   var strictMode: Boolean = prop(true)(strictMode, strictMode = _)
 
-  val CodeTags: Set[String] = Set("script", "style")
+  val CodeTags: Set[String] = Set("script", "style", "textarea", "pre")
   val TagOpenClosePattern: Regex = """<([ /]*)([^<> ]+)(>| [^<>]*>)""".r
 
   case class TagMatch(tag: String, name: String, opening: Boolean, closing: Boolean, attributes: String, text: String, stack: List[String]) {
@@ -87,7 +87,7 @@ object HtmlProcessor {
     } else Iterator.empty
   }.flatten
 
-  private def internalProcessTags(tags: BufferedIterator[TagMatch], handlers: Set[TagHandler[_]], outer: Boolean = false, inner: Boolean = true, ignoreHierarchical: Set[String] = Set.empty): Iterator[(TagMatch, Seq[TagMatch])] = {
+  private def internalProcessTags(tags: BufferedIterator[TagMatch], handlers: Set[TagHandler[_]], outer: Boolean = true, inner: Boolean = true, ignoreHierarchical: Set[String] = Set.empty): Iterator[(TagMatch, Seq[TagMatch])] = {
     if (!tags.hasNext) return Iterator.empty
     var iter = tags
     IteratorUtil.whileDefined {
@@ -123,30 +123,33 @@ object HtmlProcessor {
           }
         } else {
           val activeHandlers = handlers.filter(h => h.handleClosing && h.handles(name))
-          for (handler <- activeHandlers) handler.handle(head, Seq.empty)
-          Iterator((head, Seq.empty))
+          if (activeHandlers.isEmpty) Iterator.empty
+          else {
+            for (handler <- activeHandlers) handler.handle(head, Seq.empty)
+            Iterator((head, Seq.empty))
+          }
         }
       } else None
     }
   }.flatten
 
-  def lazyProcessTags(tags: TraversableOnce[TagMatch], handlers: Set[TagHandler[_]], outer: Boolean = false, inner: Boolean = true): Iterator[(TagMatch, Seq[TagMatch])] = {
+  def lazyProcessTags(tags: TraversableOnce[TagMatch], handlers: Set[TagHandler[_]], outer: Boolean = true, inner: Boolean = true): Iterator[(TagMatch, Seq[TagMatch])] = {
     internalProcessTags(tags.toIterator.buffered, handlers, outer, inner)
   }
 
-  def lazyProcess(html: String, handlers: Set[TagHandler[_]], outer: Boolean = false, inner: Boolean = true): Iterator[(TagMatch, Seq[TagMatch])] = {
+  def lazyProcess(html: String, handlers: Set[TagHandler[_]], outer: Boolean = true, inner: Boolean = true): Iterator[(TagMatch, Seq[TagMatch])] = {
     lazyProcessTags(iterateTags(html), handlers, outer, inner)
   }
 
-  def processTags(tags: TraversableOnce[TagMatch], handlers: Set[TagHandler[_]], outer: Boolean = false, inner: Boolean = true): Int = {
+  def processTags(tags: TraversableOnce[TagMatch], handlers: Set[TagHandler[_]], outer: Boolean = true, inner: Boolean = true): Int = {
     lazyProcessTags(tags, handlers, outer, inner).size
   }
 
-  def process(html: String, handlers: Set[TagHandler[_]], outer: Boolean = false, inner: Boolean = true): Int = {
+  def process(html: String, handlers: Set[TagHandler[_]], outer: Boolean = true, inner: Boolean = true): Int = {
     lazyProcess(html, handlers, outer, inner).size
   }
 
-  def encloseTags(tags: TraversableOnce[TagMatch], names: Set[String], outer: Boolean = false, inner: Boolean = true): Iterator[(TagMatch, Seq[TagMatch])] = {
+  def encloseTags(tags: TraversableOnce[TagMatch], names: Set[String], outer: Boolean = true, inner: Boolean = true): Iterator[(TagMatch, Seq[TagMatch])] = {
     lazyProcessTags(tags, Set(TagHandler.noop(names)), outer, inner)
   }
 
@@ -160,12 +163,16 @@ object HtmlProcessor {
     TagHandler(tags, Seq.empty[(TagMatch, Seq[TagMatch])])((tag, children, r) => r ++ Seq((tag, children)))
   }
 
-  def tagsWithText(html: String, names: Set[String], outer: Boolean = false, inner: Boolean = true): Iterator[(TagMatch, String)] = tagsWithChildren(html, names, outer, inner).map { case (tag, children) =>
+  def tagsWithText(html: String, names: Set[String], outer: Boolean = true, inner: Boolean = true): Iterator[(TagMatch, String)] = tagsWithChildren(html, names, outer, inner).map { case (tag, children) =>
     (tag, text(children))
   }
 
-  def tagsWithChildren(html: String, names: Set[String], outer: Boolean = false, inner: Boolean = true): Iterator[(TagMatch, Seq[TagMatch])] = {
+  def tagsWithChildren(html: String, names: Set[String], outer: Boolean = true, inner: Boolean = true): Iterator[(TagMatch, Seq[TagMatch])] = {
     encloseTags(iterateTags(html), names, outer, inner)
+  }
+
+  def printTags(html: String, names: Set[String], outer: Boolean = true, inner: Boolean = true): Iterator[String] = {
+    tagsWithChildren(html, names, outer, inner).map{case (tag, children) => print(tag, children)}
   }
 
   def tags(html: String, names: Set[String]): Iterator[TagMatch] = {
@@ -181,5 +188,12 @@ object HtmlProcessor {
 
   def attributeValues(html: String, tagName: String, attribute: String): Iterator[String] = tag(html, tagName).flatMap { tag =>
     attributeValue(tag, attribute)
+  }
+
+  def print(tag: TagMatch, children: TraversableOnce[TagMatch]): String = tag.tag + children.map(t => t.text + t.tag).mkString
+
+  def print(tags: TraversableOnce[TagMatch]): String = {
+    val iter = tags.toIterator
+    if (iter.hasNext) print(iter.next, iter) else ""
   }
 }

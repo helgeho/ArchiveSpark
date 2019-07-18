@@ -2,61 +2,39 @@
 
 [![ArchiveSpark Logo](./logo.png)](https://github.com/helgeho/ArchiveSpark)
 
-An Apache Spark framework for easy data processing, extraction as well as derivation for archival collections. Originally developed for the use with Web archives, it has now been extended to support any archival dataset through Data Specifications.
+ArchiveSpark is a framework / toolkit / library / API to facilitate **efficient data processing, extraction as well as derivation for archival collections**.
+
+While originally developed for the use with web archives, which is still its main focus, ArchiveSpark can be used with any (archival) data collections through it's modular architecture and customizable _data specifications_.
+
+### What can you do with it?
+
+The main use case of ArchiveSpark is the **efficient access to archival data** with the goal to derive corpora by applying **filters and tools** in order to extract information from the original raw data, to be stored in a more **accessible format, like JSON**, while reflecting the data **lineage of each derived value**.
+
+Examples of what you can do with it include: (see [**recipes**](docs/Recipes.md) for code examples)
+
+* Selecting a **subset of your data** and **extracting desired properties** (e.g., title, entities, ...)
+* Running a **(temporal) data analysis** on the filtered / extracted / derived data
+* Generating **hyperlink or knowledge graphs** for downstream applications 
+* **Processing archived webpages** and extracting embedded resources
+* Downloading **remote WARC/CDX data from the Internet Archive's Wayback Machine**
+
+### New in 3.0
+
+* Namespace changed to `org.archive.archivespark`.
+* Extensive overhaul to be based on _Sparkling_, Internet Archive's internal data processing library, which is now partially included under `org.archive.archivespark.sparkling`.
+* _ArchiveSpark_ will evolve as _Sparkling_ evolves and automatically benefit from new features and bugfixes.
+* Streamlined with all unused / unnecessary / academic / experimental features being removed.
+* Refactored / cleaned up / simplified ArchiveSpark's public API.
 
 For more information and instructions, please [**read the docs**](docs/README.md):
  
  [![ArchiveSpark Documentation](./docs_button.png)](docs/README.md)
 
-## Approach
-
-In the traditional Spark / Map Reduce approach datasets get loaded completely before irrelevant records are filtered out and relevant ones are transformed into something more valuable by extracting and deriving meaningful information.
-
-In contrast to this, ArchiveSpark incorporates lightweight metadata records about the items in a dataset, which are commonly available for archival collections. Now, basic operations, like filtering, deduplication, grouping, sorting, will be performed on these metadata records, before they get enriched with additional information from the actual data records. Hence, rather than starting from everything and removing unnecessary data, ArchiveSpark starts from metadata that gets extended, leading to significant efficiency improvements in the work with archival collections.:
-
-![ArchiveSpark Approach](approach.png)
-
-The original version of ArchiveSpark was developed for Web archives, with the metadata coming from CDX (crawl index) and the data being stored in (W)ARC files. With the later introduction of Data Specifications, ArchiveSpark can now be used with any archival collection that provides metadata records along with the data. For more details, please [read the docs](docs/README.md) and the publications below. 
-
-## Read more / cite
-
-ArchiveSpark has been published in a research paper at JCDL 2016, where it was nominated for the Best Paper Award. If you use ArchiveSpark in your work, please cite:
-
-[H. Holzmann, V. Goel and A. Anand. *ArchiveSpark: Efficient Web Archive Access, Extraction and Derivation.* 16th ACM/IEEE-CS Joint Conference on Digital Libraries (JCDL). Newark, New Jersey, USA. June 2016.](http://dl.acm.org/citation.cfm?id=2910902) [**Get full-text PDF**](http://www.helgeholzmann.de/papers/JCDL_2016_ArchiveSpark.pdf)
-
-The extensions to make it a more universal / generic data processing platform for any archival collection were presented by a short paper at IEEE BigData 2017:
-
-[H. Holzmann, Emily Novak Gustainis and Vinay Goel. *Universal Distant Reading through Metadata Proxies with ArchiveSpark*. 5th IEEE International Conference on Big Data (BigData). Boston, MA, USA. December 2017.](http://cci.drexel.edu/bigdata/bigdata2017/AcceptedPapers.html) [**Get full-text PDF**](http://www.helgeholzmann.de/papers/BIGDATA_2017.pdf)
-
-## Related projects
-
-**[ArchiveSpark-server](https://github.com/helgeho/ArchiveSpark-server)**
-
-A server application that provides a Web service API for ArchiveSpark to be used by third-party applications to integrate temporal Web archive data with a flexible, easy-to-use interface. 
-
-**[ArchiveSpark2Triples](https://github.com/helgeho/ArchiveSpark2Triples)**
-
-This library provides tools to convert ArchiveSpark records from Web archives to [RDF](https://en.wikipedia.org/wiki/Resource_Description_Framework) triples in [*Notation3 (N3)*](https://en.wikipedia.org/wiki/Notation3) format.
-
-**[HadoopConcatGz](https://github.com/helgeho/HadoopConcatGz)**
-
-A Splitable Hadoop InputFormat for Concatenated GZIP Files and *.(w)arc.gz, used by ArchiveSpark to load plain Web archive data (WARC) without a metadata index.
-
-**[Web2Warc](https://github.com/helgeho/Web2Warc)**
-
-If you do not have Web archive data available to be used with ArchiveSpark, easily create your own from any collection of websites with [Web2Warc](https://github.com/helgeho/Web2Warc).
-
-**[ArchivePig](https://github.com/helgeho/ArchivePig)**
-
-The original implementation of the ArchiveSpark concept was built on [Apache Pig](https://pig.apache.org) instead of Spark.
-The project was the inspiration for this one and can be found under [ArchivePig](https://github.com/helgeho/ArchivePig).
-However, it is not actively being developed anymore, but can be used if you prefer Pig over Spark.
-
 ## License
 
 The MIT License (MIT)
 
-Copyright (c) 2015-2018 [Helge Holzmann](http://www.HelgeHolzmann.de) ([L3S](http://www.L3S.de)) and Vinay Goel ([Internet Archive](http://www.archive.org))
+Copyright (c) 2015-2019 [Helge Holzmann](http://www.HelgeHolzmann.de) ([Internet Archive](http://www.archive.org)) <[helge@archive.org](mailto:helge@archive.org)>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

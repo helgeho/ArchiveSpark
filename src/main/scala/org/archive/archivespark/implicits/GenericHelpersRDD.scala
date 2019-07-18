@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015-2018 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
+ * Copyright (c) 2015-2019 Helge Holzmann (Internet Archive) <helge@archive.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -30,8 +30,21 @@ import org.archive.archivespark.sparkling.Sparkling
 import scala.reflect.ClassTag
 
 class GenericHelpersRDD[A : ClassTag](rdd: RDD[A]) {
-  def peek: A = rdd.first
-  def peek(index: Int): A = rdd.take(index + 1).drop(index).head
+  def peek: A = try {
+    rdd.first
+  } catch {
+    case e: Exception =>
+      e.printStackTrace(System.out)
+      throw e
+  }
+
+  def peek(index: Int): A = try {
+    rdd.take(index + 1).drop(index).head
+  } catch {
+    case e: Exception =>
+      e.printStackTrace(System.out)
+      throw e
+  }
 
   def distinctByValue[T : ClassTag](value: A => T)(distinct: (A, A) => A): RDD[A] = {
     rdd.keyBy(value).reduceByKey(distinct, Sparkling.parallelism).values

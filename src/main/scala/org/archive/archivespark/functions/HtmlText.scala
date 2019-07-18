@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015-2018 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
+ * Copyright (c) 2015-2019 Helge Holzmann (Internet Archive) <helge@archive.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,13 +26,11 @@ package org.archive.archivespark.functions
 
 import org.archive.archivespark.model._
 import org.archive.archivespark.model.dataloads.ByteLoad
-import org.jsoup.nodes.Element
-import org.jsoup.parser.Parser
-
-import scala.collection.JavaConverters._
+import org.archive.archivespark.sparkling.html.HtmlProcessor
+import org.archive.archivespark.sparkling.util.{RegexUtil, StringUtil}
 
 object HtmlText extends EnrichFunc[ByteLoad.Root, String, String] with GlobalEnrichFunc[ByteLoad.Root, String, String] {
-  val func: EnrichFunc[ByteLoad.Root, String, String] = Html.map("text") { str =>
-    Parser.parseXmlFragment(str, "").asScala.headOption.map(_.asInstanceOf[Element].text).get
+  val func: EnrichFunc[ByteLoad.Root, String, String] = Html.first("body").map("text") { str =>
+    RegexUtil.oneLineSpaceTrim(HtmlProcessor.text(HtmlProcessor.iterateTags(str)))
   }
 }

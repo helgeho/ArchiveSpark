@@ -3,87 +3,79 @@
 
 # ArchiveSpark Operations
 
-ArchiveSpark extends the existing Spark [*transformations*](https://spark.apache.org/docs/latest/rdd-programming-guide.html#transformations) and [*actions*](https://spark.apache.org/docs/latest/rdd-programming-guide.html#actions) with additional operations on a dataset (RDDs), single records (an item in an RDD), as well as [Enrich Functions](EnrichFuncs.md):
+ArchiveSpark extends the existing Spark [*transformations*](https://spark.apache.org/docs/latest/rdd-programming-guide.html#transformations) and [*actions*](https://spark.apache.org/docs/latest/rdd-programming-guide.html#actions) with additional operations for datasets (RDDs), single records (an item in an RDD), as well as field values.
+
+Since version 3.0, values in a dataset / record are addressed by so-called Field Pointers (see [`FieldPointer`](../src/main/scala/org/archive/archivespark/model/pointers/FieldPointer.scala)). All Enrichment Functions are automatically Field Pointers, pointing at their default result field, and thus, can be used as parameters in all methods that expect a field reference. Besides, Field Pointers can be created manually by specifying a type along with an absolute path (e.g., `FieldPointer[String]("payload.string")`) or relative to an existing pointer, e.g., `pointer.parent[String]`, `pointer.child[String]("text")`, `pointer.sibling[Map[String,String]]("headers")`, etc. By default all pointers are assumed to address single values. If, for instance due to `ofEach` dependencies, there are multiple values under a path, this must be specified explicitely, e.g., `val list = record.value(pointer.multi)`.
 
 ## Dataset Operations
 
-Dataset operations that require a *source* (e.g., `mapValues`) or a *field* (e.g., `filterExists`) can commonly be called with either a path (in dot notation, e.g., `rdd.mapValues("payload.string.html.title")`), an Enrich Function with default field (e.g., `rdd.mapValues(HtmlText)`) or an Enrich Function with specified field (e.g., `rdd.mapValues(WarcPayload, "recordHeader")`). In case an Enrich Function with a single or default result field is used as a field pointer, the value of that field can often be inferred automatically, otherwise it needs to be specified, e.g., `rdd.filterValue(StringContent)(v => v.get.length > 10)` vs. `rdd.filterValue("payload.string") {v: Option[String] => v.get.length > 10)`. 
-
-These operations become available by the following import `import org.archive.archivespark.implicits._`
+These operations become available on `RDD` with enrichable ArchiveSpark records by the following import `import org.archive.archivespark._`
 
 Operation| Description
 :--------|:---
-**enrich**(*func*) | Enriches all records in your dataset with the given Enrich Function and returns a new RDD with the enriched records. All dependencies of the given Enrich Function are applied first in case they do not exist yet. The resulting value will be appended in the internal tree-like structure of the records according to its dependency lineage, i.e., `StringContent.of(WarcPayload)` would result in a field called `string` which is nested under another field named `payload`, to be addressed in dot notation as `payload.string`. 
+**enrich**(*func*) | Enriches all records in a dataset with the given Enrichment Function and returns a new RDD with the enriched records. In case the dependencies of that function do not exist yet, these are automatically created prior to the specified function, but their values are not included in the output. The resulting value will be appended in the internal tree-like structure of the records according to the functions dependency lineage, i.e., `StringContent.of(WarcPayload)` would result in a field called `string` which is nested under another field named `payload`, to be addressed in dot notation as `payload.string`. 
 &nbsp; | *Example:* `val enriched = rdd.enrich(StringContent)`
-**mapEnrich**(*source*, *target*)(*func*) | Enriches all records in your dataset with the given map function, so you can write the enrichment logic inline using a lambda expression and it will store the result in the *target* field under the *source*. This is equivalent to `rdd.enrich(SourceEnrichFunc.map(target)(func))`
-&nbsp; | *Example:* `val enriched = rdd.mapEnrich(StringContent, "length")(_.length)`
-**filterExists**(*field*) | Filters the records in the dataset based on whether the given field exists. If the field is specified by an Enrich Function, it checks whether the Enrich Function has returned a result or has resulted in an enrichment.
+**filterExists**(*fieldPointer*) | Filters the records in a dataset based on whether the given field exists, e.g., to filter out records for which a given Enrichment Function has not generated any values.
 &nbsp; | *Example:* `val filtered = enriched.filterExists(SomeEnrichFunc)`
-**filterValue**(*field*)(*filter*) | Filters the records in the dataset based on the value of the given field. The filter function gets the field value as an option, which is undefined if the field does not exist.
+**filterValue**(*fieldPointer*)(*filter*) | Filters the records in a dataset based on the value of the given field. The filter function gets the field value as an option, which is undefined if the field does not exist.
 &nbsp; | *Example:* `val filtered = enriched.filterValue(SomeEnrichFunc)(opt => opt.isDefined && opt.get == someValue)`
-**filterNonEmpty**(*field*) | Filters the records in the dataset based on whether their value is non-empty, i.e., whether or not the field exists and the value in this field has a non-empty value. This can be applied to any datatype that defines a `nonEmpty` method, e.g., a string can be non-empty if it is longer than 0 characters or an `Option` would be non-empty if it holds a value.
+**filterNonEmpty**(*fieldPointer*) | Filters the records in the dataset based on whether their value is non-empty, i.e., whether or not the field exists and the value in this field has a non-empty value. This can be applied to any datatype that defines a `nonEmpty` method, e.g., a string can be non-empty if it is longer than 0 characters or an `Option` would be non-empty if it holds a value.
 &nbsp; | *Example:* `val filtered = enriched.filterNonEmpty(SomeEnrichFunc)`
-**filterNoException**() | Filters the records in the dataset based on whether or not there was an exception thrown during the last enrichment by the applied Enrich Function. Every call of `enrich` clears this last catched exception for each record. To use this operation, [`catchExceptions`](Config.md) has to be enabled (default).
+**filterNoException**() | Filters the records in a dataset based on whether or not an exception was thrown for that record at the last enrichment by the applied Enrichment Function. Every call of `enrich` clears the last catched exception for each record. To use this operation, [`catchExceptions`](Config.md) has to be enabled (default).
 &nbsp; | *Example:* `val filtered = enriched.filterNoException()`
-**lastException** | Returns the exception thrown during the last enrichment by the applied Enrich Function. To use this operation, [`catchExceptions`](Config.md) has to be enabled (default). It returns an `Option`, which is only defined if any exception happend. It returns the first exception found in the dataset. Each call of `enrich` clears this last catched exception for each record.
-&nbsp; | *Example:* `val ex = enriched.lastException`
-**distinctValue**(*field*)(*reduce*) | Returns a new RDD that consists only of records with distinct values in the given field. The given reduce function defined which of two records two keep in case they share the same value in the specified field. 
+**printLastException()** | Prints the last exception thrown by an Enrichment Function along with its stack trace. To use this operation, [`catchExceptions`](Config.md) has to be enabled (default). It prints the first exception found for a record in a dataset. Each call of `enrich` clears the last catched exception for each record.
+&nbsp; | *Example:* `val ex = enriched.printLastException()`
+**distinctValue**(*fieldPointer*)(*reduce*) | Returns a new RDD that consists only of records with distinct values in the given field. The given reduce function defines which of two records two keep in case they share the same value in the specified field. As an alternative to a Field Pointer, this method also accepts a mapping of the root record.
 &nbsp; | *Example:* `val distinct = enriched.distinctValue(_.surtUrl) {(r1, r2) => Seq(r1, r2).maxBy(_.time)}`
-**mapValues**(*source*) | Transforms the records in the dataset to the value in the given source field. If you specify the source by an Enrich Function it will automatically do the enrichment before the mapping in case it does not exist yet.
+**mapValues**(*fieldPointer*) | Transforms the records in a dataset to the values in the given field. If the field is specified by an Enrichment Function that has not been applied yet, it will automatically be initialized first.
 &nbsp; | *Example:* `val titles = rdd.mapValues(Html.first("title"))`
-**flatMapValues**(*source*) | Transforms the records in the datset to the value in the given source field and flattens it, i.e., if the source field holds a list, the items of this list are becoming the records of the resulting dataset. If you specify the source by an Enrich Function it will automatically do the enrichment before the mapping in case it does not exist yet.
+**flatMapValues**(*source*) | Transforms the records in the datset to the values in the given field and flattens it, i.e., if the field holds multiple values, these values become the records of the resulting dataset. If the field is specified by an Enrichment Function that has not been applied yet, it will automatically be initialized first.
 &nbsp; | *Example:* `val links = rdd.flatMapValues(Html.all("a"))`
-**peekJson** | Returns the first record of the dataset as JSON. The tree-like structure of an ArchiveSpark record is reflected by nested JSON objects in this representation. It is very useful to get an idea of what fields the records in your dataset consist of. If you use Jupyter to instruct ArchiveSpark interactively, you need to wrap it into a `print` in order to see the full output, in case the content of the record is too long.
+**peekJson** | Returns the first record of the dataset as JSON. The tree-like structure of an ArchiveSpark record is reflected by nested JSON objects in this representation. This is useful to get an idea of what fields the records in your dataset consist of. If you use Jupyter to instruct ArchiveSpark interactively, you need to wrap it into a `print` in order to see the full output, in case the content of the record is too long.
 &nbsp; | *Example:* `print(enriched.peekJson)`
-**saveAsJson**(*path*) | Saves the records of the dataset as their corresponding JSON representation. This is the same as you get by calling `peekJson` on an RDD. If the path ends in a `.gz` extension, the resulting output will automatically be compressed using GZip.
+**saveAsJson**(*path*) | Saves the records of a dataset as their corresponding JSON representation. This is the same output as you get by calling `peekJson` on an RDD. If the path ends in a `.gz` extension, the resulting output will automatically be compressed using GZip.
 &nbsp; | *Example:* `enriched.saveAsJson("enriched.json.gz")`
 
 ### Web Archive-specific Dataset Operations
 
-These operations are specific to Web archive dataset and become available through `import org.archive.archivespark.specific.warc._`
+These operations are specific to web archive datasets and become available through `import org.archive.archivespark.specific.warc._`
 
 Operation| Description
 :--------|:---
-**resolveRevisits**([*origCdxRdd*]) | Resolves the *revisit records* in the this collection of metadata records by setting the correct location and actual type of the corresponding (W)ARC record from a given set of original CDX records. If no such a set is given, the original records are looked up in the current dataset.  This operation can only be applied to metadata-only collection, loaded via [`CdxHdfsSpec`](DataSpecs.md).
-&nbsp; | *Example:* `val resolved = cdxRdd.resolveRevisits()`
-**saveAsWarc**(*path*, *info*, [*generateCdx*]) | Saves Web archive records in your dataset as WARC(.gz) format. Additional meta information to be included in the resulting WARC field can be specified as a [`WarcMeta`](../src/main/scala/de/l3s/archivespark/specific/warc/WarcMeta.scala) object. By default, it generates CDX files for the WARC records under the same path, this can be turned of by the third parameter. If the path ends in a `.gz` extension, the resulting output will automatically be compressed using GZip with each record compressed individually.
-&nbsp; | *Example:* `rdd.saveAsWarc("/path/to/warc.gz", WarcMeta(publisher = "me"), generateCdx = true)`
-**toCdxStrings** | Converts the Web archive records in the dataset to a new RDD consisting of their meta data in CDX format (in the common form used by the Internet Archive's CDX server and many other tools). 
+**saveAsWarc**(*path*, [*info*], [*generateCdx*]) | Saves web archive records in your dataset as WARC(.gz) files. Additional meta information to be included in the resulting WARC records can be specified as a [`WarcFileMeta`](../src/main/scala/org/archive/archivespark/specific/warc/WarcFileMeta.scala) object. By default, it generates CDX files for the WARC records under the same path, this can be turned off by the third parameter. If the path ends in a `.gz` extension, the resulting output will automatically be compressed using GZip with each record compressed individually.
+&nbsp; | *Example:* `rdd.saveAsWarc("/path/to/warc.gz", WarcFileMeta(publisher = "me"), generateCdx = true)`
+**toCdxStrings** | Converts the web archive records in a dataset to a new RDD consisting of their meta data in CDX format (in the common form used by the Internet Archive's CDX server and many other tools). 
 &nbsp; | *Example:* `val cdx = rdd.toCdxStrings`
-**saveAsCdx**(*path*) | Saves the meta data of the Web archive records in the dataset as their CDX representations. If the path ends in a `.gz` extension, the resulting output will automatically be compressed using GZip.
+**saveAsCdx**(*path*) | Saves the meta data of the web archive records in a dataset as CDX. If the path ends in a `.gz` extension, the resulting output will automatically be compressed using GZip.
 &nbsp; | *Example:* `rdd.saveAsCdx("/path/to/cdx.gz")`
 
 ## Record Operations
 
-The following methods are defined on individual ArchiveSpark records instead of the datasets / RDDs.
+The following methods are defined on individual ArchiveSpark records in a dataset / RDD.
 
 Operation| Description
 :--------|:---
-**getValue**(*field*) | Gets the value stored in the specified field. If the field is specified by an Enrich Function, the records in the dataset first need to be enriched with it (s. `rdd.enrich(...)`). This operation will fail and throw an exception if the given field does not exist.
-&nbsp; | *Example:* `val titles = enriched.map(_.getValue(Html.first("title")))`
-**value**(*field*) | Gets an `Option` for the value stored in the specified field. The option will be defined with the value of the field it is exists. Hence, this can also be used to filter whether a field exists or return a default value if not, using Scala's `Option#getOrElse`.
+**getValue**(*fieldPointer*) | Gets the value stored in the specified field. If the field is specified by an Enrichment Function that has not been applied yet, it will automatically be initialized first.
+&nbsp; | *Example:* `val titles = rdd.map(_.getValue(Html.first("title")))`
+**value**(*fieldPointer*) | Gets an `Option` for the value stored in the specified field. The option will be defined with the value of the field it is exists or undefined if not. If the field is specified by an Enrichment Function that has not been applied yet, it will automatically be initialized first.
 &nbsp; | *Example:* `val filtered = rdd.filter(_.value(Html.first("title")).isDefined)`
-**valueOrElse**(*field*, *else*) | Gets the value stored in the specified field if the field exists or a default value else.
+**valueOrElse**(*fieldPointer*, *else*) | Gets the value stored in the specified field if the field exists or a default value else.  If the field is specified by an Enrichment Function that has not been applied yet, it will automatically be initialized first.
 &nbsp; | *Example:* `val titles = rdd.map(_.valueOrElse(Html.first("title"), "no title"))`
 
-## Operations on Enrich Functions
+## Operations on Field Values / Enrichment Functions
 
-The following operations on Enrich Functions create a new Enrich Function, either by changing the dependency or mapping the resulting value by applying some transformation as shown in the examples below.
+The following operations are defined on fields specified by Field Pointers / Enrichment Functions to create a new Enrichment Function, either by changing the dependency or mapping the resulting value by applying a transformation as shown in the examples below.
 
 Operation| Description
 :--------|:---
-**on**(*source*) / **of**(*source*) | Changes the dependency of the Enrich Function to the specified source, which can either be another Enrich Function or a source field in dot notation.
+**on**(*fieldPointer*) / **of**(*fieldPointer*) | Changes the dependency of an Enrichment Function to the specified source field.
 &nbsp; | *Example:* `val Tile = HtmlText.of(Html.first("title"))`
-**onEach**(*source*) / **ofEach**(*source*) | Changes the dependency of the Enrich Function to be applied to each value of the speficied source, in case the source consists of multiple values.
+**onEach**(*fieldPointer*) / **ofEach**(*fieldPointer*) | Changes the dependency of an Enrichment Function to each value of the specified multi-value source field. The resulting Enrichment Function represents single result value to be mapped / derived further. The access the list of multiple values, `.mutli` must be called on it.
 &nbsp; | *Example:* `val AnchorTexts = HtmlText.ofEach(Html.all("a"))`
-**map**(*target*)(*func*) | Creates a new Enrich Function that is dependent on the current one, applying the logic defined by the given function or inline lambda expression. The input of the new function will be the value of output of this Enrich Function and the result will be stored in the *target* field under the output of this.
-&nbsp; | *Example:* `val TitleLength = Title.map("length"){str: String => str.length}`
-**mapEach**(*target*)(*func*) | Creates a new Enrich Function that is applied to each value of the current one, in case it produces multiple values. The result will be stored in the *target* field under the each value of this..
-&nbsp; | *Example:* `val LowerCaseLinks = Html.all("a").mapEach("lower"){str: String => str.toLowerCase}`
-**mapMulti**(*target*)(*func*) | Creates a new Enrich Function that is dependent on the current one, but produces multiple values instead of one. The resulting values will be stored as a sequence in the *target* field under the output of this.
-&nbsp; | *Example:* `val TitleTerms = Title.mapMulti("terms"){str: String => str.split(" ")}`
-**toMulti**([*field*], *target*) | Transforms a single-value Enrich Function into a muli-value Enrich Function to be applied on a multi-value field. It now can be combined with multi-value Enrich Functions by using `on/of` instead of `onEach/ofEach`, however, the lineage of which result is derived from which source value is lost by this operation. The target parameter specifies the name of the new target field name (usually the plural version of the original field name). If no field is specified, the default field  (if available) is multiplied by this operation.
-&nbsp; | *Example:* `val AnchorTexts = HtmlText.toMulti("texts").on(Html.all("a"))`
+**map**(*target*)(*func*) | Creates a new Enrichment Function that dependents on the current field / derives from it with the logic defined by the given function or inline lambda expression. The result will be stored in a field named *target* under the parent field.
+&nbsp; | *Example:* `val TitleLength = Title.map("length")(_.length)`
+**mapMulti**(*target*)(*func*) | Creates a new Enrichment Function that dependents on the current field / derives from it with the logic defined by the given function or inline lambda expression. The result if must be a multi-value list, which will be stored in a field named *target* under the parent field, to be derived further using `onEach` / `ofEach` or `.each.map(single => ...)`.
+&nbsp; | *Example:* `val TitleTerms = Title.mapMulti("terms")(_.split(" "))`
 
 [< Table of Contents](README.md) | [Data Specifications (DataSpecs) >](DataSpecs.md)
 :---|---:

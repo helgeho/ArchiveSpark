@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015-2018 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
+ * Copyright (c) 2015-2019 Helge Holzmann (Internet Archive) <helge@archive.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -45,5 +45,5 @@ class WarcCdxHdfsSpec private(cdxPath: String, warcPath: String) extends TextDat
 
 object WarcCdxHdfsSpec {
   def apply(cdxPath: String, warcPath: String) = new WarcCdxHdfsSpec(cdxPath, warcPath)
-  def apply(path: String) = new WarcCdxHdfsSpec(path + "/@(*.cdx|*.cdx.gz)", path)
+  def apply(path: String) = new WarcCdxHdfsSpec(path + "/{*.cdx,*.cdx.gz}", path)
 }

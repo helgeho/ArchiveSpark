@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015-2018 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
+ * Copyright (c) 2015-2019 Helge Holzmann (Internet Archive) <helge@archive.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -56,7 +56,7 @@ object HttpClient {
   def rangeRequestMessage[R](url: String, headers: Map[String, String] = Map.empty, offset: Long = 0, length: Long = -1, retries: Int = DefaultRetries, sleepMillis: Int = DefaultSleepMillis, timeoutMillis: Int = DefaultTimeoutMillis)(action: HttpMessage => R): R = {
     rangeRequestConnection(url, headers, offset, length, retries, sleepMillis, timeoutMillis) { case connection: HttpURLConnection =>
       val in = new BufferedInputStream(connection.getInputStream)
-      val responseHeaders = connection.getHeaderFields.asScala.toMap.flatMap{case (k, v) => v.asScala.headOption.map(k -> _)}
+      val responseHeaders = connection.getHeaderFields.asScala.toMap.flatMap{case (k, v) => v.asScala.headOption.map((if (k == null) "" else k) -> _)}
       val message = new HttpMessage(connection.getResponseMessage, responseHeaders, in)
       val r = action(message)
       Try(in.close())

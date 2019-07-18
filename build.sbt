@@ -3,7 +3,7 @@ import sbt.Keys._
 
 lazy val commonSettings = Seq(
   name := "archivespark",
-  organization := "org.archive",
+  organization := "com.github.helgeho",
   version := "3.0",
   scalaVersion := "2.11.12",
   fork := true,
@@ -27,8 +27,7 @@ lazy val archivespark = (project in file("."))
         ExclusionRule(organization = "org.apache.httpcomponents", name = "httpcore"),
         ExclusionRule(organization = "org.apache.httpcomponents", name = "httpclient"),
         ExclusionRule(organization = "joda-time", name = "joda-time")),
-      "edu.stanford.nlp" % "stanford-corenlp" % "3.5.1" % "provided",
-      "org.jsoup" % "jsoup" % "1.11.2"
+      "edu.stanford.nlp" % "stanford-corenlp" % "3.5.1" % "provided"
     ) ++ Seq(
       "io.circe" %% "circe-core",
       "io.circe" %% "circe-generic",
@@ -60,5 +59,5 @@ lazy val archivespark = (project in file("."))
     licenses := Seq("MIT" -> url("http://www.opensource.org/licenses/mit-license.php"))
   )
 
-assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = false) //, includeDependency = false)
-//assemblyOption in assemblyPackageDependency := (assemblyOption in assemblyPackageDependency).value.copy(includeScala = false)
+assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = false, includeDependency = false)
+assemblyOption in assemblyPackageDependency := (assemblyOption in assemblyPackageDependency).value.copy(includeScala = false)

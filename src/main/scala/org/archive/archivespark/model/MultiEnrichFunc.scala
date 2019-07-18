@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015-2018 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
+ * Copyright (c) 2015-2019 Helge Holzmann (Internet Archive) <helge@archive.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,18 +27,18 @@ package org.archive.archivespark.model
 import org.archive.archivespark.model.pointers.{FieldPointer, MultiFieldPointer}
 
 trait MultiEnrichFunc[Root <: EnrichRoot, Source, DefaultValue] extends EnrichFunc[Root, Source, Seq[DefaultValue]] with MultiFieldPointer[Root, DefaultValue] {
-  override def on[DependencyRoot <: EnrichRoot](dependency: FieldPointer[DependencyRoot, Source]): MultiEnrichFunc[DependencyRoot, Source, DefaultValue] = {
+  override def on[DependencyRoot <: EnrichRoot, S <: Source](dependency: FieldPointer[DependencyRoot, S]): MultiEnrichFunc[DependencyRoot, Source, DefaultValue] = {
     val self = this
     new MultiEnrichFunc[DependencyRoot, Source, DefaultValue] {
-      override def source: FieldPointer[DependencyRoot, Source] = dependency
+      override def source: FieldPointer[DependencyRoot, Source] = dependency.asInstanceOf[FieldPointer[DependencyRoot, Source]]
       override def fields: Seq[String] = self.fields
       override def defaultField: String = self.defaultField
       override def derive(source: TypedEnrichable[Source], derivatives: Derivatives): Unit = self.derive(source, derivatives)
     }
   }
 
-  override def of[DependencyRoot <: EnrichRoot](source: FieldPointer[DependencyRoot, Source]): MultiEnrichFunc[DependencyRoot, Source, DefaultValue] = on(source)
+  override def of[DependencyRoot <: EnrichRoot, S <: Source](source: FieldPointer[DependencyRoot, S]): MultiEnrichFunc[DependencyRoot, Source, DefaultValue] = on(source)
 
-  override def onEach[DependencyRoot <: EnrichRoot](source: MultiFieldPointer[DependencyRoot, Source]): MultiEnrichFunc[DependencyRoot, Source, DefaultValue] = on(source.each)
-  override def ofEach[DependencyRoot <: EnrichRoot](source: MultiFieldPointer[DependencyRoot, Source]): MultiEnrichFunc[DependencyRoot, Source, DefaultValue] = onEach(source)
+  override def onEach[DependencyRoot <: EnrichRoot, S <: Source](source: MultiFieldPointer[DependencyRoot, S]): MultiEnrichFunc[DependencyRoot, Source, DefaultValue] = on(source.each)
+  override def ofEach[DependencyRoot <: EnrichRoot, S <: Source](source: MultiFieldPointer[DependencyRoot, S]): MultiEnrichFunc[DependencyRoot, Source, DefaultValue] = onEach(source)
 }

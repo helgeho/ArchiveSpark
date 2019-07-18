@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015-2018 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
+ * Copyright (c) 2015-2019 Helge Holzmann (Internet Archive) <helge@archive.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -41,12 +41,13 @@ object Json extends Serializable {
     else ListMap(map.toSeq.filter{case (key, value) => value != null}.map{ case (key, value) => if (key == null) (SingleValueKey, value) else (key, value) }: _*).asJson
   }
 
-  def json[A](obj: A): Circe = obj match {
+  def json[A](obj: A): Circe = if (obj == null) Circe.Null else obj match {
     case json: Circe => json
     case json: JsonConvertible => json.toJson.asJson
     case map: Map[_, _] => map.map{case (k, v) => (k.toString, json(v))}.asJson
     case bytes: Array[Byte] => s"bytes(length: ${bytes.length})".asJson
     case iterable: TraversableOnce[_] => iterable.map(e => json(e)).toSeq.asJson
+    case array: Array[_] => array.map(e => json(e)).asJson
     case str: String => str.asJson
     case n: Long => n.asJson
     case n: Int => n.asJson

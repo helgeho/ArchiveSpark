@@ -1,0 +1,1 @@
+[**Vinay Goel**](https://github.com/vinaygoel) was one of the first contributors and started [ArchiveSpark](https://github.com/helgeho/ArchiveSpark) together with [Helge Holzmann](https://github.com/helgeho) when he was still with the [Internet Archive](https://archive.org) until 2018, *thank you for your great work!*   

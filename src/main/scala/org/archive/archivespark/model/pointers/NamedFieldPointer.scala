@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015-2018 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
+ * Copyright (c) 2015-2019 Helge Holzmann (Internet Archive) <helge@archive.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,6 +26,10 @@ package org.archive.archivespark.model.pointers
 
 import org.archive.archivespark.model.EnrichRoot
 
-trait NamedFieldPointer[Root <: EnrichRoot, T] extends FieldPointer[Root, T] {
+trait GenericNamedFieldPointer[+R <: EnrichRoot, +T] extends GenericFieldPointer[R, T] { this: NamedFieldPointer[_, _] =>
+  def fieldName: String
+}
+
+trait NamedFieldPointer[Root <: EnrichRoot, T] extends FieldPointer[Root, T] with GenericNamedFieldPointer[Root, T] {
   def fieldName: String
 }

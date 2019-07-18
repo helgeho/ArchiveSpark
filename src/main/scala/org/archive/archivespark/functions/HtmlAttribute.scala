@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015-2018 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
+ * Copyright (c) 2015-2019 Helge Holzmann (Internet Archive) <helge@archive.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,9 +27,7 @@ package org.archive.archivespark.functions
 import org.archive.archivespark.model._
 import org.archive.archivespark.model.dataloads.ByteLoad
 import org.archive.archivespark.model.pointers.DependentFieldPointer
-import org.jsoup.parser.Parser
-
-import scala.collection.JavaConverters._
+import org.archive.archivespark.sparkling.html.HtmlProcessor
 
 object HtmlAttributeNamespace {
   def get: DependentFieldPointer[ByteLoad.Root, String] = Html.mapIdentity("attributes").get[String]("attributes")
@@ -39,18 +37,14 @@ object HtmlAttribute {
   def apply(name: String): HtmlAttribute = new HtmlAttribute(name)
 }
 
-class HtmlAttribute private (attribute: String) extends BoundEnrichFunc[ByteLoad.Root, String, String](HtmlAttributeNamespace.get) {
+class HtmlAttribute private(attribute: String) extends BoundEnrichFunc[ByteLoad.Root, String, String](HtmlAttributeNamespace.get) {
   override def fields: Seq[String] = Seq(attribute)
 
   override def derive(source: TypedEnrichable[String], derivatives: Derivatives): Unit = {
-    val nodes = Parser.parseXmlFragment(source.get, "").asScala
-    if (nodes.nonEmpty) {
-      val el = nodes.head
-      val lc = attribute.toLowerCase
-      el.attributes().asScala.find(a => a.getKey.toLowerCase == lc) match {
-        case Some(a) => derivatives << a.getValue
-        case None => // skip
-      }
+    val tags = HtmlProcessor.iterateTags(source.get)
+    if (tags.hasNext) {
+      val attrValue = HtmlProcessor.attributeValue(tags.next.tag, attribute)
+      if (attrValue.isDefined) derivatives << attrValue.get
     }
   }
 }

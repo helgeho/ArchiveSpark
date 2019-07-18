@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015-2018 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
+ * Copyright (c) 2015-2019 Helge Holzmann (Internet Archive) <helge@archive.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -33,21 +33,27 @@ import org.archive.archivespark.sparkling.http.{HttpClient, HttpMessage}
 import org.archive.archivespark.specific.warc.functions.HttpPayload
 
 class WaybackRecord(cdx: CdxRecord) extends DataEnrichRoot[CdxRecord, HttpMessage](cdx) with WarcLikeRecord {
-  val WaybackUrl = "http://web.archive.org/web/$timestampid_/$url"
-
-  def waybackUrl(timestamp: String, url: String): String = {
-    WaybackUrl.replace("$timestamp", timestamp).replace("$url", url)
-  }
+  import WaybackRecord._
 
   override def access[R >: Null](action: HttpMessage => R): R = {
-    val url = waybackUrl(cdx.timestamp, cdx.originalUrl)
-    HttpClient.requestMessage(url)(msg => action(msg))
+    HttpClient.requestMessage(WaybackUrl.replace("$timestamp", cdx.timestamp).replace("$url", cdx.originalUrl)) { msg =>
+      val originalStatusline = msg.headers.getOrElse("", msg.statusLine)
+      val originalHeaders = msg.headers.flatMap { case (k,v) =>
+        if (k == "Content-Type") Some(k -> v) else {
+          if (k.startsWith(OriginalHttpHeaderPrefix)) Some(k.stripPrefix(OriginalHttpHeaderPrefix).split('-').map(_.capitalize).mkString("-") -> v) else None
+        }
+      }
+      action(new HttpMessage(originalStatusline, originalHeaders, msg.payload))
+    }
   }
 
   override def companion: EnrichRootCompanion[WaybackRecord] = WaybackRecord
 }
 
 object WaybackRecord extends EnrichRootCompanion[WaybackRecord] {
+  val WaybackUrl = "http://web.archive.org/web/$timestampid_/$url"
+  val OriginalHttpHeaderPrefix = "X-Archive-Orig-"
+
   override def dataLoad[T](load: DataLoad[T]): Option[FieldPointer[WaybackRecord, T]] = (load match {
     case ByteLoad => Some(HttpPayload)
     case TextLoad => Some(StringContent)

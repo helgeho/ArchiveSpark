@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015-2018 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
+ * Copyright (c) 2015-2019 Helge Holzmann (Internet Archive) <helge@archive.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,8 +24,8 @@
 
 package org.archive.archivespark.implicits
 
-import org.apache.hadoop.io.compress.GzipCodec
 import org.apache.spark.rdd.RDD
+import org.archive.archivespark.sparkling.util.RddUtil
 import org.archive.archivespark.util.JsonConvertible
 
 import scala.reflect.ClassTag
@@ -36,7 +36,7 @@ class JsonConvertibleRDD[Record <: JsonConvertible : ClassTag](rdd: RDD[Record])
   def toJsonStrings: RDD[String] = rdd.map(r => r.toJsonString)
   def toJsonStrings(pretty: Boolean = true): RDD[String] = rdd.map(r => r.toJsonString(pretty))
 
-  def saveAsJson(path: String): Unit = if (path.endsWith(".gz")) toJsonStrings.saveAsTextFile(path, classOf[GzipCodec]) else toJsonStrings.saveAsTextFile(path)
+  def saveAsJson(path: String): Unit = RddUtil.saveAsTextFile(toJsonStrings, path)
 
   def peekJson: String = rdd.peek.toJsonString
   def peekJson(index: Int): String = rdd.peek(index).toJsonString

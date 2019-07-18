@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015-2018 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
+ * Copyright (c) 2015-2019 Helge Holzmann (Internet Archive) <helge@archive.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,7 +24,7 @@
 
 package org.archive.archivespark.specific.warc
 
-import java.io.InputStream
+import java.io.{BufferedInputStream, InputStream}
 
 import org.archive.archivespark.dataspecs.access.DataAccessor
 import org.archive.archivespark.functions.StringContent
@@ -37,7 +37,7 @@ import org.archive.archivespark.specific.warc.functions.WarcPayload
 
 class WarcRecord(cdx: CdxRecord, val data: DataAccessor[InputStream]) extends DataEnrichRoot[CdxRecord, WARC](cdx) with WarcLikeRecord {
   override def access[R >: Null](action: WARC => R): R = data.access { stream =>
-    WARC.get(stream) match {
+    WARC.get(if (stream.markSupported) stream else new BufferedInputStream(stream)) match {
       case Some(record) => action(record)
       case None => null
     }

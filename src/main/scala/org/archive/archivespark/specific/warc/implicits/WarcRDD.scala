@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015-2018 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
+ * Copyright (c) 2015-2019 Helge Holzmann (Internet Archive) <helge@archive.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,14 +24,14 @@
 
 package org.archive.archivespark.specific.warc.implicits
 
-import java.io.{ByteArrayOutputStream, PrintWriter}
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream, PrintWriter}
 
 import org.apache.hadoop.fs.Path
 import org.apache.spark.rdd.RDD
 import org.archive.archivespark.model.dataloads.ByteLoad
 import org.archive.archivespark.sparkling.io.{GzipBytes, HdfsIO, IOUtil}
 import org.archive.archivespark.sparkling.util.{Common, RddUtil, StringUtil}
-import org.archive.archivespark.sparkling.warc.{WarcHeaders, WarcRecordMeta}
+import org.archive.archivespark.sparkling.warc.{WarcHeaders, WarcRecord, WarcRecordMeta}
 import org.archive.archivespark.specific.warc.functions.{HttpPayload, WarcPayloadFields}
 import org.archive.archivespark.specific.warc.{WarcFileMeta, WarcLikeRecord}
 
@@ -62,7 +62,7 @@ class WarcRDD[WARC <: WarcLikeRecord : ClassTag](rdd: RDD[WARC]) {
     }
 
     rdd.mapPartitionsWithIndex { case (idx, records) =>
-      val warcPrefix = filePrefix + "_" + StringUtil.padNum(idx, 5)
+      val warcPrefix = filePrefix + "-" + StringUtil.padNum(idx, 5)
       val warcFile = warcPrefix + WarcExt + (if (gz) GzipExt else "")
       val warcPath = new Path(path, warcFile).toString
       val warcCdxPath = new Path(path, warcPrefix + WarcExt + CdxExt + (if (gz) GzipExt else "")).toString
@@ -90,21 +90,32 @@ class WarcRDD[WARC <: WarcLikeRecord : ClassTag](rdd: RDD[WARC]) {
         val httpHeadersOpt = payloadPointer.sibling[Map[String, String]](HttpPayload.HeaderField).get(enriched)
         val httpHeader = if (httpStatusOpt.isDefined && httpHeadersOpt.isDefined) WarcHeaders.http(httpStatusOpt.get, httpHeadersOpt.get) else Array.empty[Byte]
 
-        val payload = payloadPointer.get(enriched).get
-        val content = httpHeader ++ payload
-        val recordHeader = WarcHeaders.warcResponseRecord(recordMeta, content, payload)
+        payloadPointer.get(enriched) match {
+          case Some(payload) =>
+            val content = httpHeader ++ payload
+            val recordHeader = WarcHeaders.warcResponseRecord(recordMeta, content, payload)
 
-        val recordBytes = if (gz) GzipBytes(recordHeader ++ content ++ emptyLines) else recordHeader ++ content ++ emptyLines
-        warcOut.get.write(recordBytes)
+            val recordBytes = if (gz) GzipBytes(recordHeader ++ content ++ emptyLines) else recordHeader ++ content ++ emptyLines
 
-        if (generateCdx) {
-          val locationInfo = Array(warcPosition.toString, warcFile)
-          cdxOut.get.println(enriched.get.copy(compressedSize = recordBytes.length).toCdxString(locationInfo))
+            if (generateCdx) {
+              val warc = WarcRecord.get(new ByteArrayInputStream(recordBytes))
+              if (warc.isDefined) {
+                val cdx = warc.get.toCdx(recordBytes.length)
+                if (cdx.isDefined) {
+                  warcOut.get.write(recordBytes)
+                  val locationInfo = Array(warcPosition.toString, warcFile)
+                  cdxOut.get.println(cdx.get.toCdxString(locationInfo))
+                  warcPosition += recordBytes.length
+                  1L
+                } else 0L
+              } else 0L
+            } else {
+              warcOut.get.write(recordBytes)
+              warcPosition += recordBytes.length
+              1L
+            }
+          case None => 0L
         }
-
-        warcPosition += recordBytes.length
-
-        1L
       }.sum
 
       warcOut.clear(true)

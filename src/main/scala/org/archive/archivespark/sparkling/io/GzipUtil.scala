@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015-2018 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
+ * Copyright (c) 2015-2019 Helge Holzmann (Internet Archive) <helge@archive.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -49,17 +49,17 @@ object GzipUtil {
   def decompressConcatenated(in: InputStream): Iterator[InputStream] = decompressConcatenatedWithPosition(in).map{case (pos, s) => s}
 
   def decompressConcatenatedWithPosition(in: InputStream): Iterator[(Long, InputStream)] = {
-    val stream = new CountingInputStream(new BufferedInputStream(new NonClosingInputStream(in)))
-    var uncompressed: Option[InputStream] = None
+    val stream = new CountingInputStream(IOUtil.supportMark(new NonClosingInputStream(in)))
+    var last: Option[InputStream] = None
     IteratorUtil.whileDefined {
-      if (uncompressed.isDefined) IOUtil.readToEnd(uncompressed.get, close = true)
+      if (last.isDefined) IOUtil.readToEnd(last.get, close = true)
       if (IOUtil.eof(stream)) {
         stream.close()
         None
       } else Try {
         val pos = stream.getCount
-        uncompressed = Some(new GzipCompressorInputStream(new NonClosingInputStream(stream), false))
-        uncompressed.map((pos, _))
+        last = Some(new GzipCompressorInputStream(new NonClosingInputStream(stream), false))
+        last.map((pos, _))
       }.getOrElse(None)
     }
   }

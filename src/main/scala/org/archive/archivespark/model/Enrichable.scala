@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015-2018 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
+ * Copyright (c) 2015-2019 Helge Holzmann (Internet Archive) <helge@archive.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,7 +25,7 @@
 package org.archive.archivespark.model
 
 import org.archive.archivespark.ArchiveSpark
-import org.archive.archivespark.util.{Copyable, JsonConvertible, SelectorUtil}
+import org.archive.archivespark.util.{Copyable, JsonConvertible, SelectorUtil, SerializedException}
 
 import scala.collection.immutable.ListMap
 import scala.reflect.ClassTag
@@ -44,8 +44,8 @@ trait Enrichable extends Serializable with Copyable[Enrichable] with JsonConvert
     case None => false
   }
 
-  private[model] var _lastException: Option[Exception] = None
-  def lastException: Option[Exception] = _lastException
+  private[model] var _lastException: Option[SerializedException] = None
+  def lastException: Option[SerializedException] = _lastException
 
   private[archivespark] def excludeFromOutput(value: Boolean = true, overwrite: Boolean = true): Unit = excludeFromOutput match {
     case Some(_) => if (overwrite) excludeFromOutput = Some(value)
@@ -96,12 +96,12 @@ trait Enrichable extends Serializable with Copyable[Enrichable] with JsonConvert
   private def enrich[D](func: EnrichFunc[_, D, _], excludeFromOutput: Boolean = false): Enrichable = {
     if (!func.isEnriched(this)) {
       val derivatives = new Derivatives(func.fields)
-      var lastException: Option[Exception] = None
+      var lastException: Option[SerializedException] = None
       try {
         func.derive(this.asInstanceOf[TypedEnrichable[D]], derivatives)
       } catch {
         case exception: Exception =>
-          if (ArchiveSpark.conf.catchExceptions) lastException = Some(exception)
+          if (ArchiveSpark.conf.catchExceptions) lastException = Some(SerializedException(exception))
           else throw exception
       }
       val clone = copy()

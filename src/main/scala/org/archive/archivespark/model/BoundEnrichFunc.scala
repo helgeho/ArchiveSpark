@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015-2018 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
+ * Copyright (c) 2015-2019 Helge Holzmann (Internet Archive) <helge@archive.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -29,7 +29,7 @@ import org.archive.archivespark.model.pointers.{DependentFieldPointer, FieldPoin
 abstract class BoundEnrichFunc[Root <: EnrichRoot, Source, DefaultValue] (bound: DependentFieldPointer[Root, Source]) extends EnrichFunc[Root, Source, DefaultValue] {
   def source: DependentFieldPointer[Root, Source] = bound
 
-  override def on[DependencyRoot <: EnrichRoot](dependency: FieldPointer[DependencyRoot, Source]): EnrichFunc[DependencyRoot, Source, DefaultValue] = {
+  override def on[DependencyRoot <: EnrichRoot, S <: Source](dependency: FieldPointer[DependencyRoot, S]): EnrichFunc[DependencyRoot, Source, DefaultValue] = {
     val self = this
     val boundOn = new DependentFieldPointer[DependencyRoot, Source](bound.func.asInstanceOf[EnrichFunc[Root, Source, _]].on(dependency), bound.fieldName)
     new BoundEnrichFunc[DependencyRoot, Source, DefaultValue](boundOn) {

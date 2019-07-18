@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015-2018 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
+ * Copyright (c) 2015-2019 Helge Holzmann (Internet Archive) <helge@archive.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -67,10 +67,10 @@ class WarcRecord (val versionStr: String, val headers: Map[String, String], stre
     bytes.map(hash)
   }
 
-  def toCdx(compressedSize: Long, digest: InputStream => String = defaultDigestHash): Option[CdxRecord] = {
-    if (isResponse || isRevisit) {
+  def toCdx(compressedSize: Long, digest: InputStream => String = defaultDigestHash, handleRevisits: Boolean = true, handleOthers: Boolean = false): Option[CdxRecord] = {
+    if (isResponse || (handleRevisits && isRevisit) || handleOthers) {
       val surt = SurtUtil.fromUrl(url.get)
-      val mime = if (isRevisit) "warc/revisit" else if (isHttp) http.flatMap(_.mime).getOrElse("-") else "-"
+      val mime = if (isResponse) if (isHttp) http.flatMap(_.mime).getOrElse("-") else "-" else "warc/" + warcType
       val status = if (isHttp) http.map(_.status).getOrElse(-1) else -1
       val redirectUrl = if (isHttp) http.flatMap(_.redirectLocation).getOrElse("-") else "-"
       Some(CdxRecord(surt, timestamp.get, url.get, mime, status, payloadDigest(digest).getOrElse("-"), redirectUrl, "-", compressedSize))
@@ -86,11 +86,11 @@ object WarcRecord {
 
   def defaultDigestHash(in: InputStream): String = "sha1:" + DigestUtil.sha1Base32(in)
 
-  def get(in: InputStream, detectArc: Boolean = true, autodetectCompressed: Boolean = true, compressed: Boolean = false): Option[WarcRecord] = {
-    next(if ((autodetectCompressed && GzipUtil.isCompressed(in)) || (!autodetectCompressed && compressed)) GzipUtil.decompress(in) else in, detectArc)
+  def get(in: InputStream, handleArc: Boolean = true, autodetectCompressed: Boolean = true, compressed: Boolean = false): Option[WarcRecord] = {
+    next(if ((autodetectCompressed && GzipUtil.isCompressed(in)) || (!autodetectCompressed && compressed)) GzipUtil.decompress(in) else in, handleArc)
   }
 
-  def next(in: InputStream, detectArc: Boolean = true): Option[WarcRecord] = {
+  def next(in: InputStream, handleArc: Boolean = true): Option[WarcRecord] = {
     var line = StringUtil.readLine(in, Charset)
     while (line != null && !{
       if (line.startsWith(WarcRecordStart)) {
@@ -105,7 +105,7 @@ object WarcRecord {
         return Some(new WarcRecord(versionStr, ListMap(headers: _*), in))
       }
       false
-    } && detectArc && !{
+    } && handleArc && !{
       if (RegexUtil.matchesAbsoluteUrlStart(line)) {
         val split = line.split(" ")
         // https://archive.org/web/researcher/ArcFileFormat.php

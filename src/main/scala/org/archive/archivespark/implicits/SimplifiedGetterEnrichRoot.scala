@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015-2018 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
+ * Copyright (c) 2015-2019 Helge Holzmann (Internet Archive) <helge@archive.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -30,9 +30,9 @@ import org.archive.archivespark.model.pointers.FieldPointer
 import scala.reflect.ClassTag
 
 class SimplifiedGetterEnrichRoot[Root <: EnrichRoot](root: Root) {
-  def value[T](pointer: FieldPointer[Root, T]): Option[T] = pointer.get(root)
+  def value[R >: Root <: EnrichRoot, T](pointer: FieldPointer[R, T]): Option[T] = pointer.get(root)
 
-  def getValue[T](pointer: FieldPointer[Root, T]): T = value(pointer).get
+  def getValue[R >: Root <: EnrichRoot, T](pointer: FieldPointer[R, T]): T = value(pointer).get
 
-  def valueOrElse[T : ClassTag](pointer: FieldPointer[Root, T])(elseValue: => T): T = value(pointer).getOrElse(elseValue)
+  def valueOrElse[R >: Root <: EnrichRoot, T : ClassTag](pointer: FieldPointer[R, T], elseValue: => T): T = value(pointer).getOrElse(elseValue)
 }

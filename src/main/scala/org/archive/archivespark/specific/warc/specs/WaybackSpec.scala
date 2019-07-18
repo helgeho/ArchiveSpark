@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015-2018 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
+ * Copyright (c) 2015-2019 Helge Holzmann (Internet Archive) <helge@archive.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -36,23 +36,11 @@ import org.archive.archivespark.specific.warc.WaybackRecord
 
 import scala.io.Source
 
-class WaybackSpec private (url: String, matchPrefix: Boolean, from: Long, to: Long, blocksPerPage: Int, pages: Int, maxPartitions: Int) extends DataSpec[String, WaybackRecord] {
-  val CdxServerUrl = "http://web.archive.org/cdx/search/cdx?url=$url&matchType=$prefix&pageSize=$blocks&page=$page"
-
-  private def cdxServerUrl(page: Int): String = {
-    var uri = CdxServerUrl.replace("$url", URLEncoder.encode(url, "UTF-8"))
-    uri = uri.replace("$prefix", if (matchPrefix) "prefix" else "exact")
-    uri = uri.replace("$blocks", blocksPerPage.toString)
-    uri = uri.replace("$page", page.toString)
-    if (from > 0) uri += "&from=" + from
-    if (to > 0) uri += "&to=" + to
-    uri
-  }
-
+class WaybackSpec (cdxServerUrl: String, pages: Int, maxPartitions: Int) extends DataSpec[String, WaybackRecord] {
   override def load(sc: SparkContext, minPartitions: Int): RDD[String] = {
     RddUtil.parallelize(pages, if (maxPartitions == 0) minPartitions else maxPartitions.min(minPartitions)).flatMap{page =>
       try {
-        val source = Source.fromURL(cdxServerUrl(page))(StringUtil.codec(Sparkling.DefaultCharset))
+        val source = Source.fromURL(cdxServerUrl + "&page=" + page)(StringUtil.codec(Sparkling.DefaultCharset))
         IteratorUtil.cleanup(source.getLines, source.close)
       } catch {
         case e: Exception =>
@@ -67,6 +55,12 @@ class WaybackSpec private (url: String, matchPrefix: Boolean, from: Long, to: Lo
 
 object WaybackSpec {
   def apply(url: String, matchPrefix: Boolean = false, from: Long = 0, to: Long = 0, blocksPerPage: Int = 5, pages: Int = 50, maxPartitions: Int = 0): WaybackSpec = {
-    new WaybackSpec(url, matchPrefix, from, to, blocksPerPage, pages, maxPartitions)
+    var cdxServerUrl = "http://web.archive.org/cdx/search/cdx?url=$url&matchType=$prefix&pageSize=$blocks"
+    cdxServerUrl = cdxServerUrl.replace("$url", URLEncoder.encode(url, "UTF-8"))
+    cdxServerUrl = cdxServerUrl.replace("$prefix", if (matchPrefix) "prefix" else "exact")
+    cdxServerUrl = cdxServerUrl.replace("$blocks", blocksPerPage.toString)
+    if (from > 0) cdxServerUrl += "&from=" + from
+    if (to > 0) cdxServerUrl += "&to=" + to
+    new WaybackSpec(cdxServerUrl, pages, maxPartitions)
   }
 }

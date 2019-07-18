@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015-2018 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
+ * Copyright (c) 2015-2019 Helge Holzmann (Internet Archive) <helge@archive.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -29,7 +29,10 @@ import org.apache.spark.sql.Column
 import org.archive.archivespark.model._
 import org.archive.archivespark.util.SelectorUtil
 
-trait FieldPointer[Root <: EnrichRoot, T] extends Serializable {
+trait GenericFieldPointer[+R <: EnrichRoot, +T] extends Serializable { this: FieldPointer[_, _] =>
+}
+
+trait FieldPointer[Root <: EnrichRoot, T] extends GenericFieldPointer[Root, T] {
   def path[R <: Root](root: EnrichRootCompanion[R]): Seq[String]
 
   def get(root: Root): Option[T] = enrichable(root).map(_.get)
@@ -38,7 +41,7 @@ trait FieldPointer[Root <: EnrichRoot, T] extends Serializable {
 
   def enrichable(root: Root): Option[TypedEnrichable[T]] = {
     val initialized = init(root, excludeFromOutput = false)
-    root[T](path(initialized))
+    initialized[T](path(initialized))
   }
 
   def multi: MultiFieldPointer[Root, T] = new SingleToMultiFieldPointer[Root, T](this)

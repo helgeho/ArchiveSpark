@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015-2018 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
+ * Copyright (c) 2015-2019 Helge Holzmann (Internet Archive) <helge@archive.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,7 +25,7 @@
 package org.archive.archivespark.model
 
 import io.circe.Json
-import org.archive.archivespark.util.Json.{json, _}
+import org.archive.archivespark.util.Json.{json, mapToJson}
 
 import scala.collection.immutable.ListMap
 

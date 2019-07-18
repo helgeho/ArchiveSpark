@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015-2018 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
+ * Copyright (c) 2015-2019 Helge Holzmann (Internet Archive) <helge@archive.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,7 +28,7 @@ import java.io._
 
 import com.google.common.io.CountingInputStream
 import org.apache.spark.rdd.RDD
-import org.archive.archivespark.sparkling.io.{ByteArray, GzipUtil, MemoryBufferInputStream}
+import org.archive.archivespark.sparkling.io.{ByteArray, GzipUtil, IOUtil, MemoryBufferInputStream, NonClosingInputStream}
 import org.archive.archivespark.sparkling.util._
 
 import scala.util.Try
@@ -38,12 +38,23 @@ object WarcLoader {
     var pos = 0L
     val buffered = new MemoryBufferInputStream(in)
     val counting = new CountingInputStream(buffered)
-    val records = load(counting)
-    records.map { record =>
-      record.close()
-      val offset = pos
-      pos = counting.getCount
-      (offset, buffered.resetBuffer())
+    var current: Option[WarcRecord] = None
+    if (GzipUtil.isCompressed(counting)) {
+      GzipUtil.decompressConcatenated(counting).map { s =>
+        IOUtil.readToEnd(s, close = true)
+        val offset = pos
+        pos = counting.getCount
+        (offset, buffered.resetBuffer())
+      }
+    } else {
+      IteratorUtil.whileDefined {
+        WarcRecord.next(counting)
+      }.map { warc =>
+        warc.close()
+        val offset = pos
+        pos = counting.getCount
+        (offset, buffered.resetBuffer())
+      }
     }
   }
 

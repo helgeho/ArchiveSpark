@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015-2018 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
+ * Copyright (c) 2015-2019 Helge Holzmann (Internet Archive) <helge@archive.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -38,13 +38,16 @@ import scala.collection.JavaConverters._
 import scala.collection.mutable
 
 object EntitiesNamespace {
-  def get: DependentFieldPointer[ByteLoad.Root, String] = Html.mapIdentity("entities").get[String]("entities")
+  def get: DependentFieldPointer[ByteLoad.Root, String] = HtmlText.mapIdentity("entities").get[String]("entities")
 }
 
 /*
-In order to use this enrich function, please make sure have Stanford CoreNLP model file in your classpath.
+In order to use this enrich function, please make sure have Stanford CoreNLP (3.5.1) with corresponding models in your classpath.
+http://central.maven.org/maven2/edu/stanford/nlp/stanford-corenlp/3.5.1
  */
 class Entities private (properties: Properties, tagFieldMapping: Seq[(String, String)]) extends BoundEnrichFunc[ByteLoad.Root, String, String](EntitiesNamespace.get) {
+  override def defaultField: String = ""
+
   override def fields: Seq[String] = tagFieldMapping.map { case (tag, field) => field }
 
   @transient lazy val pipeline: StanfordCoreNLP = new StanfordCoreNLP(properties)

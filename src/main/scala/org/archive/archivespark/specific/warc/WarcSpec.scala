@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015-2018 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
+ * Copyright (c) 2015-2019 Helge Holzmann (Internet Archive) <helge@archive.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,12 +28,15 @@ import org.apache.spark.rdd.RDD
 import org.archive.archivespark.sparkling.cdx.CdxRecord
 import org.archive.archivespark.specific.warc.specs._
 
-object WarcResponseSpec {
+object WarcSpec {
   def fromWaybackWithLocalCdx(cdxPath: String): WaybackCdxHdfsSpec = WaybackCdxHdfsSpec(cdxPath)
-  def fromWaybackRemote(url: String, matchPrefix: Boolean = false, from: Long = 0, to: Long = 0, blocksPerPage: Int = 5, pages: Int = 50, maxPartitions: Int = 0): WaybackSpec = {
+  def fromWayback(url: String, matchPrefix: Boolean = false, from: Long = 0, to: Long = 0, blocksPerPage: Int = 5, pages: Int = 50, maxPartitions: Int = 0): WaybackSpec = {
     WaybackSpec(url, matchPrefix, from, to, blocksPerPage, pages, maxPartitions)
   }
-  def fromFiles(path: String): WarcHdfsSpec = WarcHdfsSpec(path)
+  def fromWaybackByCdxQuery(cdxServerUrl: String, pages: Int = 50, maxPartitions: Int = 0): WaybackSpec = {
+    new WaybackSpec(cdxServerUrl, pages, maxPartitions)
+  }
+  def fromFiles(path: String, includeRevisits: Boolean = true, includeOthers: Boolean = false): WarcHdfsSpec = WarcHdfsSpec(path, includeRevisits, includeOthers)
   def fromFiles(cdx: RDD[CdxRecord], warcPath: String): WarcHdfsCdxRddSpec = WarcHdfsCdxRddSpec(cdx, warcPath)
   def fromFiles(cdxWarcPaths: RDD[(CdxRecord, String)]): WarcHdfsCdxPathRddSpec = WarcHdfsCdxPathRddSpec(cdxWarcPaths)
   def fromFiles(cdxPath: String, warcPath: String): WarcCdxHdfsSpec = WarcCdxHdfsSpec(cdxPath, warcPath)

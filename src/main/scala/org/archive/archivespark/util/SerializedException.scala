@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015-2018 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
+ * Copyright (c) 2015-2019 Helge Holzmann (Internet Archive) <helge@archive.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,26 +22,21 @@
  * SOFTWARE.
  */
 
-package org.archive.archivespark.functions
+package org.archive.archivespark.util
 
-import org.archive.archivespark.model._
-import org.archive.archivespark.model.dataloads.ByteLoad
-import org.archive.archivespark.model.pointers.DependentFieldPointer
-import org.archive.archivespark.sparkling.html.HtmlProcessor
+import java.io.{PrintWriter, StringWriter}
 
-object FastHtmlAttributeNamespace {
-  def get: DependentFieldPointer[ByteLoad.Root, String] = Html.mapIdentity("attributes").get[String]("attributes")
+case class SerializedException (exception: String, message: String, stackTrace: String) {
+  def print(): Unit = {
+    println(exception + ": " + message)
+    println(stackTrace)
+  }
 }
 
-object FastHtmlAttribute {
-  def apply(name: String): FastHtmlAttribute = new FastHtmlAttribute(name)
-}
-
-class FastHtmlAttribute private (attribute: String) extends BoundEnrichFunc[ByteLoad.Root, String, String](FastHtmlAttributeNamespace.get) {
-  override def fields: Seq[String] = Seq(attribute)
-
-  override def derive(source: TypedEnrichable[String], derivatives: Derivatives): Unit = {
-    val attrValue = HtmlProcessor.attributeValue(source.get, attribute)
-    if (attrValue.isDefined) derivatives << attrValue.get
+object SerializedException {
+  def apply(ex: Exception): SerializedException = {
+    val stackTrace = new StringWriter()
+    ex.printStackTrace(new PrintWriter(stackTrace))
+    new SerializedException(ex.getClass.getCanonicalName, ex.getMessage, stackTrace.toString)
   }
 }

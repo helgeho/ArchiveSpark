@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015-2018 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
+ * Copyright (c) 2015-2019 Helge Holzmann (Internet Archive) <helge@archive.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -74,14 +74,14 @@ object HdfsIO {
           val in = fs.open(new Path(path))
           if (retry > 0) in.seekToNewSource(offset)
           else if (offset > 0) in.seek(offset)
-          val buffered = if (length > 0) new MemoryBufferInputStream(new BoundedInputStream(in, length)) else new MemoryBufferInputStream(in)
+          val buffered = if (length > 0) new BufferedInputStream(new BoundedInputStream(in, length)) else new BufferedInputStream(in)
           if (IOUtil.eof(buffered)) {
             buffered.close()
             IOUtil.emptyStream
           } else buffered
         }
       case LoadingStrategy.BlockWise =>
-        new MemoryBufferInputStream(new HdfsBlockStream(fs, path, offset, length, retries, sleepMillis))
+        new BufferedInputStream(new HdfsBlockStream(fs, path, offset, length, retries, sleepMillis))
       case LoadingStrategy.CopyLocal =>
         Common.retry(retries, sleepMillis, (retry, e) => {
           "File access failed (" + retry + "/" + retries + "): " + path + " - " + e.getMessage
@@ -93,7 +93,7 @@ object HdfsIO {
           }))
           val in = new FileInputStream(localFiles(path))
           if (offset > 0) in.getChannel.position(offset)
-          val buffered = if (length > 0) new MemoryBufferInputStream(new BoundedInputStream(in, length)) else new MemoryBufferInputStream(in)
+          val buffered = if (length > 0) new BufferedInputStream(new BoundedInputStream(in, length)) else new BufferedInputStream(in)
           if (IOUtil.eof(buffered)) {
             buffered.close()
             IOUtil.emptyStream

@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015-2018 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
+ * Copyright (c) 2015-2019 Helge Holzmann (Internet Archive) <helge@archive.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,14 +22,14 @@
  * SOFTWARE.
  */
 
-package org.archive.archivespark.functions
+package org.archive.archivespark.implicits
 
-import org.archive.archivespark.model._
-import org.archive.archivespark.model.dataloads.ByteLoad
-import org.archive.archivespark.sparkling.html.HtmlProcessor
+import org.apache.spark.rdd.RDD
+import org.archive.archivespark.sparkling.Sparkling
+import org.archive.archivespark.sparkling.util.RddUtil
 
-object FastHtmlText extends EnrichFunc[ByteLoad.Root, String, String] with GlobalEnrichFunc[ByteLoad.Root, String, String] {
-  val func: EnrichFunc[ByteLoad.Root, String, String] = Html.map("text") { str =>
-    HtmlProcessor.text(HtmlProcessor.iterateTags(str))
-  }
+import scala.reflect.ClassTag
+
+class StringRDD(rdd: RDD[String]) {
+  def saveText(path: String): Long = RddUtil.saveAsTextFile(rdd, path)
 }

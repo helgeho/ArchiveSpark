@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015-2018 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
+ * Copyright (c) 2015-2019 Helge Holzmann (Internet Archive) <helge@archive.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -33,7 +33,7 @@ import org.archive.archivespark.sparkling.util.{IteratorUtil, RddUtil}
 import org.archive.archivespark.sparkling.warc.{WarcLoader, WarcRecord => WARC}
 import org.archive.archivespark.specific.warc.WarcRecord
 
-class WarcHdfsSpec private(path: String) extends DataSpec[(String, Long, ByteArray), WarcRecord] {
+class WarcHdfsSpec private (path: String, includeRevisits: Boolean = true, includeOthers: Boolean = false) extends DataSpec[(String, Long, ByteArray), WarcRecord] {
   def load(sc: SparkContext, minPartitions: Int): RDD[(String, Long, ByteArray)] = {
     RddUtil.loadBinary(path, decompress = false, close = false) { case (file, stream) =>
       IteratorUtil.cleanup(WarcLoader.loadBytes(stream).map { case (offset, bytes) =>
@@ -45,7 +45,7 @@ class WarcHdfsSpec private(path: String) extends DataSpec[(String, Long, ByteArr
   override def parse(in: (String, Long, ByteArray)): Option[WarcRecord] = {
     val (file, offset, bytes) = in
     WARC.get(bytes.toInputStream).flatMap { warc =>
-      warc.toCdx(bytes.length).map { cdx =>
+      warc.toCdx(bytes.length, handleRevisits = includeRevisits, handleOthers = includeOthers).map { cdx =>
         new WarcRecord(cdx.copy(additionalFields = Seq(offset.toString, file)), new ByteArrayAccessor(bytes))
       }
     }
@@ -53,5 +53,5 @@ class WarcHdfsSpec private(path: String) extends DataSpec[(String, Long, ByteArr
 }
 
 object WarcHdfsSpec {
-  def apply(path: String) = new WarcHdfsSpec(path)
+  def apply(path: String, includeRevisits: Boolean = true, includeOthers: Boolean = false) = new WarcHdfsSpec(path, includeRevisits, includeOthers)
 }

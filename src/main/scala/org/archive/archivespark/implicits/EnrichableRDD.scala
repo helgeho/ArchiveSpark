@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015-2018 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
+ * Copyright (c) 2015-2019 Helge Holzmann (Internet Archive) <helge@archive.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -29,6 +29,7 @@ import org.apache.spark.sql._
 import org.archive.archivespark.model._
 import org.archive.archivespark.model.pointers.FieldPointer
 import org.archive.archivespark.sparkling.Sparkling
+import org.archive.archivespark.util.SerializedException
 
 import scala.collection.TraversableOnce
 import scala.reflect.ClassTag
@@ -42,10 +43,12 @@ class EnrichableRDD[Root <: EnrichRoot : ClassTag](rdd: RDD[Root]) {
   def filterExists[R >: Root <: EnrichRoot](pointer: FieldPointer[R, _]): RDD[Root] = rdd.filter(pointer.exists(_))
 
   def filterNoException(): RDD[Root] = rdd.filter(r => r.lastException.isEmpty)
-  def lastException: Option[Exception] = Try{rdd.filter(r => r.lastException.isDefined).take(1).head.lastException.get}.toOption
-  def throwLastException(): Unit = lastException match {
-    case Some(e) => throw e
-    case _ =>
+  def lastException: Option[SerializedException] = Try{rdd.filter(r => r.lastException.isDefined).take(1).head.lastException.get}.toOption
+  def printLastException(): Boolean = lastException match {
+    case Some(e) =>
+      e.print()
+      true
+    case _ => false
   }
 
   def filterValue[R >: Root <: EnrichRoot, T](pointer: FieldPointer[R, T])(filter: Option[T] => Boolean): RDD[Root] = {
@@ -68,7 +71,7 @@ class EnrichableRDD[Root <: EnrichRoot : ClassTag](rdd: RDD[Root]) {
 
   def mapValues[R >: Root <: EnrichRoot, T : ClassTag](pointer: FieldPointer[R, T]): RDD[T] = rdd.map(r => pointer.get(r)).filter(_.isDefined).map(_.get)
 
-  def flatMapValues[R >: Root <: EnrichRoot, T : ClassTag, S <: TraversableOnce[T] : ClassTag](pointer: FieldPointer[R, S]): RDD[T] = mapValues(pointer).flatMap(r => r)
+  def flatMapValues[R >: Root <: EnrichRoot, T : ClassTag](pointer: FieldPointer[R, _ <: TraversableOnce[T]]): RDD[T] = mapValues(pointer).flatMap(r => r)
 
   def toDataFrame: DataFrame = {
     val sql = SparkSession.builder.getOrCreate()

@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015-2018 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
+ * Copyright (c) 2015-2019 Helge Holzmann (Internet Archive) <helge@archive.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -103,7 +103,7 @@ object IOUtil {
         stream.close()
       }
       ValueSupplier {
-        Common.touch(new MemoryBufferInputStream(new FileInputStream(file)))(streams += _)
+        Common.touch(new BufferedInputStream(new FileInputStream(file)))(streams += _)
       }
     }, { _ =>
       streams.foreach(_.close())
@@ -214,4 +214,6 @@ object IOUtil {
   }
 
   def print(out: OutputStream, autoFlush: Boolean = false, closing: Boolean = true): PrintStream = new PrintStream(if (closing) out else new NonClosingOutputStream(out), autoFlush, DefaultCharset)
+
+  def supportMark(stream: InputStream): InputStream = if (stream.markSupported()) stream else new BufferedInputStream(stream)
 }

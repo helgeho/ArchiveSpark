@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015-2018 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
+ * Copyright (c) 2015-2019 Helge Holzmann (Internet Archive) <helge@archive.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,13 +27,14 @@ package org.archive
 import java.time.LocalDateTime
 
 import org.apache.spark.rdd.RDD
-import org.archive.archivespark.implicits.{EnrichableRDD, GenericHelpersRDD, JsonConvertibleRDD, SimplifiedGetterEnrichRoot}
+import org.archive.archivespark.implicits.{EnrichableRDD, GenericHelpersRDD, JsonConvertibleRDD, SimplifiedGetterEnrichRoot, StringRDD}
 import org.archive.archivespark.model.EnrichRoot
 import org.archive.archivespark.util.JsonConvertible
 
 import scala.reflect.ClassTag
 
 package object archivespark {
+  implicit class ImplicitStringRDD(rdd: RDD[String]) extends StringRDD(rdd)
   implicit class ImplicitGenericHelpersRDD[A : ClassTag](rdd: RDD[A]) extends GenericHelpersRDD[A](rdd)
   implicit class ImplicitEnrichableRDD[Root <: EnrichRoot : ClassTag](rdd: RDD[Root]) extends EnrichableRDD[Root](rdd)
   implicit class ImplicitJsonConvertibleRDD[Record <: JsonConvertible : ClassTag](rdd: RDD[Record]) extends JsonConvertibleRDD[Record](rdd)
