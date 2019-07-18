@@ -4,7 +4,7 @@
 
 ArchiveSpark is a framework / toolkit / library / API to facilitate **efficient data processing, extraction as well as derivation for archival collections**.
 
-While originally developed for the use with web archives, which is still its main focus, ArchiveSpark can be used with any (archival) data collections through it's modular architecture and customizable _data specifications_.
+While originally developed for the use with web archives, which is still its main focus, ArchiveSpark can be used with any (archival) data collections through its modular architecture and customizable _data specifications_.
 
 ### What can you do with it?
 
@@ -24,7 +24,7 @@ Examples of what you can do with it include: (see [**recipes**](docs/Recipes.md)
 * Extensive overhaul to be based on _Sparkling_, Internet Archive's internal data processing library, which is now partially included under `org.archive.archivespark.sparkling`.
 * _ArchiveSpark_ will evolve as _Sparkling_ evolves and automatically benefit from new features and bugfixes.
 * Streamlined with all unused / unnecessary / academic / experimental features being removed.
-* Refactored / cleaned up / simplified ArchiveSpark's public API.
+* Refactored / cleaned up / simplified ArchiveSpark's public APIs.
 
 For more information and instructions, please [**read the docs**](docs/README.md):
  
