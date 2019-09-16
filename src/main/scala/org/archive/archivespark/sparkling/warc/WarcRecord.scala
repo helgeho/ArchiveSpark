@@ -70,7 +70,7 @@ class WarcRecord (val versionStr: String, val headers: Map[String, String], stre
   def toCdx(compressedSize: Long, digest: InputStream => String = defaultDigestHash, handleRevisits: Boolean = true, handleOthers: Boolean = false): Option[CdxRecord] = {
     if (isResponse || (handleRevisits && isRevisit) || handleOthers) {
       val surt = SurtUtil.fromUrl(url.get)
-      val mime = if (isResponse) if (isHttp) http.flatMap(_.mime).getOrElse("-") else "-" else "warc/" + warcType
+      val mime = if (isResponse) if (isHttp) http.flatMap(_.mime).getOrElse("-") else "-" else warcType.map("warc/" + _).getOrElse("-")
       val status = if (isHttp) http.map(_.status).getOrElse(-1) else -1
       val redirectUrl = if (isHttp) http.flatMap(_.redirectLocation).getOrElse("-") else "-"
       Some(CdxRecord(surt, timestamp.get, url.get, mime, status, payloadDigest(digest).getOrElse("-"), redirectUrl, "-", compressedSize))
