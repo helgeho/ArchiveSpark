@@ -45,7 +45,8 @@ class HdfsFileWriter private(filename: String, append: Boolean, replication: Sho
     Log.info("Copying from temporary file " + file.getCanonicalPath + " to " + filename + "...")
     if (append) {
       val in = new FileInputStream(file)
-      val appendOut = HdfsIO.fs.append(new Path(filename))
+      val p = new Path(filename)
+      val appendOut = HdfsIO.fs(p).append(p)
       IOUtil.copy(in, appendOut)
       appendOut.close()
       in.close()

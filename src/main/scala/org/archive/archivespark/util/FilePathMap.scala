@@ -33,13 +33,14 @@ case class FilePathMap(path: String, patterns: Seq[String] = Seq.empty) {
   val pathMap: Map[String, String] = {
     var map = collection.mutable.Map[String, String]()
 
-    val fs = FileSystem.get(SparkHadoopUtil.get.conf)
-    val files = fs.listFiles(new Path(path), true)
+    val p = new Path(path)
+    val fs = p.getFileSystem(SparkHadoopUtil.get.conf)
+    val files = fs.listFiles(p, true)
     while (files.hasNext) {
       val path = files.next.getPath
       val filename = path.getName
       if (patterns.isEmpty || patterns.exists(filename.matches)) {
-        if (map.contains(filename)) throw new RuntimeException("duplicate filename: " + filename)
+        if (map.contains(filename)) throw new RuntimeException("duplicate filename: " + filename + " in path: " + path)
         map += filename -> path.getParent.toString.intern
       }
     }

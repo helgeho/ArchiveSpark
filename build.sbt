@@ -4,7 +4,7 @@ import sbt.Keys._
 lazy val commonSettings = Seq(
   name := "archivespark",
   organization := "com.github.helgeho",
-  version := "3.0.1",
+  version := "3.0.3-MMISIEWICZ-SNAPSHOT",
   scalaVersion := "2.11.12",
   fork := true,
   exportJars := true
@@ -16,9 +16,10 @@ lazy val archivespark = (project in file("."))
   .settings(
     commonSettings,
     libraryDependencies ++= Seq(
-      "org.apache.hadoop" % "hadoop-client" % "2.5.0" % "provided",
-      "org.apache.spark" %% "spark-core" % "2.1.3" % "provided",
-      "org.apache.spark" %% "spark-sql" % "2.1.3" % "provided",
+      "org.apache.hadoop" % "hadoop-client" % "2.7.2" % "provided",
+      "org.apache.hadoop" % "hadoop-aws" % "2.7.2" % "provided",
+      "org.apache.spark" %% "spark-core" % "2.4.4" % "provided",
+      "org.apache.spark" %% "spark-sql" % "2.4.4" % "provided",
       "joda-time" % "joda-time" % "2.10",
       "org.apache.httpcomponents" % "httpclient" % "4.5.6",
       "org.netpreserve.commons" % "webarchive-commons" % "1.1.8" excludeAll(

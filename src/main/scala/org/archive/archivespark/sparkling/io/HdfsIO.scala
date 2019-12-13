@@ -44,7 +44,7 @@ object HdfsIO {
   val ReplicationProperty = "dfs.replication"
   val BufferSizeProperty = "io.file.buffer.size"
 
-  def fs: FileSystem = FileSystem.get(SparkHadoopUtil.get.conf)
+  def fs(p: Path): FileSystem = p.getFileSystem(SparkHadoopUtil.get.conf)
 
   object LoadingStrategy extends Enumeration {
     val Remote, BlockWise, CopyLocal, Dynamic = Value
@@ -58,6 +58,7 @@ object HdfsIO {
   private var localFiles: Map[String, String] = Map.empty
 
   def open(path: String, offset: Long = 0, length: Long = 0, decompress: Boolean = true, retries: Int = 60, sleepMillis: Int = 1000 * 60, strategy: LoadingStrategy = defaultLoadingStrategy): InputStream = {
+    val p = new Path(path)
     val loadingStrategy = if (strategy == LoadingStrategy.Dynamic) {
       val fileSize = HdfsIO.length(path)
       val copyLocalThreshold = fileSize.toDouble * dynamicCopyLocalThreshold
@@ -71,7 +72,7 @@ object HdfsIO {
         Common.retry(retries, sleepMillis, (retry, e) => {
           "File access failed (" + retry + "/" + retries + "): " + path + " (Offset: " + offset + ") - " + e.getMessage
         }) { retry =>
-          val in = fs.open(new Path(path))
+          val in = fs(p).open(p)
           if (retry > 0) in.seekToNewSource(offset)
           else if (offset > 0) in.seek(offset)
           val buffered = if (length > 0) new BufferedInputStream(new BoundedInputStream(in, length)) else new BufferedInputStream(in)
@@ -81,14 +82,14 @@ object HdfsIO {
           } else buffered
         }
       case LoadingStrategy.BlockWise =>
-        new BufferedInputStream(new HdfsBlockStream(fs, path, offset, length, retries, sleepMillis))
+        new BufferedInputStream(new HdfsBlockStream(fs(p), path, offset, length, retries, sleepMillis))
       case LoadingStrategy.CopyLocal =>
         Common.retry(retries, sleepMillis, (retry, e) => {
           "File access failed (" + retry + "/" + retries + "): " + path + " - " + e.getMessage
         }) { retry =>
           localFiles = localFiles.synchronized(localFiles.updated(path, {
             val tmpPath = IOUtil.tmpFile.getCanonicalPath
-            fs.copyToLocalFile(new Path(path), new Path(tmpPath))
+            fs(p).copyToLocalFile(new Path(path), new Path(tmpPath))
             tmpPath
           }))
           val in = new FileInputStream(localFiles(path))
@@ -113,14 +114,17 @@ object HdfsIO {
   def copyFromLocal(src: String, dst: String, move: Boolean = false, overwrite: Boolean = false, replication: Short = 0): Unit = {
     if (overwrite) delete(dst)
     val dstPath = new Path(dst)
-    val dstReplication = if (replication == 0) fs.getDefaultReplication(dstPath) else replication
+    val dstReplication = if (replication == 0) fs(dstPath).getDefaultReplication(dstPath) else replication
     val conf = new org.apache.hadoop.conf.Configuration(SparkHadoopUtil.get.conf)
     conf.setInt(ReplicationProperty, 1)
-    FileUtil.copy(FileSystem.getLocal(conf), new Path(src), fs, dstPath, move, overwrite, conf)
-    if (dstReplication > 1) fs.setReplication(dstPath, dstReplication)
+    FileUtil.copy(FileSystem.getLocal(conf), new Path(src), fs(dstPath), dstPath, move, overwrite, conf)
+    if (dstReplication > 1) fs(dstPath).setReplication(dstPath, dstReplication)
   }
 
-  def length(path: String): Long = HdfsIO.fs.getFileStatus(new Path(path)).getLen
+  def length(path: String): Long = {
+    val p = new Path(path)
+    HdfsIO.fs(p).getFileStatus(p).getLen
+  }
 
   def lines(path: String, n: Int = -1, offset: Long = 0): Seq[String] = access(path, offset, length = if (n < 0) -1 else 0) { in =>
     val lines = IOUtil.lines(in)
@@ -129,7 +133,8 @@ object HdfsIO {
   }
 
   def files(path: String, recursive: Boolean = true): Iterator[String] = {
-    val glob = fs.globStatus(new Path(path))
+    val p = new Path(path)
+    val glob = fs(p).globStatus(p)
     if (glob == null) Iterator.empty
     else glob.toIterator.flatMap { status =>
       if (status.isDirectory && recursive) files(new Path(status.getPath, "*").toString)
@@ -139,7 +144,7 @@ object HdfsIO {
 
   def dir(path: String): String = {
     val p = new Path(path)
-    val status = fs.globStatus(p)
+    val status = fs(p).globStatus(p)
     if (status == null || status.isEmpty || (status.length == 1 && status.head.isDirectory)) path
     else p.getParent.toString
   }
@@ -149,10 +154,10 @@ object HdfsIO {
     var tmpPath: Path = null
     while ({
       tmpPath = new Path(path, prefix + rnd)
-      fs.exists(tmpPath)
+      fs(tmpPath).exists(tmpPath)
     }) rnd = System.currentTimeMillis + "-" + Random.nextInt.abs
-    fs.mkdirs(tmpPath)
-    if (deleteOnExit) fs.deleteOnExit(tmpPath)
+    fs(tmpPath).mkdirs(tmpPath)
+    if (deleteOnExit) fs(tmpPath).deleteOnExit(tmpPath)
     tmpPath.toString
   }
 
@@ -165,15 +170,19 @@ object HdfsIO {
 
   def delete(path: String): Unit = if (exists(path)) {
     val p = new Path(path)
-    val success = fs.delete(p, true)
-    if (!success) fs.deleteOnExit(p)
+    val success = fs(p).delete(p, true)
+    if (!success) fs(p).deleteOnExit(p)
   }
 
-  def exists(path: String): Boolean = fs.exists(new Path(path))
+  def exists(path: String): Boolean = {
+    val p = new Path(path)
+    fs(p).exists(p)
+  }
 
   def ensureOutDir(path: String, ensureNew: Boolean = true): Unit = {
+    val p = new Path(path)
     if (ensureNew && exists(path)) Common.printThrow("Path exists: " + path)
-    fs.mkdirs(new Path(path))
+    fs(p).mkdirs(p)
   }
 
   def ensureNewFile(path: String): Unit = {
@@ -182,12 +191,14 @@ object HdfsIO {
 
   def writer(path: String, overwrite: Boolean = false, append: Boolean = false, replication: Short = 0): HdfsFileWriter = HdfsFileWriter(path, overwrite, append, replication)
 
-  def bufferSize: Int = fs.getConf().getInt(BufferSizeProperty, 4096)
+  def bufferSize(p : Path): Int = {
+    fs(p).getConf.getInt(BufferSizeProperty, 4096)
+  }
 
   def out(path: String, overwrite: Boolean = false, compress: Boolean = true, useWriter: Boolean = true, append: Boolean = false, temporary: Boolean = false): OutputStream = {
-    val out = if (useWriter) writer(path, overwrite, append, if (temporary) tmpFileReplication else 0) else if (append) fs.append(new Path(path)) else {
-      val fsPath = new Path(path)
-      if (temporary) fs.create(fsPath, overwrite, bufferSize, tmpFileReplication, fs.getDefaultBlockSize(fsPath)) else fs.create(fsPath, overwrite)
+    val fsPath = new Path(path)
+    val out = if (useWriter) writer(path, overwrite, append, if (temporary) tmpFileReplication else 0) else if (append) fs(fsPath).append(fsPath) else {
+      if (temporary) fs(fsPath).create(fsPath, overwrite, bufferSize(fsPath), tmpFileReplication, fs(fsPath).getDefaultBlockSize(fsPath)) else fs(fsPath).create(fsPath, overwrite)
     }
     if (compress && path.toLowerCase.endsWith(GzipExt)) new GZIPOutputStream(out)
     else out
