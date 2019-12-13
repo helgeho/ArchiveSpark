@@ -41,7 +41,11 @@ class HttpMessage (val statusLine: String, val headers: Map[String, String], val
   lazy val lowerCaseHeaders: Map[String, String] = headers.map{case (k,v) => (k.toLowerCase, v)}
 
   def contentEncoding: Option[String] = lowerCaseHeaders.get("content-encoding").map(_.toLowerCase)
-  def mime: Option[String] = lowerCaseHeaders.get("content-type").map(_.split(';').head.trim.toLowerCase)
+  def mime: Option[String] = Try {
+    lowerCaseHeaders.get("content-type")
+      .map(_.split(';').head.trim.toLowerCase)
+  }.getOrElse(None)
+
   def charset: Option[String] = {
     lowerCaseHeaders.get("content-type").flatMap(_.split(';').drop(1).headOption).map(_.trim)
       .filter(_.startsWith("charset="))

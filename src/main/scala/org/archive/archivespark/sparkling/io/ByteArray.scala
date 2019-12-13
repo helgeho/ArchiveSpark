@@ -29,7 +29,7 @@ import java.util.Collections
 
 import scala.collection.JavaConverters._
 
-class ByteArray {
+class ByteArray extends Serializable {
   private val arrays = collection.mutable.Buffer.empty[Array[Byte]]
 
   def append(array: Array[Byte]): Unit = if (array.nonEmpty) arrays += array
