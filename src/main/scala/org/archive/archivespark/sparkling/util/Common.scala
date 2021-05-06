@@ -1,41 +1,26 @@
-/*
- * The MIT License (MIT)
- *
- * Copyright (c) 2015-2019 Helge Holzmann (Internet Archive) <helge@archive.org>
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
-
 package org.archive.archivespark.sparkling.util
 
-import java.io.InputStream
 import java.util.concurrent.{Callable, FutureTask, TimeUnit, TimeoutException}
 
+import org.archive.archivespark.sparkling.Sparkling
 import org.archive.archivespark.sparkling.logging.{Log, LogContext}
 
-object Common {
-  def lazyValWithCleanup[A](create: => A)(cleanup: A => Unit = (_: A) => {}): ManagedVal[A] = ManagedVal[A](create, {
-    case Right(v) => cleanup(v)
-    case Left(_) =>
-  })
+import scala.util.Try
 
-  def lazyVal[A](create: => A): ManagedVal[A] = ManagedVal[A](create, _ => {})
+object Common {
+  def lazyValWithCleanup[A](create: => A)(cleanup: A => Unit = (_: A) => {}): ManagedVal[A] = ManagedVal[A](
+    create,
+    {
+      case Right(v) => cleanup(v)
+      case Left(_)  =>
+    }
+  )
+
+  def lazyVal[A](create: => A): ManagedVal[A] = ManagedVal[A](create, lazyEval = true)
+
+  def cleanup[A](action: => A, catchCloseException: Boolean = true)(cleanup: () => Unit): A =
+    try { action }
+    finally { if (catchCloseException) Try(cleanup()) else cleanup() }
 
   def printThrow(msg: String): Nothing = {
     println(msg)
@@ -43,28 +28,47 @@ object Common {
   }
 
   def retry[R](times: Int = 30, sleepMillis: Int = 1000, log: (Int, Exception) => String)(run: Int => R)(implicit context: LogContext): R = {
+    retryObj(Unit)(times, sleepMillis, log = (_, i, e) => log(i, e))((o, i) => run(i))
+  }
+
+  def retryObj[O, R](
+      init: => O
+  )(times: Int = 30, sleepMillis: Int = 1000, cleanup: O => Unit = (_: O) => {}, log: (Option[O], Int, Exception) => String)(run: (O, Int) => R)(implicit context: LogContext): R = {
     var lastException: Exception = null
     for (retry <- 0 to times) {
       if (retry > 0) Thread.sleep(sleepMillis)
-      var in: InputStream = null
+      val obj: Option[O] = None
       try {
-        return run(retry)
+        val obj = Some(init)
+        return run(obj.get, retry)
       } catch {
         case e: Exception =>
-          Log.error(log(retry, e))
+          for (o <- obj) Try(cleanup(o))
+          Log.error(log(obj, retry, e))
           lastException = e
       }
     }
     throw lastException
   }
 
-  private class ProcessReporter {
+  private[util] class ProcessReporter {
+    private var _done: Boolean = false
     private var _time: Long = System.currentTimeMillis
     private var _status: Option[String] = None
+    def isDone: Boolean = _done
     def lastAlive: Long = _time
     def lastStatus: Option[String] = _status
     def alive(): Unit = _time = System.currentTimeMillis
     def alive(status: String): Unit = {
+      _status = Some(status)
+      _time = System.currentTimeMillis
+    }
+    def done(): Unit = {
+      _done = true
+      _time = System.currentTimeMillis
+    }
+    def done(status: String): Unit = {
+      _done = true
       _status = Some(status)
       _time = System.currentTimeMillis
     }
@@ -84,7 +88,8 @@ object Common {
         if (iter.hasNext) Some {
           val item = iter.next()
           (item, status(idx, item))
-        } else None
+        }
+        else None
       }
       if (item.isDefined && System.currentTimeMillis - lastLog > millis) {
         Log.info("Process is alive..." + item.flatMap(_._2).map(status => s" - Last status: $status").getOrElse(""))
@@ -96,57 +101,63 @@ object Common {
 
   def timeout[R](millis: Long, status: Option[String] = None)(action: => R)(implicit context: LogContext): R = {
     if (millis < 0) return action
-    val future = new FutureTask[R](new Callable[R] {
-      override def call(): R = action
-    })
-    new Thread(future).start()
-    SparkUtil.cleanupTask(future, () => while (!future.isDone) future.cancel(true))
-    try {
-      future.get(millis, TimeUnit.MILLISECONDS)
-    } catch {
+    val task = ConcurrencyUtil.thread(useExecutionContext = false)(action)
+    try { task.get(millis, TimeUnit.MILLISECONDS) }
+    catch {
       case e: TimeoutException =>
         Log.info("Timeout after " + millis + " milliseconds" + status.map(status => s" - Last status: $status").getOrElse("") + ".")
         throw e
     } finally {
-      while (!future.isDone) future.cancel(true)
-      SparkUtil.removeTaskCleanup(future)
+      while (!task.isDone) task.cancel(true)
+      SparkUtil.removeTaskCleanup(task)
     }
+  }
+
+  def timeoutOpt[R](millis: Long, status: Option[String] = None)(action: => R)(implicit context: LogContext): Option[R] = {
+    try { Some(timeout(millis, status)(action)) }
+    catch { case _: TimeoutException => None }
   }
 
   def timeoutWithReporter[R](millis: Long)(action: ProcessReporter => R)(implicit context: LogContext): R = {
     val reporter = new ProcessReporter
     if (millis < 0) return action(reporter)
-    val future = new FutureTask[R](new Callable[R] {
-      override def call(): R = action(reporter)
-    })
-    new Thread(future).start()
-    SparkUtil.cleanupTask(future, () => while (!future.isDone) future.cancel(true))
+    val thread = ConcurrencyUtil.thread(useExecutionContext = false)(action(reporter))
     var lastAlive = reporter.lastAlive
     while (true) {
       try {
-        val wait = lastAlive + millis - System.currentTimeMillis
-        val result = future.get(if (wait <= 0) 1 else wait, TimeUnit.MILLISECONDS)
-        SparkUtil.removeTaskCleanup(future)
-        return result
+        if (reporter.isDone) {
+          val result = thread.get()
+          SparkUtil.removeTaskCleanup(thread)
+          return result
+        } else {
+          val wait = lastAlive + millis - System.currentTimeMillis
+          val result = thread.get(if (wait <= 0) 1 else wait, TimeUnit.MILLISECONDS)
+          SparkUtil.removeTaskCleanup(thread)
+          return result
+        }
       } catch {
         case e: TimeoutException =>
           if (lastAlive == reporter.lastAlive) {
             Log.info("Timeout after " + millis + " milliseconds" + reporter.lastStatus.map(status => s" - Last status: $status").getOrElse("") + ".")
-            while (!future.isDone) future.cancel(true)
-            SparkUtil.removeTaskCleanup(future)
+            while (!thread.isDone) thread.cancel(true)
+            SparkUtil.removeTaskCleanup(thread)
             throw e
           } else {
             Log.info("Process is alive..." + reporter.lastStatus.map(status => s" - Last status: $status").getOrElse(""))
             lastAlive = reporter.lastAlive
           }
-        case _: Exception => SparkUtil.removeTaskCleanup(future)
+        case e: Exception =>
+          SparkUtil.removeTaskCleanup(thread)
+          throw e
       }
     }
-    throw new RuntimeException()
+    throw new RuntimeException("this can/should never happen")
   }
 
   def touch[A](a: A)(touch: A => Unit): A = {
     touch(a)
     a
   }
+
+  def tryOpt[A](a: => Option[A]): Option[A] = Try(a).toOption.flatten
 }

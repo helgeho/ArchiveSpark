@@ -1,32 +1,9 @@
-/*
- * The MIT License (MIT)
- *
- * Copyright (c) 2015-2019 Helge Holzmann (Internet Archive) <helge@archive.org>
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
-
 package org.archive.archivespark.sparkling.http
 
 import java.io.{BufferedInputStream, InputStream}
 import java.net.{HttpURLConnection, URL, URLConnection}
 
+import org.archive.archivespark.sparkling.io.CleanupInputStream
 import org.archive.archivespark.sparkling.logging.LogContext
 import org.archive.archivespark.sparkling.util.Common
 
@@ -40,47 +17,45 @@ object HttpClient {
 
   implicit val logContext: LogContext = LogContext(this)
 
-  def request[R](url: String, headers: Map[String, String] = Map.empty, retries: Int = DefaultRetries, sleepMillis: Int = DefaultSleepMillis, timeoutMillis: Int = DefaultTimeoutMillis)(action: InputStream => R): R = rangeRequest(url, headers, retries = retries, sleepMillis = sleepMillis, timeoutMillis = timeoutMillis)(action)
+  def request[R](url: String, headers: Map[String, String] = Map.empty, retries: Int = DefaultRetries, sleepMillis: Int = DefaultSleepMillis, timeoutMillis: Int = DefaultTimeoutMillis, close: Boolean = true)(action: InputStream => R): R = rangeRequest(url, headers, retries = retries, sleepMillis = sleepMillis, timeoutMillis = timeoutMillis, close = close)(action)
 
-  def rangeRequest[R](url: String, headers: Map[String, String] = Map.empty, offset: Long = 0, length: Long = -1, retries: Int = DefaultRetries, sleepMillis: Int = DefaultSleepMillis, timeoutMillis: Int = DefaultTimeoutMillis)(action: InputStream => R): R = {
-    rangeRequestConnection(url, headers, offset, length, retries, sleepMillis, timeoutMillis) { case connection: HttpURLConnection =>
-      val in = new BufferedInputStream(connection.getInputStream)
-      val r = action(in)
-      Try(in.close())
-      r
+  def rangeRequest[R](url: String, headers: Map[String, String] = Map.empty, offset: Long = 0, length: Long = -1, retries: Int = DefaultRetries, sleepMillis: Int = DefaultSleepMillis, timeoutMillis: Int = DefaultTimeoutMillis, close: Boolean = true)(action: InputStream => R): R = {
+    rangeRequestConnection(url, headers, offset, length, retries, sleepMillis, timeoutMillis, disconnect = false) { case connection: HttpURLConnection =>
+      val in = new CleanupInputStream(new BufferedInputStream(connection.getInputStream), connection.disconnect)
+      Common.cleanup(action(in))(() => if (close) in.close())
     }
   }
 
-  def requestMessage[R](url: String, headers: Map[String, String] = Map.empty, retries: Int = DefaultRetries, sleepMillis: Int = DefaultSleepMillis, timeoutMillis: Int = DefaultTimeoutMillis)(action: HttpMessage => R): R = rangeRequestMessage(url, headers, retries = retries, sleepMillis = sleepMillis, timeoutMillis = timeoutMillis)(action)
+  def requestMessage[R](url: String, headers: Map[String, String] = Map.empty, retries: Int = DefaultRetries, sleepMillis: Int = DefaultSleepMillis, timeoutMillis: Int = DefaultTimeoutMillis, close: Boolean = true)(action: HttpMessage => R): R = rangeRequestMessage(url, headers, retries = retries, sleepMillis = sleepMillis, timeoutMillis = timeoutMillis, close = close)(action)
 
-  def rangeRequestMessage[R](url: String, headers: Map[String, String] = Map.empty, offset: Long = 0, length: Long = -1, retries: Int = DefaultRetries, sleepMillis: Int = DefaultSleepMillis, timeoutMillis: Int = DefaultTimeoutMillis)(action: HttpMessage => R): R = {
-    rangeRequestConnection(url, headers, offset, length, retries, sleepMillis, timeoutMillis) { case connection: HttpURLConnection =>
-      val in = new BufferedInputStream(connection.getInputStream)
-      val responseHeaders = connection.getHeaderFields.asScala.toMap.flatMap{case (k, v) => v.asScala.headOption.map((if (k == null) "" else k) -> _)}
-      val message = new HttpMessage(connection.getResponseMessage, responseHeaders, in)
-      val r = action(message)
-      Try(in.close())
-      r
+  def rangeRequestMessage[R](url: String, headers: Map[String, String] = Map.empty, offset: Long = 0, length: Long = -1, retries: Int = DefaultRetries, sleepMillis: Int = DefaultSleepMillis, timeoutMillis: Int = DefaultTimeoutMillis, close: Boolean = true)(action: HttpMessage => R): R = {
+    rangeRequestConnection(url, headers, offset, length, retries, sleepMillis, timeoutMillis, disconnect = false) { case connection: HttpURLConnection =>
+      val in = new CleanupInputStream(new BufferedInputStream(connection.getInputStream), connection.disconnect)
+      Common.cleanup({
+        val responseHeaders = connection.getHeaderFields.asScala.toSeq.flatMap { case (k, v) => v.asScala.map((if (k == null) "" else k) -> _) }
+        val message = new HttpMessage(connection.getResponseMessage, responseHeaders, in)
+        action(message)
+      })(() => if (close) in.close())
     }
   }
 
-  def requestConnection[R](url: String, headers: Map[String, String] = Map.empty, retries: Int = DefaultRetries, sleepMillis: Int = DefaultSleepMillis, timeoutMillis: Int = DefaultTimeoutMillis)(action: URLConnection => R): R = rangeRequestConnection(url, headers, retries = retries, sleepMillis = sleepMillis, timeoutMillis = timeoutMillis)(action)
+  def requestConnection[R](url: String, headers: Map[String, String] = Map.empty, retries: Int = DefaultRetries, sleepMillis: Int = DefaultSleepMillis, timeoutMillis: Int = DefaultTimeoutMillis, disconnect: Boolean = true)(action: URLConnection => R): R = rangeRequestConnection(url, headers, retries = retries, sleepMillis = sleepMillis, timeoutMillis = timeoutMillis, disconnect = disconnect)(action)
 
-  def rangeRequestConnection[R](url: String, headers: Map[String, String] = Map.empty, offset: Long = 0, length: Long = -1, retries: Int = DefaultRetries, sleepMillis: Int = DefaultSleepMillis, timeoutMillis: Int = DefaultTimeoutMillis)(action: URLConnection => R): R = {
-    Common.timeoutWithReporter(timeoutMillis) { reporter =>
-      val connection = Common.retry(retries, sleepMillis, (retry, e) => {
-        "Request failed (" + retry + "/" + retries + "): " + url + " (" + offset + "-" + (if (length >= 0) length else "") + ") - " + e.getMessage
-      }) { _ =>
-        reporter.alive()
-        val connection = new URL(url).openConnection()
-        for ((key, value) <- headers) connection.addRequestProperty(key, value)
-        if (offset > 0 || length >= 0) connection.addRequestProperty("Range", "bytes=" + offset + "-" + (if (length >= 0) offset + length - 1 else ""))
-        connection.asInstanceOf[HttpURLConnection]
+  def rangeRequestConnection[R](url: String, headers: Map[String, String] = Map.empty, offset: Long = 0, length: Long = -1, retries: Int = DefaultRetries, sleepMillis: Int = DefaultSleepMillis, timeoutMillis: Int = DefaultTimeoutMillis, disconnect: Boolean = true)(action: URLConnection => R): R = {
+    val connection = Common.retryObj(new URL(url).openConnection.asInstanceOf[HttpURLConnection])(retries, sleepMillis, _.disconnect, (_, retry, e) => {
+      "Request failed (" + retry + "/" + retries + "): " + url + " (" + offset + "-" + (if (length >= 0) length else "") + ") - " + e.getClass.getCanonicalName + Option(e.getMessage).map(_.trim).filter(_.nonEmpty).map(" - " + _).getOrElse("")
+    }) { (connection, _) =>
+      if (timeoutMillis >= 0) connection.setConnectTimeout(timeoutMillis)
+      for ((key, value) <- headers) connection.addRequestProperty(key, value)
+      if (offset > 0 || length >= 0) connection.addRequestProperty("Range", "bytes=" + offset + "-" + (if (length >= 0) offset + length - 1 else ""))
+      connection.setInstanceFollowRedirects(false)
+      val redirect = if (connection.getResponseCode / 100 == 3) Option(connection.getHeaderField("Location")) else None
+      if (redirect.isDefined) {
+        Try(connection.disconnect())
+        return rangeRequestConnection(redirect.get, headers, offset, length, retries, sleepMillis, timeoutMillis, disconnect)(action)
       }
-      val r = action(connection)
-      Try(connection.disconnect())
-      r
+      connection
     }
+    if (disconnect) Common.cleanup(action(connection))(connection.disconnect) else action(connection)
   }
 }
-

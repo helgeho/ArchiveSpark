@@ -32,16 +32,31 @@ import org.archive.archivespark.sparkling.cdx.CdxRecord
 import org.archive.archivespark.sparkling.http.{HttpClient, HttpMessage}
 import org.archive.archivespark.specific.warc.functions.HttpPayload
 
-class WaybackRecord(cdx: CdxRecord) extends DataEnrichRoot[CdxRecord, HttpMessage](cdx) with WarcLikeRecord {
+class WaybackRecord(cdx: CdxRecord)
+    extends DataEnrichRoot[CdxRecord, HttpMessage](cdx)
+    with WarcLikeRecord {
   import WaybackRecord._
 
   override def access[R >: Null](action: HttpMessage => R): R = {
-    HttpClient.requestMessage(WaybackUrl.replace("$timestamp", cdx.timestamp).replace("$url", cdx.originalUrl)) { msg =>
-      val originalStatusline = msg.headers.getOrElse("", msg.statusLine)
-      val originalHeaders = msg.headers.flatMap { case (k,v) =>
-        if (k == "Content-Type") Some(k -> v) else {
-          if (k.startsWith(OriginalHttpHeaderPrefix)) Some(k.stripPrefix(OriginalHttpHeaderPrefix).split('-').map(_.capitalize).mkString("-") -> v) else None
-        }
+    HttpClient.requestMessage(
+      WaybackUrl
+        .replace("$timestamp", cdx.timestamp)
+        .replace("$url", cdx.originalUrl)
+    ) { msg =>
+      val originalStatusline = msg.statusLine
+      val originalHeaders = msg.headers.flatMap {
+        case (k, v) =>
+          if (k == "Content-Type") Some(k -> v)
+          else {
+            if (k.startsWith(OriginalHttpHeaderPrefix))
+              Some(
+                k.stripPrefix(OriginalHttpHeaderPrefix)
+                  .split('-')
+                  .map(_.capitalize)
+                  .mkString("-") -> v
+              )
+            else None
+          }
       }
       action(new HttpMessage(originalStatusline, originalHeaders, msg.payload))
     }
@@ -54,9 +69,12 @@ object WaybackRecord extends EnrichRootCompanion[WaybackRecord] {
   val WaybackUrl = "http://web.archive.org/web/$timestampid_/$url"
   val OriginalHttpHeaderPrefix = "X-Archive-Orig-"
 
-  override def dataLoad[T](load: DataLoad[T]): Option[FieldPointer[WaybackRecord, T]] = (load match {
-    case ByteLoad => Some(HttpPayload)
-    case TextLoad => Some(StringContent)
-    case _ => None
-  }).map(_.asInstanceOf[FieldPointer[WaybackRecord, T]])
+  override def dataLoad[T](
+    load: DataLoad[T]
+  ): Option[FieldPointer[WaybackRecord, T]] =
+    (load match {
+      case ByteLoad => Some(HttpPayload)
+      case TextLoad => Some(StringContent)
+      case _        => None
+    }).map(_.asInstanceOf[FieldPointer[WaybackRecord, T]])
 }

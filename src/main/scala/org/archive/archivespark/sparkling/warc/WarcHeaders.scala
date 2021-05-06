@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015-2019 Helge Holzmann (Internet Archive) <helge@archive.org>
+ * Copyright (c) 2015-2018 Helge Holzmann (L3S) and Vinay Goel (Internet Archive)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -88,23 +88,27 @@ object WarcHeaders {
     header.toString().getBytes(UTF8)
   }
 
-  def warcResponseRecord(meta: WarcRecordMeta, content: Array[Byte], payload: Array[Byte]): Array[Byte] = {
+  def warcRecord(warcType: String, meta: WarcRecordMeta, contentLength: Long, payloadDigest: Option[String]): Array[Byte] = {
     val header = StringBuilder.newBuilder
     header.append("WARC/1.0").append(Br)
-    header.append("WARC-Type: response").append(Br)
+    header.append("WARC-Type: " + warcType).append(Br)
     header.append("WARC-Target-URI: " + meta.url).append(Br)
     header.append("WARC-Date: " + WarcDateTimeFormat.print(meta.timestamp)).append(Br)
-    header.append("WARC-Payload-Digest: sha1:" + DigestUtil.sha1Base32(payload)).append(Br)
-    if (meta.ip.isDefined) header.append("WARC-IP-Address: " + meta.ip.get).append(Br)
+    for (digest <- payloadDigest) header.append("WARC-Payload-Digest: " + digest).append(Br)
+    for (ip <- meta.ip) header.append("WARC-IP-Address: " + ip).append(Br)
     header.append("WARC-Record-ID: " + meta.recordId.getOrElse(newRecordID())).append(Br)
-    header.append("Content-Type: application/http; msgtype=response").append(Br)
-    header.append("Content-Length: " + content.length).append(Br)
+    header.append("Content-Type: application/http; msgtype=" + warcType).append(Br)
+    header.append("Content-Length: " + contentLength).append(Br)
     header.append(Br)
 
     header.toString().getBytes(UTF8)
   }
 
-  def http(statusLine: String, headers: Map[String, String]): Array[Byte] = {
+  def warcResponseRecord(meta: WarcRecordMeta, content: Array[Byte], payload: Array[Byte]): Array[Byte] = {
+    warcRecord("response", meta, content.length, Some("sha1:" + DigestUtil.sha1Base32(payload)))
+  }
+
+  def http(statusLine: String, headers: Seq[(String, String)]): Array[Byte] = {
     val header = StringBuilder.newBuilder
     header.append(statusLine).append(Br)
     for ((key, value) <- headers) {

@@ -1,32 +1,10 @@
-/*
- * The MIT License (MIT)
- *
- * Copyright (c) 2015-2019 Helge Holzmann (Internet Archive) <helge@archive.org>
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
-
 package org.archive.archivespark.sparkling.util
 
 import scala.util.Try
 
-class ManagedVal[A] private(create: => A, cleanup: Either[Exception, A] => Unit = (_: Either[Exception, A]) => {}, val lazyEval: Boolean = true) {
+class ManagedVal[A] private (create: => A, cleanup: Either[Exception, A] => Unit = (_: Either[Exception, A]) => {}, val lazyEval: Boolean = true) {
+  private var locked = 0
+  private var clearOnRelease = false
   private var value: Option[Either[Exception, A]] = None
 
   def evaluated: Boolean = value.isDefined
@@ -56,48 +34,63 @@ class ManagedVal[A] private(create: => A, cleanup: Either[Exception, A] => Unit 
 
   def get: A = either match {
     case Right(v) => v
-    case Left(e) => throw e
+    case Left(e)  => throw e
   }
 
   def option: Option[A] = either.right.toOption
 
-  def clear(throwOnError: Boolean = true): Unit = if (value.isDefined && value.get.isRight) try {
-    val either = value.get
-    value = None
-    cleanup(either)
-  } catch {
-    case e: Exception => if (throwOnError) throw e
-  } finally {
-    SparkUtil.removeTaskCleanup(this)
-  }
+  def clear(throwOnError: Boolean = true): Unit = if (value.isDefined && value.get.isRight)
+    try {
+      val either = value.get
+      value = None
+      cleanup(either)
+    } catch { case e: Exception => if (throwOnError) throw e }
+    finally { SparkUtil.removeTaskCleanup(this) }
 
-  def apply[R](action: A => R, throwOnClearError: Boolean = false): R = try {
-    action(get)
-  } finally {
-    clear(throwOnClearError)
-  }
+  def apply[R](action: A => R, throwOnClearError: Boolean = false): R =
+    try { action(get) }
+    finally { clear(throwOnClearError) }
 
-  def map[B](map: A => B, cleanup: Either[Exception, B] => Unit = (_: Either[Exception, B]) => {}, bubbleClear: Boolean = true, lazyEval: Boolean = true): ManagedVal[B] = ManagedVal({
-    either match {
-      case Right(v) => map(v)
-      case Left(e) => throw e
-    }
-  }, { either =>
-    cleanup(either)
-    if (bubbleClear) clear()
-  }, lazyEval = lazyEval)
+  def map[B](map: A => B, cleanup: Either[Exception, B] => Unit = (_: Either[Exception, B]) => {}, bubbleClear: Boolean = true, lazyEval: Boolean = true): ManagedVal[B] = ManagedVal(
+    {
+      either match {
+        case Right(v) => map(v)
+        case Left(e)  => throw e
+      }
+    },
+    { either =>
+      cleanup(either)
+      if (bubbleClear) clear()
+    },
+    lazyEval = lazyEval
+  )
 
   def iter[B](iter: A => Iterator[B], cleanup: () => Unit = () => {}, lazyEval: Boolean = true, throwOnError: Boolean = false): ManagedVal[CleanupIterator[B]] = {
     var wrapped: Option[ManagedVal[CleanupIterator[B]]] = None
-    wrapped = Some(map({ a =>
-      CleanupIterator(iter(a), () => {
-        cleanup()
-        wrapped.get.clear()
-      }, throwOnError = throwOnError)
-    }, lazyEval = true))
+    wrapped = Some(map(
+      { a =>
+        CleanupIterator(
+          iter(a),
+          () => {
+            if (wrapped.isDefined) {
+              cleanup()
+              wrapped.get.clear()
+              wrapped = None
+            }
+          },
+          throwOnError = throwOnError
+        )
+      },
+      lazyEval = true
+    ))
     if (!lazyEval) wrapped.get.eval()
     wrapped.get
   }
+
+//  override def finalize(): Unit = {
+//    clear(throwOnError = false)
+//    super.finalize()
+//  }
 
   if (!lazyEval) eval()
 }

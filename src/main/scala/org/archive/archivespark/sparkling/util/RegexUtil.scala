@@ -1,41 +1,48 @@
-/*
- * The MIT License (MIT)
- *
- * Copyright (c) 2015-2019 Helge Holzmann (Internet Archive) <helge@archive.org>
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
-
 package org.archive.archivespark.sparkling.util
 
 import scala.util.matching.Regex
 
 object RegexUtil {
-  private val patternCache = collection.mutable.Map.empty[String, Regex]
+  private val patternCache = CollectionUtil.concurrentMap[String, Regex]
 
   def r(pattern: String): Regex = patternCache.getOrElseUpdate(pattern, pattern.r)
 
   lazy val urlStartPattern: Regex = r("[a-z]+\\:.*")
   lazy val noWordCharacterPattern: Regex = r("[^\\p{L}\\p{M}]+")
   lazy val newLineSpaceTabPattern: Regex = r("""[\n\r\t ]+""")
+  lazy val tokenDelimiterPattern: Regex = r("[^\\p{L}\\p{M}0-9]+")
 
   def matchesAbsoluteUrlStart(url: String): Boolean = urlStartPattern.pattern.matcher(url.toLowerCase).matches
   def oneValidWordCharacter(str: String): Boolean = str.nonEmpty && !noWordCharacterPattern.pattern.matcher(str).matches
   def oneLineSpaceTrim(str: String): String = newLineSpaceTabPattern.replaceAllIn(str, " ").trim
+  def tokenize(str: String): Array[String] = tokenDelimiterPattern.replaceAllIn(str.toLowerCase, " ").trim.split(' ')
+
+  def split(str: String, pattern: String, limit: Int = -1): Seq[String] = {
+    if (str.isEmpty) return Seq(str)
+    if (limit < 1) r(pattern).split(str).toSeq else {
+      val p = r(pattern)
+      var remaining = str
+      var count = 1
+      var eof = false
+      IteratorUtil.whileDefined {
+        if (eof) None
+        else {
+          if (count == limit) {
+            eof = true
+            Some(remaining)
+          } else if (remaining.nonEmpty) Some {
+            p.findFirstMatchIn(remaining) match {
+              case Some(m) =>
+                count += 1
+                remaining = m.after.toString
+                m.before.toString
+              case None =>
+                eof = true
+                remaining
+            }
+          } else None
+        }
+      }.toList
+    }
+  }
 }

@@ -1,27 +1,3 @@
-/*
- * The MIT License (MIT)
- *
- * Copyright (c) 2015-2019 Helge Holzmann (Internet Archive) <helge@archive.org>
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
-
 package org.archive.archivespark.sparkling.html
 
 import java.net.URL
@@ -32,11 +8,13 @@ import org.archive.archivespark.sparkling.util.{RegexUtil, StringUtil}
 import scala.util.Try
 import scala.util.matching.Regex
 
+// cf. https://github.com/internetarchive/webarchive-commons/blob/master/src/main/java/org/archive/resource/html/ExtractingParseObserver.java
 object LinkExtractor {
   val BaseTag = "base"
   val LinkTags: Set[String] = Set("a", "form")
   val ContentEmbedTags: Set[String] = Set("applet", "area", "embed", "frame", "iframe", "img", "input", "object", "source")
   val EmbedTags: Set[String] = ContentEmbedTags ++ Set("link", "script")
+  val JsUrlPattern: Regex = """[\\"'].+?[\\"']""".r
   val CssUrlPattern: Regex = """url\s*\(\s*([\\"']*.+?[\\"']*)\s*\)""".r
   val CssImportNoUrlPattern: Regex = """@import\s+(('[^']+')|("[^"]+")|(\('[^']+'\))|(\("[^"]+"\))|(\([^)]+\))|([a-z0-9_.:/\\-]+))\s*;""".r
 
@@ -148,13 +126,19 @@ object LinkExtractor {
     }
   }.flatten.toSet
 
-  def embeds(html: String, url: Option[String] = None): Set[String] = {
-    val handler = embedsHandler(html, url)
+  def jsStringUrls(script: String, url: Option[String] = None): Set[String] = {
+    for (m <- JsUrlPattern.findAllMatchIn(script)) yield {
+      resolveLink(StringUtil.stripBrackets(m.toString, Seq("\"", "'")), url)
+    }
+  }.flatten.toSet
+
+  def embeds(html: String, url: Option[String] = None, includeJsStringUrls: Boolean = false): Set[String] = {
+    val handler = embedsHandler(html, url, includeJsStringUrls = includeJsStringUrls)
     HtmlProcessor.process(html, Set(handler))
     handler.result
   }
 
-  def embedsHandler(html: String, url: Option[String] = None, tags: Set[String] = EmbedTags, filterTag: TagMatch => Boolean = _ => true): TagHandler[Set[String]] = {
+  def embedsHandler(html: String, url: Option[String] = None, tags: Set[String] = EmbedTags, filterTag: TagMatch => Boolean = _ => true, filterUrl: String => Boolean = _ => true, includeJsStringUrls: Boolean = false): TagHandler[Set[String]] = {
     val base = baseUrl(html, url)
     TagHandler.all(Set.empty[String], handleClosing = true) { (tag, _, result) =>
       result ++ {
@@ -168,12 +152,13 @@ object LinkExtractor {
               if (EmbedTags.contains(tag.name)) tagTargets(tag, base)
               else Iterator.empty
             }
-          } else {
-            if (tag.closingTag && tag.name == "style") cssEmbeds(tag.text, base)
+          } else if (tag.closingTag) {
+            if (tag.name == "style") cssEmbeds(tag.text, base)
+            else if (includeJsStringUrls && tag.name == "script") jsStringUrls(tag.text, base)
             else Iterator.empty
-          }
+          } else Iterator.empty
         } else Iterator.empty
-      }
+      }.filter(filterUrl)
     }
   }
 
@@ -182,9 +167,12 @@ object LinkExtractor {
     embedsHandler(html, url, ContentEmbedTags, { tag =>
       if (inContent) true
       else {
-        if (tag.closingTag && !HtmlProcessor.CodeTags.contains(tag.name)) inContent = tag.text.trim.length >= minContentTextLength
+        if (tag.closingTag && !HtmlProcessor.EscapeTags.contains(tag.name)) inContent = tag.text.trim.length >= minContentTextLength
         inContent
       }
+    }, { url =>
+      val fileUrl = RegexUtil.split(url, "[\\?\\#]", 2).head.toLowerCase
+      !fileUrl.endsWith(".js") && !fileUrl.endsWith(".css")
     })
   }
 }

@@ -1,27 +1,3 @@
-/*
- * The MIT License (MIT)
- *
- * Copyright (c) 2015-2019 Helge Holzmann (Internet Archive) <helge@archive.org>
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
-
 package org.archive.archivespark.sparkling.html
 
 import org.archive.archivespark.sparkling.Sparkling.prop
@@ -32,9 +8,12 @@ import scala.util.matching.Regex
 object HtmlProcessor {
   var maxHtmlStackDepth: Int = prop(500)(maxHtmlStackDepth, maxHtmlStackDepth = _) // empirically determined, amazon.com ~ 180
   var strictMode: Boolean = prop(true)(strictMode, strictMode = _)
+  var stopAtMaxHtmlStackDepth: Boolean = prop(true)(stopAtMaxHtmlStackDepth, stopAtMaxHtmlStackDepth = _)
 
-  val CodeTags: Set[String] = Set("script", "style", "textarea", "pre")
+  val CodeTags: Set[String] = Set("script", "style")
+  val EscapeTags: Set[String] = CodeTags ++ Set("textarea", "pre")
   val TagOpenClosePattern: Regex = """<([ /]*)([^<> ]+)(>| [^<>]*>)""".r
+  val MaxHtmlStackDepthReachedMsg = "Max HTML stack depth reached."
 
   case class TagMatch(tag: String, name: String, opening: Boolean, closing: Boolean, attributes: String, text: String, stack: List[String]) {
     def closingTag: Boolean = closing && !opening
@@ -51,38 +30,45 @@ object HtmlProcessor {
       var stack = List.empty[String]
       var inCode: Option[String] = None
       val tags = collection.mutable.Map.empty[String, Int]
-      for (tag <- TagOpenClosePattern.findAllMatchIn(strict.get)) yield {
-        val slash = tag.group(1).trim
-        val name = tag.group(2).trim.toLowerCase
-        val opening = !slash.startsWith("/")
-        val (attributes, closing) = {
-          val attributes = tag.group(3).dropRight(1).trim
-          if (attributes.endsWith("/")) (attributes.dropRight(1), true)
-          else (attributes, !opening)
-        }
-        if (inCode.isDefined && name == inCode.get && closing && !opening) inCode = None
-        if (inCode.isEmpty) {
-          if (!opening || !closing) {
-            if (opening) {
-              stack +:= name
-              if (stack.size > maxHtmlStackDepth) Common.printThrow("Max HTML stack depth reached.")
-              tags.update(name, tags.getOrElse(name, 0) + 1)
-              if (CodeTags.contains(name)) inCode = Some(name)
-            } else if (tags.contains(name)) {
-              val drop = stack.takeWhile(_ != name)
-              stack = stack.drop(drop.size)
-              for (dropTag <- drop ++ Iterator(stack.head)) {
-                val count = tags(dropTag)
-                if (count == 1) tags.remove(dropTag)
-                else tags.update(dropTag, count - 1)
-              }
-              stack = stack.drop(1)
-            }
+      var maxHtmlStackDepthReached = false
+      for (tag <- TagOpenClosePattern.findAllMatchIn(strict.get).takeWhile(_ => !maxHtmlStackDepthReached)) yield {
+        if (maxHtmlStackDepthReached) None else {
+          val slash = tag.group(1).trim
+          val name = tag.group(2).trim.toLowerCase
+          val opening = !slash.startsWith("/")
+          val (attributes, closing) = {
+            val attributes = tag.group(3).dropRight(1).trim
+            if (attributes.endsWith("/")) (attributes.dropRight(1), true)
+            else (attributes, !opening)
           }
-          val text = html.substring(pos, tag.start)
-          pos = tag.end
-          Some(TagMatch(tag.matched, name, opening, closing, attributes, text, stack))
-        } else None
+          if (inCode.isDefined && name == inCode.get && closing && !opening) inCode = None
+          if (inCode.isEmpty) {
+            if (!opening || !closing) {
+              if (opening) {
+                stack +:= name
+                if (stack.size > maxHtmlStackDepth) {
+                  maxHtmlStackDepthReached = true
+                  println(MaxHtmlStackDepthReachedMsg)
+                  if (stopAtMaxHtmlStackDepth) throw new RuntimeException(MaxHtmlStackDepthReachedMsg)
+                }
+                tags.update(name, tags.getOrElse(name, 0) + 1)
+                if (EscapeTags.contains(name)) inCode = Some(name)
+              } else if (tags.contains(name)) {
+                val drop = stack.takeWhile(_ != name)
+                stack = stack.drop(drop.size)
+                for (dropTag <- drop ++ Iterator(stack.head)) {
+                  val count = tags(dropTag)
+                  if (count == 1) tags.remove(dropTag)
+                  else tags.update(dropTag, count - 1)
+                }
+                stack = stack.drop(1)
+              }
+            }
+            val text = html.substring(pos, tag.start)
+            pos = tag.end
+            Some(TagMatch(tag.matched, name, opening, closing, attributes, text, stack))
+          } else None
+        }
       }
     } else Iterator.empty
   }.flatten
@@ -153,10 +139,10 @@ object HtmlProcessor {
     lazyProcessTags(tags, Set(TagHandler.noop(names)), outer, inner)
   }
 
-  def text(children: TraversableOnce[TagMatch]): String = children.filter(t => !(CodeTags.contains(t.name) && t.closing)).map(_.text).mkString
+  def text(children: TraversableOnce[TagMatch]): String = children.filter(t => !(EscapeTags.contains(t.name) && t.closing)).map(_.text).mkString
 
   def textHandler(tags: Set[String]): TagHandler[Seq[(TagMatch, String)]] = {
-    TagHandler(tags, Seq.empty[(TagMatch, String)])((tag, children, r) => r ++ Seq((tag, HtmlProcessor.text(children))))
+    TagHandler(tags, Seq.empty[(TagMatch, String)])((tag, children, r) => r ++ Seq((tag, text(children))))
   }
 
   def childrenHandler(tags: Set[String]): TagHandler[Seq[(TagMatch, Seq[TagMatch])]] = {

@@ -1,27 +1,3 @@
-/*
- * The MIT License (MIT)
- *
- * Copyright (c) 2015-2019 Helge Holzmann (Internet Archive) <helge@archive.org>
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
-
 package org.archive.archivespark.sparkling.util
 
 class CleanupIterator[A] private (iter: Iterator[A], cleanup: () => Unit, throwOnError: Boolean) extends BufferedIterator[A] {
@@ -44,6 +20,8 @@ class CleanupIterator[A] private (iter: Iterator[A], cleanup: () => Unit, throwO
     case None => iter.next()
   }
 
+  override def headOption: Option[A] = if (hasNext) Some(head) else None
+
   override def head: A = headValue match {
     case Some(v) => v
     case None =>
@@ -52,15 +30,14 @@ class CleanupIterator[A] private (iter: Iterator[A], cleanup: () => Unit, throwO
   }
 
   def clear(throwOnError: Boolean = throwOnError): Unit = {
-    if (!cleanedUp) try {
-      cleanup()
-    } catch {
-      case e: Exception => if (throwOnError) throw e
-    } finally {
-      headValue = None
-      cleanedUp = true
-      SparkUtil.removeTaskCleanup(this)
-    }
+    if (!cleanedUp)
+      try { cleanup() }
+      catch { case e: Exception => if (throwOnError) throw e }
+      finally {
+        headValue = None
+        cleanedUp = true
+        SparkUtil.removeTaskCleanup(this)
+      }
   }
 
   def iter[R](action: CleanupIterator[A] => R, throwOnError: Boolean): R = {
@@ -72,6 +49,27 @@ class CleanupIterator[A] private (iter: Iterator[A], cleanup: () => Unit, throwO
   def iter[R](action: CleanupIterator[A] => R): R = iter(action, throwOnError)
 
   def chain[B](action: CleanupIterator[A] => Iterator[B]): CleanupIterator[B] = CleanupIterator[B](action(this), () => clear(), throwOnError)
+
+  def chainOpt[B](action: CleanupIterator[A] => Option[Iterator[B]]): Option[CleanupIterator[B]] = action(this) match {
+    case Some(iter) => Some(CleanupIterator[B](iter, () => clear(), throwOnError))
+    case None =>
+      clear()
+      None
+  }
+
+  def onClear(cleanup: () => Unit, throwOnError: Boolean = false): CleanupIterator[A] = CleanupIterator(
+    this,
+    () => {
+      cleanup()
+      clear()
+    },
+    throwOnError
+  )
+
+//  override def finalize(): Unit = {
+//    clear(throwOnError = false)
+//    super.finalize()
+//  }
 }
 
 object CleanupIterator {
@@ -85,13 +83,18 @@ object CleanupIterator {
 
   def empty[A]: CleanupIterator[A] = apply(Iterator.empty)
 
-  def flatMap[A](iters: Iterator[CleanupIterator[A]]): CleanupIterator[A] = {
+  def lazyIter[A](iter: => CleanupIterator[A]): CleanupIterator[A] = flatten(Iterator(true).map(_ => iter))
+
+  def combine[A](iters: CleanupIterator[A]*): CleanupIterator[A] = flatten(iters.toIterator).onClear(() => iters.foreach(_.clear()))
+
+  def flatten[A](iters: Iterator[CleanupIterator[A]]): CleanupIterator[A] = {
     var currentIter: Option[CleanupIterator[A]] = None
-    CleanupIterator(iters.flatMap { iter =>
-      currentIter = Some(iter)
-      currentIter.get
-    }, () =>{
-      if (currentIter.isDefined) currentIter.get.clear()
-    })
+    CleanupIterator(
+      iters.flatMap { iter =>
+        currentIter = Some(iter)
+        iter
+      },
+      () => { for (iter <- currentIter) iter.clear() }
+    )
   }
 }
