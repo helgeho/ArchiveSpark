@@ -29,22 +29,27 @@ import org.archive.archivespark.model.pointers.FieldPointer
 import org.archive.archivespark.sparkling.io.IOUtil
 import org.archive.archivespark.sparkling.warc.WarcRecord
 
-class WarcPayload private (http: Boolean = true) extends EnrichFunc[DataEnrichRoot[Any, WarcRecord], Any, Array[Byte]] {
+class WarcPayload private (http: Boolean = true)
+    extends EnrichFunc[DataEnrichRoot[Any, WarcRecord], Any, Array[Byte]] {
   import WarcPayloadFields._
 
-  val source: FieldPointer[DataEnrichRoot[Any, WarcRecord], Any] = FieldPointer.root[DataEnrichRoot[Any, WarcRecord], Any]
+  val source: FieldPointer[DataEnrichRoot[Any, WarcRecord], Any] =
+    FieldPointer.root[DataEnrichRoot[Any, WarcRecord], Any]
 
-  val fields: Seq[String] = if (http) Seq(RecordHeader, HttpStatusLine, HttpHeader, Payload) else Seq(RecordHeader, Payload)
+  val fields: Seq[String] =
+    if (http) Seq(RecordHeader, HttpStatusLine, HttpHeader, Payload)
+    else Seq(RecordHeader, Payload)
 
   override val defaultField: String = Payload
 
-  override def derive(source: TypedEnrichable[Any], derivatives: Derivatives): Unit = {
+  override def derive(source: TypedEnrichable[Any],
+                      derivatives: Derivatives): Unit = {
     source.asInstanceOf[DataEnrichRoot[Any, WarcRecord]].access { record =>
-      derivatives << record.headers
+      derivatives << record.headers.toMap
       if (http) {
         for (msg <- record.http) {
           derivatives << msg.statusLine
-          derivatives << msg.headers
+          derivatives << msg.headers.toMap
           derivatives << IOUtil.bytes(msg.payload)
         }
       } else {

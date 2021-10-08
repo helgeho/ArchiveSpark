@@ -101,24 +101,24 @@ class WarcRDD[WARC <: WarcLikeRecord: ClassTag](rdd: RDD[WARC]) {
           val enriched = payloadPointer.init(record, excludeFromOutput = false)
 
           val warcHeadersOpt = payloadPointer
-            .sibling[Map[String, String]](WarcPayloadFields.RecordHeader)
+            .sibling[Seq[(String, String)]](WarcPayloadFields.RecordHeader)
             .get(enriched)
           val recordMeta = WarcRecordMeta(
             enriched.get.originalUrl,
             enriched.get.time.toInstant,
-            warcHeadersOpt.flatMap(_.get(WarcRecordIdField)),
-            warcHeadersOpt.flatMap(_.get(WarcIpField))
+            warcHeadersOpt.flatMap(_.find(_._1 == WarcRecordIdField).map(_._2)),
+            warcHeadersOpt.flatMap(_.find(_._1 == WarcIpField).map(_._2))
           )
 
           val httpStatusOpt = payloadPointer
             .sibling[String](HttpPayload.StatusLineField)
             .get(enriched)
           val httpHeadersOpt = payloadPointer
-            .sibling[Map[String, String]](HttpPayload.HeaderField)
+            .sibling[Seq[(String, String)]](HttpPayload.HeaderField)
             .get(enriched)
           val httpHeader =
             if (httpStatusOpt.isDefined && httpHeadersOpt.isDefined)
-              WarcHeaders.http(httpStatusOpt.get, httpHeadersOpt.get.toSeq)
+              WarcHeaders.http(httpStatusOpt.get, httpHeadersOpt.get)
             else Array.empty[Byte]
 
           payloadPointer.get(enriched) match {

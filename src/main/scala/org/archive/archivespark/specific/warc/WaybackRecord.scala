@@ -46,11 +46,13 @@ class WaybackRecord(cdx: CdxRecord)
       val originalStatusline = msg.statusLine
       val originalHeaders = msg.headers.flatMap {
         case (k, v) =>
-          if (k == "Content-Type") Some(k -> v)
+          val kLower = k.toLowerCase
+          if (kLower == "content-type") Some(k -> v)
           else {
-            if (k.startsWith(OriginalHttpHeaderPrefix))
+            if (kLower.startsWith(OriginalHttpHeaderPrefix))
               Some(
-                k.stripPrefix(OriginalHttpHeaderPrefix)
+                kLower
+                  .stripPrefix(OriginalHttpHeaderPrefix)
                   .split('-')
                   .map(_.capitalize)
                   .mkString("-") -> v
@@ -67,7 +69,7 @@ class WaybackRecord(cdx: CdxRecord)
 
 object WaybackRecord extends EnrichRootCompanion[WaybackRecord] {
   val WaybackUrl = "http://web.archive.org/web/$timestampid_/$url"
-  val OriginalHttpHeaderPrefix = "X-Archive-Orig-"
+  val OriginalHttpHeaderPrefix = "x-archive-orig-"
 
   override def dataLoad[T](
     load: DataLoad[T]
