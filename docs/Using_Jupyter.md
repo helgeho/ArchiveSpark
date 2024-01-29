@@ -29,9 +29,9 @@ You are now ready to execute ArchiveSpark instructions. These can be entered in 
 
 By default, the required imports are the following. The first two are the general ArchiveSpark imports that are almost always needed. The last one is specific to web archive datasets and may not be required if you use ArchiveSpark with different kinds of collections. In that case, you might need different or additional imports to get access to different datasets or additional enrichment functions (the corresponding JAR files should be put into your libraries folder, s. [Install ArchiveSpark with Jupyter](Install_Juyter.md), and the notebook needs to be restarted).
 ```scala
-import org.archive.archivespark._
-import org.archive.archivespark.functions._
-import org.archive.archivespark.specific.warc._
+import org.archive.webservices.archivespark._
+import org.archive.webservices.archivespark.functions._
+import org.archive.webservices.archivespark.specific.warc._
 ```
 
 Now you can load your data, apply filters and enrichment functions provided by ArchiveSpark as well as any operations provided by Spark. The following example shows how a web archive dataset is loaded from HDFS (`WarcSpec.fromFilesWithCdx`), filtered by type and status and enriched with the title of the page:

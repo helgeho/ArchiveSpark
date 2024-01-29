@@ -8,7 +8,7 @@ They serve as the bridge between third-party tools and data stored in the Archiv
 At the same time, they are used as pointers to the location of the corresponding information within an ArchiveSpark record.
 Multiple Enrichment Functions can be chained to allow flexible pipelines of data derivation and extraction.
 
-These Enrichment Functions become available with the following import: `import org.archive.archivespark.functions._`
+These Enrichment Functions become available with the following import: `import org.archive.webservices.archivespark.functions._`
 
 EnrichFunc | Description
 :-------|:--- 
@@ -33,7 +33,7 @@ EnrichFunc | Description
 
 ## Web Archive-specific Enrichment Functions
 
-The following web archive-specific Enrichment Functions should only be used explicitely by advanced users. They usually serve as default accessors for the content of a web archive record, which are implicitely used by other Enrichment Function. They become available through `import org.archive.archivespark.specific.warc.functions._`
+The following web archive-specific Enrichment Functions should only be used explicitely by advanced users. They usually serve as default accessors for the content of a web archive record, which are implicitely used by other Enrichment Function. They become available through `import org.archive.webservices.archivespark.specific.warc.functions._`
 
 EnrichFunc | Description
 :-------|:--- 

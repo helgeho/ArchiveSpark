@@ -6,9 +6,9 @@
 Before you start working with ArchiveSpark, you will need to import a few required packages:
 
 ```scala
-import org.archive.archivespark._
-import org.archive.archivespark.functions._
-import org.archive.archivespark.specific.warc._
+import org.archive.webservices.archivespark._
+import org.archive.webservices.archivespark.functions._
+import org.archive.webservices.archivespark.specific.warc._
 ```
 
 The first two of these are the general ArchiveSpark imports that are almost always needed. The last one is specific to web archive datasets and may not be required if you use ArchiveSpark with different kinds of collections. In that case, you might need different or additional imports to get access to different datasets or additional enrichment functions (the corresponding JAR files should be put into your libraries folder, s. [Install ArchiveSpark with Jupyter](Install_Juyter.md)).

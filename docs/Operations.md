@@ -9,7 +9,7 @@ Since version 3.0, values in a dataset / record are addressed by so-called Field
 
 ## Dataset Operations
 
-These operations become available on `RDD` with enrichable ArchiveSpark records by the following import `import org.archive.archivespark._`
+These operations become available on `RDD` with enrichable ArchiveSpark records by the following import `import org.archive.webservices.archivespark._`
 
 Operation| Description
 :--------|:---
@@ -38,7 +38,7 @@ Operation| Description
 
 ### Web Archive-specific Dataset Operations
 
-These operations are specific to web archive datasets and become available through `import org.archive.archivespark.specific.warc._`
+These operations are specific to web archive datasets and become available through `import org.archive.webservices.archivespark.specific.warc._`
 
 Operation| Description
 :--------|:---

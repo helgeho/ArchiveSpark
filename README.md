@@ -20,8 +20,8 @@ Examples of what you can do with it include: (see [**recipes**](docs/Recipes.md)
 
 ### New in 3.0
 
-* Namespace changed to `org.archive.archivespark`.
-* Extensive overhaul to be based on _Sparkling_, Internet Archive's internal data processing library, which is now partially included under `org.archive.archivespark.sparkling`.
+* Namespace changed to `org.archive.webservices.archivespark`.
+* Extensive overhaul to be based on _Sparkling_, Internet Archive's internal data processing library, which is now partially included under `org.archive.webservices.sparkling`.
 * _ArchiveSpark_ will evolve as _Sparkling_ evolves and automatically benefit from new features and bugfixes.
 * Streamlined with all unused / unnecessary / academic / experimental features being removed.
 * Refactored / cleaned up / simplified ArchiveSpark's public APIs.
