@@ -24,18 +24,14 @@
 
 package org.archive.webservices.archivespark.functions
 
-import java.util.Properties
-import edu.stanford.nlp.ling.CoreAnnotations.{NamedEntityTagAnnotation, SentencesAnnotation, TextAnnotation, TokensAnnotation}
-import edu.stanford.nlp.ling.CoreLabel
-import edu.stanford.nlp.pipeline.{Annotation, CoreDocument, StanfordCoreNLP}
-import edu.stanford.nlp.util.CoreMap
+import edu.stanford.nlp.pipeline.{CoreDocument, StanfordCoreNLP}
 import org.archive.webservices.archivespark.model._
 import org.archive.webservices.archivespark.model.dataloads.ByteLoad
 import org.archive.webservices.archivespark.model.pointers.DependentFieldPointer
 import org.archive.webservices.sparkling.ars.WANE
 
+import java.util.Properties
 import scala.collection.JavaConverters._
-import scala.collection.mutable
 
 object EntitiesNamespace {
   def get: DependentFieldPointer[ByteLoad.Root, String] = HtmlText.mapIdentity("entities").get[String]("entities")
@@ -66,7 +62,9 @@ class Entities private (properties: Properties, tagFieldMapping: Seq[(String, St
       case _: Exception => Map.empty[String, Set[String]]
     }
 
-    for ((tag, _) <- tagFieldMapping) derivatives.setNext(MultiValueEnrichable(mentions.getOrElse(tag, Set.empty).toSeq))
+    for ((tag, _) <- tagFieldMapping) {
+      derivatives.setNext(MultiValueEnrichable(mentions.getOrElse(tag, Set.empty).toSeq))
+    }
   }
 }
 

@@ -49,7 +49,7 @@ class WarcPayload private (http: Boolean = true)
       if (http) {
         for (msg <- record.http) {
           derivatives << msg.statusLine
-          derivatives << msg.headers.toMap
+          derivatives << msg.headers
           derivatives << IOUtil.bytes(msg.payload)
         }
       } else {
