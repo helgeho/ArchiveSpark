@@ -24,7 +24,7 @@
 
 package org.archive.webservices.archivespark.model
 
-class Derivatives(val fields: Seq[String]) {
+class Derivatives(val fields: Seq[String], transparent: Boolean = false) {
   private var nextField = 0
   private var map = Map[String, Enrichable]()
 
@@ -33,11 +33,12 @@ class Derivatives(val fields: Seq[String]) {
   def <<[T](value: T): Unit = setNext(SingleValueEnrichable(value))
 
   def setNext(enrichable: Enrichable): Unit = {
-    map += fields(nextField) -> enrichable
+    set(fields(nextField), enrichable)
     nextField += 1
   }
 
   def set(field: String, enrichable: Enrichable): Unit = {
+    enrichable.isTransparent = transparent
     map += field -> enrichable
   }
 }

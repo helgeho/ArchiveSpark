@@ -39,6 +39,8 @@ trait Enrichable extends Serializable with Copyable[Enrichable] with JsonConvert
   def get: Any
   def typed[T]: TypedEnrichable[T] = this.asInstanceOf[TypedEnrichable[T]]
 
+  var isTransparent: Boolean = true
+
   private var excludeFromOutput: Option[Boolean] = None
   def isExcludedFromOutput: Boolean = excludeFromOutput match {
     case Some(value) => value
@@ -97,7 +99,7 @@ trait Enrichable extends Serializable with Copyable[Enrichable] with JsonConvert
 
   private def enrich[D](func: EnrichFunc[_, D, _], excludeFromOutput: Boolean = false): Enrichable = {
     if (!func.isEnriched(this)) {
-      val derivatives = new Derivatives(func.fields)
+      val derivatives = new Derivatives(func.fields, transparent = func.isTransparent)
       var lastException: Option[SerializedException] = None
       try {
         func.derive(this.asInstanceOf[TypedEnrichable[D]], derivatives)

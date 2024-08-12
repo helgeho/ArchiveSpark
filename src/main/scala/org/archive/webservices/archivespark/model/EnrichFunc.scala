@@ -48,6 +48,8 @@ trait EnrichFunc[Root <: EnrichRoot, Source, DefaultValue] extends NamedFieldPoi
     case None => false
   }
 
+  def isTransparent: Boolean = false
+
   def isEnriched(enrichable: Enrichable): Boolean = fields.forall(f => enrichable.enrichment(f).isDefined)
 
   def hasField(name: String): Boolean = fields.contains(name)
@@ -58,6 +60,7 @@ trait EnrichFunc[Root <: EnrichRoot, Source, DefaultValue] extends NamedFieldPoi
       override def source: FieldPointer[DependencyRoot, Source] = dependency.asInstanceOf[FieldPointer[DependencyRoot, Source]]
       override def fields: Seq[String] = self.fields
       override def defaultField: String = self.defaultField
+      override def isTransparent: Boolean = self.isTransparent
       override def derive(source: TypedEnrichable[Source], derivatives: Derivatives): Unit = self.derive(source, derivatives)
     }
   }

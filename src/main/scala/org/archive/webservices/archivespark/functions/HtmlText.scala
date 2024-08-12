@@ -27,7 +27,7 @@ package org.archive.webservices.archivespark.functions
 import org.archive.webservices.archivespark.model._
 import org.archive.webservices.archivespark.model.dataloads.ByteLoad
 import org.archive.webservices.sparkling.html.HtmlProcessor
-import org.archive.webservices.sparkling.util.{RegexUtil, StringUtil}
+import org.archive.webservices.sparkling.util.RegexUtil
 
 object HtmlText extends EnrichFunc[ByteLoad.Root, String, String] with GlobalEnrichFunc[ByteLoad.Root, String, String] {
   val func: EnrichFunc[ByteLoad.Root, String, String] = Html.first("body").map("text") { str =>

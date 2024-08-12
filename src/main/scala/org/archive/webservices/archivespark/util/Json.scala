@@ -44,7 +44,7 @@ object Json extends Serializable {
   def json[A](obj: A): Circe = if (obj == null) Circe.Null else obj match {
     case json: Circe => json
     case json: JsonConvertible => json.toJson.asJson
-    case map: Map[_, _] => map.map{case (k, v) => (k.toString, json(v))}.asJson
+    case map: Map[_, _] => ListMap(map.toSeq.map{case (k, v) => (k.toString, json(v))}: _*).asJson
     case bytes: Array[Byte] => s"bytes(length: ${bytes.length})".asJson
     case iterable: TraversableOnce[_] => iterable.map(e => json(e)).toSeq.asJson
     case array: Array[_] => array.map(e => json(e)).asJson

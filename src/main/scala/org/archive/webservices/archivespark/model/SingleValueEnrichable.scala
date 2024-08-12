@@ -30,9 +30,20 @@ import org.archive.webservices.archivespark.util.Json._
 import scala.collection.immutable.ListMap
 
 class SingleValueEnrichable[T] private (override val get: T) extends TypedEnrichable[T] {
-  def toJson: Map[String, Json] = (if (isExcludedFromOutput) Map() else ListMap(
-    null.asInstanceOf[String] -> json(get)
-  )) ++ enrichments.map{e => (e, mapToJson(enrichment(e).get.toJson))}.filter{ case (_, field) => field != null }
+  def toJson: Map[String, Json] = {
+    (if (isExcludedFromOutput) Map() else ListMap(
+      null.asInstanceOf[String] -> json(get)
+    )) ++ enrichments.flatMap { key =>
+      val e = enrichment(key).get
+      if (e.isTransparent) {
+        e.enrichments.map { key =>
+          (key, mapToJson(e.enrichment(key).get.toJson))
+        }
+      } else {
+        Iterator((key, mapToJson(e.toJson)))
+      }
+    }.filter{ case (_, field) => field != null }
+  }
 }
 
 object SingleValueEnrichable {

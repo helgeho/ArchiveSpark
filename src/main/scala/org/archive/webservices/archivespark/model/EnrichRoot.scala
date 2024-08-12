@@ -44,7 +44,16 @@ trait EnrichRoot extends Enrichable { this: TypedEnrichRoot[_] =>
 
   def toJson: Map[String, Json] = ListMap(
     metaKey -> metaToJson
-  ) ++ enrichments.map{e => (e, mapToJson(enrichment(e).get.toJson))}.filter{ case (_, field) => field != null }
+  ) ++ enrichments.flatMap { key =>
+    val e = enrichment(key).get
+    if (e.isTransparent) {
+      e.enrichments.map { key =>
+        (key, mapToJson(e.enrichment(key).get.toJson))
+      }
+    } else {
+      Iterator((key, mapToJson(e.toJson)))
+    }
+  }.filter{ case (_, field) => field != null }
 }
 
 object EnrichRoot {
