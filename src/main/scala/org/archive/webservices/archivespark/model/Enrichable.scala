@@ -104,9 +104,11 @@ trait Enrichable extends Serializable with Copyable[Enrichable] with JsonConvert
       try {
         func.derive(this.asInstanceOf[TypedEnrichable[D]], derivatives)
       } catch {
-        case exception: Exception =>
-          if (ArchiveSpark.conf.catchExceptions) lastException = Some(SerializedException(exception))
-          else throw exception
+        case e: Exception =>
+          if (ArchiveSpark.conf.catchExceptions) {
+            e.printStackTrace()
+            lastException = Some(SerializedException(e))
+          } else throw e
       }
       val clone = copy()
       clone._lastException = lastException

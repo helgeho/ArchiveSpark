@@ -22,10 +22,19 @@
  * SOFTWARE.
  */
 
-package org.archive.webservices.archivespark
+package org.archive.webservices.archivespark.dataspecs
 
-class DistributedConfig extends Serializable {
-  var catchExceptions = true
-  var includeExceptionInOutput = true
-  var maxWarcDecompressionSize = 0L
+import io.circe.parser
+import org.archive.webservices.archivespark.model.EnrichRoot
+
+class OutputSpec[R <: EnrichRoot] private(val dataPath: String) extends TextDataSpec[R] {
+  override def parse(data: String): Option[R] = {
+    parser.parse(data).toOption.map(_.hcursor).map { cursor =>
+
+    }.asInstanceOf[Option[R]]
+  }
+}
+
+object OutputSpec {
+  def apply[R <: EnrichRoot](path: String) = new OutputSpec[R](path)
 }

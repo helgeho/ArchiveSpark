@@ -25,6 +25,8 @@
 package org.archive.webservices.archivespark.model
 
 import io.circe.Json
+import io.circe.syntax._
+import org.archive.webservices.archivespark.ArchiveSpark
 import org.archive.webservices.archivespark.util.Json.{json, mapToJson}
 
 import scala.collection.immutable.ListMap
@@ -37,6 +39,7 @@ trait TypedEnrichRoot[+Meta] extends EnrichRoot with TypedEnrichable[Meta] {
 
 trait EnrichRoot extends Enrichable { this: TypedEnrichRoot[_] =>
   def metaKey: String = "record"
+  def exceptionKey: String = "error"
 
   def companion: EnrichRootCompanion[_]
 
@@ -44,7 +47,11 @@ trait EnrichRoot extends Enrichable { this: TypedEnrichRoot[_] =>
 
   def toJson: Map[String, Json] = ListMap(
     metaKey -> metaToJson
-  ) ++ enrichments.flatMap { key =>
+  ) ++ {
+    if (ArchiveSpark.conf.includeExceptionInOutput) {
+      lastException.map(exceptionKey -> _.message.asJson)
+    } else None
+  } ++ enrichments.flatMap { key =>
     val e = enrichment(key).get
     if (e.isTransparent) {
       e.enrichments.map { key =>
