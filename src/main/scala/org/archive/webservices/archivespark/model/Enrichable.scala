@@ -74,7 +74,9 @@ trait Enrichable extends Serializable with Copyable[Enrichable] with JsonConvert
     _root = root
   }
 
+  private var _enrichmentAttempts: Set[String] = Set.empty
   private var _enrichments: Map[String, Enrichable] = ListMap[String, Enrichable]()
+
   def enrichments: Set[String] = _enrichments.keySet
 
   def enrichment[D : ClassTag](field: String): Option[TypedEnrichable[D]] = {
@@ -89,7 +91,7 @@ trait Enrichable extends Serializable with Copyable[Enrichable] with JsonConvert
   def enrich(fieldName: String, enrichment: Enrichable): Enrichable = {
     val clone = copy()
     clone._enrichments = clone._enrichments.updated(fieldName, enrichment)
-    clone._lastException = enrichment._lastException
+    if (enrichment._lastException.isDefined) clone._lastException = enrichment._lastException
     clone
   }
 
@@ -98,7 +100,8 @@ trait Enrichable extends Serializable with Copyable[Enrichable] with JsonConvert
   }
 
   private def enrich[D](func: EnrichFunc[_, D, _], excludeFromOutput: Boolean = false): Enrichable = {
-    if (!func.isEnriched(this)) {
+    val isEnriched = func.fields.forall(f => _enrichments.contains(f) || _enrichmentAttempts.contains(f))
+    if (!isEnriched) {
       val derivatives = new Derivatives(func.fields, transparent = func.isTransparent)
       var lastException: Option[SerializedException] = None
       try {
@@ -112,7 +115,9 @@ trait Enrichable extends Serializable with Copyable[Enrichable] with JsonConvert
       }
       val clone = copy()
       clone._lastException = lastException
-      for ((field, enrichment) <- derivatives.get) {
+      val enrichments = derivatives.get
+      clone._enrichmentAttempts ++= (func.fields.toSet -- enrichments.keySet)
+      for ((field, enrichment) <- enrichments) {
         enrichment.excludeFromOutput(excludeFromOutput, overwrite = false)
         clone._enrichments = clone._enrichments.updated(field, enrichment)
       }

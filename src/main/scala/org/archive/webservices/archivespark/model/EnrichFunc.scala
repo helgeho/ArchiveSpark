@@ -44,7 +44,7 @@ trait EnrichFunc[Root <: EnrichRoot, Source, DefaultValue] extends NamedFieldPoi
   def derive(source: TypedEnrichable[Source], derivatives: Derivatives): Unit
 
   def isEnriched(root: Root): Boolean = root(source.path(root)) match {
-    case Some(source) => isEnriched(root)
+    case Some(source) => isEnriched(source)
     case None => false
   }
 
