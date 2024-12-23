@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015-2019 Helge Holzmann (Internet Archive) <helge@archive.org>
+ * Copyright (c) 2015-2024 Helge Holzmann (Internet Archive) <helge@archive.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -29,6 +29,8 @@ import org.archive.webservices.archivespark.model.pointers.{DependentFieldPointe
 trait EnrichFunc[Root <: EnrichRoot, Source, DefaultValue] extends NamedFieldPointer[Root, DefaultValue] {
   def source: FieldPointer[Root, Source]
   def fields: Seq[String]
+
+  override def dependencyPath: Seq[FieldPointer[Root, _]] = Seq(source) ++ source.dependencyPath
 
   def defaultField: String = fields.head
   def fieldName: String = defaultField
@@ -62,6 +64,9 @@ trait EnrichFunc[Root <: EnrichRoot, Source, DefaultValue] extends NamedFieldPoi
       override def defaultField: String = self.defaultField
       override def isTransparent: Boolean = self.isTransparent
       override def derive(source: TypedEnrichable[Source], derivatives: Derivatives): Unit = self.derive(source, derivatives)
+      override def enrichPartition[R <: EnrichRoot](partition: Iterator[R], func: EnrichFunc[R, _, _]): Iterator[R] = self.enrichPartition(partition, func)
+      override def initPartition(partition: Iterator[EnrichRoot]): Iterator[EnrichRoot] = self.initPartition(partition)
+      override def cleanup(): Unit = self.cleanup()
     }
   }
 
@@ -69,4 +74,8 @@ trait EnrichFunc[Root <: EnrichRoot, Source, DefaultValue] extends NamedFieldPoi
 
   def onEach[DependencyRoot <: EnrichRoot, S <: Source](dependency: MultiFieldPointer[DependencyRoot, S]): EnrichFunc[DependencyRoot, Source, DefaultValue] = on(dependency.each)
   def ofEach[DependencyRoot <: EnrichRoot, S <: Source](dependency: MultiFieldPointer[DependencyRoot, S]): EnrichFunc[DependencyRoot, Source, DefaultValue] = onEach(dependency)
+
+  def enrichPartition[R <: EnrichRoot](partition: Iterator[R], func: EnrichFunc[R, _, _]): Iterator[R] = partition.map(func.enrich)
+  def initPartition(partition: Iterator[EnrichRoot]): Iterator[EnrichRoot] = partition
+  def cleanup(): Unit = {}
 }

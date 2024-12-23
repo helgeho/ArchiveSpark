@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015-2019 Helge Holzmann (Internet Archive) <helge@archive.org>
+ * Copyright (c) 2015-2024 Helge Holzmann (Internet Archive) <helge@archive.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,6 +24,8 @@
 
 package org.archive.webservices.archivespark.model.dataloads
 
-object ByteLoad extends DataLoad[Array[Byte]] {
+import org.archive.webservices.archivespark.util.Bytes
+
+object ByteLoad extends DataLoad[Bytes] {
   trait Root extends DataLoadRoot
 }

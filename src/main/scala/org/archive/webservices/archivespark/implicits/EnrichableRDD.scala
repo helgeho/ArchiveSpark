@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015-2019 Helge Holzmann (Internet Archive) <helge@archive.org>
+ * Copyright (c) 2015-2024 Helge Holzmann (Internet Archive) <helge@archive.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -30,14 +30,19 @@ import org.archive.webservices.archivespark.model._
 import org.archive.webservices.archivespark.model.pointers.FieldPointer
 import org.archive.webservices.sparkling.Sparkling
 import org.archive.webservices.archivespark.util.SerializedException
+import org.archive.webservices.sparkling.util.IteratorUtil
 
 import scala.collection.TraversableOnce
 import scala.reflect.ClassTag
 import scala.util.Try
 
 class EnrichableRDD[Root <: EnrichRoot : ClassTag](rdd: RDD[Root]) {
-  def enrich[R >: Root <: EnrichRoot : ClassTag](func: EnrichFunc[R, _, _]): RDD[Root] = Sparkling.initPartitions(rdd).mapPartitions { records =>
-    records.map(func.enrich)
+  def enrich[R >: Root <: EnrichRoot : ClassTag](func: EnrichFunc[R, _, _]): RDD[Root] = {
+    Sparkling.initPartitions(rdd).mapPartitions { partition =>
+      val records = func.initPartition(partition).asInstanceOf[Iterator[R]]
+      val enriched = func.enrichPartition(records, func).asInstanceOf[Iterator[Root]]
+      enriched ++ IteratorUtil.noop(func.cleanup())
+    }
   }
 
   def filterExists[R >: Root <: EnrichRoot](pointer: FieldPointer[R, _]): RDD[Root] = rdd.filter(pointer.exists(_))

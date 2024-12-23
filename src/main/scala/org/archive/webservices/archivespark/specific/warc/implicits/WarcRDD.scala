@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015-2019 Helge Holzmann (Internet Archive) <helge@archive.org>
+ * Copyright (c) 2015-2024 Helge Holzmann (Internet Archive) <helge@archive.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -116,9 +116,10 @@ class WarcRDD[WARC <: WarcLikeRecord: ClassTag](rdd: RDD[WARC]) {
 
           payloadPointer.get(enriched) match {
             case Some(payload) =>
-              val content = httpHeader ++ payload
+              val bytes = payload.array(-1)
+              val content = httpHeader ++ bytes
               val recordHeader =
-                WarcHeaders.warcResponseRecord(recordMeta, content, payload)
+                WarcHeaders.warcResponseRecord(recordMeta, content, bytes)
 
               val recordBytes =
                 if (gz) GzipBytes(recordHeader ++ content ++ emptyLines)

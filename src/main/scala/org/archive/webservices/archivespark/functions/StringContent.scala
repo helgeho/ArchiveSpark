@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015-2019 Helge Holzmann (Internet Archive) <helge@archive.org>
+ * Copyright (c) 2015-2024 Helge Holzmann (Internet Archive) <helge@archive.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,24 +24,41 @@
 
 package org.archive.webservices.archivespark.functions
 
+import org.apache.commons.io.input.BoundedInputStream
 import org.archive.webservices.archivespark.model._
 import org.archive.webservices.archivespark.model.dataloads.ByteLoad
 import org.archive.webservices.archivespark.model.pointers.{DataLoadPointer, FieldPointer}
 import org.archive.webservices.sparkling.http.HttpMessage
 import org.archive.webservices.sparkling.util.StringUtil
 import org.archive.webservices.archivespark.specific.warc.functions.HttpPayload
-import org.archive.webservices.archivespark.util.HttpHeader
+import org.archive.webservices.archivespark.util.{Bytes, HttpHeader}
+import org.archive.webservices.sparkling._
+import org.archive.webservices.sparkling.html.HtmlProcessor
 
-object StringContent extends EnrichFunc[ByteLoad.Root, Array[Byte], String] {
+object StringContent extends EnrichFunc[ByteLoad.Root, Bytes, String] {
+  val MaxContentLength: Long = 1.mb
   val DefaultCharset = "UTF-8"
 
-  override def source: FieldPointer[ByteLoad.Root, Array[Byte]] = DataLoadPointer(ByteLoad)
+  override def source: FieldPointer[ByteLoad.Root, Bytes] = DataLoadPointer(ByteLoad)
   override def fields: Seq[String] = Seq("string")
-  override def derive(source: TypedEnrichable[Array[Byte]], derivatives: Derivatives): Unit = {
-    val charsets = source.parent.get[Seq[(String, String)]](HttpPayload.HeaderField) match {
-      case Some(headers) => HttpHeader(headers).charset.toSeq ++ HttpMessage.BodyCharsets
-      case None => Seq(DefaultCharset)
+  override def derive(source: TypedEnrichable[Bytes], derivatives: Derivatives): Unit = {
+    val (mime, charsets) = source.parent.get[Seq[(String, String)]](HttpPayload.HeaderField) match {
+      case Some(headers) =>
+        val h = HttpHeader(headers)
+        (h.mime, h.charset.toSeq ++ HttpMessage.BodyCharsets)
+      case None => (None, Seq(DefaultCharset))
     }
-    derivatives << StringUtil.fromBytes(source.get, charsets).trim
+    derivatives << {
+      if (mime.map(_.toLowerCase).contains("text/html")) {
+        val in = new BoundedInputStream(source.get.stream, MaxContentLength)
+        try {
+          HtmlProcessor.readStream(in, charsets).trim
+        } finally {
+          in.close()
+        }
+      } else {
+        StringUtil.fromBytes(source.get.array(MaxContentLength, maxLength = true), charsets).trim
+      }
+    }
   }
 }

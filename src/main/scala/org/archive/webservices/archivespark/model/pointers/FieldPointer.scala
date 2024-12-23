@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015-2019 Helge Holzmann (Internet Archive) <helge@archive.org>
+ * Copyright (c) 2015-2024 Helge Holzmann (Internet Archive) <helge@archive.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -35,6 +35,8 @@ trait GenericFieldPointer[+R <: EnrichRoot, +T] extends Serializable { this: Fie
 }
 
 trait FieldPointer[Root <: EnrichRoot, T] extends GenericFieldPointer[Root, T] {
+  def dependencyPath: Seq[FieldPointer[Root, _]] = Seq(parent)
+
   def path[R <: Root](root: EnrichRootCompanion[R]): Seq[String]
 
   def get(root: Root): Option[T] = enrichable(root).map(_.get)

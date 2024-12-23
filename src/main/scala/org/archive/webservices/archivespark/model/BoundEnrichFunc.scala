@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015-2019 Helge Holzmann (Internet Archive) <helge@archive.org>
+ * Copyright (c) 2015-2024 Helge Holzmann (Internet Archive) <helge@archive.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -35,7 +35,11 @@ abstract class BoundEnrichFunc[Root <: EnrichRoot, Source, DefaultValue] (bound:
     new BoundEnrichFunc[DependencyRoot, Source, DefaultValue](boundOn) {
       override def fields: Seq[String] = self.fields
       override def defaultField: String = self.defaultField
+      override def isTransparent: Boolean = self.isTransparent
       override def derive(source: TypedEnrichable[Source], derivatives: Derivatives): Unit = self.derive(source, derivatives)
+      override def enrichPartition[R <: EnrichRoot](partition: Iterator[R], func: EnrichFunc[R, _, _]): Iterator[R] = self.enrichPartition(partition, func)
+      override def initPartition(partition: Iterator[EnrichRoot]): Iterator[EnrichRoot] = self.initPartition(partition)
+      override def cleanup(): Unit = self.cleanup()
     }
   }
 }

@@ -34,7 +34,7 @@ For more information and instructions, please [**read the docs**](docs/README.md
 
 The MIT License (MIT)
 
-Copyright (c) 2015-2019 [Helge Holzmann](http://www.HelgeHolzmann.de) ([Internet Archive](http://www.archive.org)) <[helge@archive.org](mailto:helge@archive.org)>
+Copyright (c) 2015-2024 [Helge Holzmann](http://www.HelgeHolzmann.de) ([Internet Archive](http://www.archive.org)) <[helge@archive.org](mailto:helge@archive.org)>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

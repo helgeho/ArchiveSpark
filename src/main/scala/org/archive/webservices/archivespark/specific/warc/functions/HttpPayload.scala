@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015-2019 Helge Holzmann (Internet Archive) <helge@archive.org>
+ * Copyright (c) 2015-2024 Helge Holzmann (Internet Archive) <helge@archive.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,10 +26,11 @@ package org.archive.webservices.archivespark.specific.warc.functions
 
 import org.archive.webservices.archivespark.model.pointers.FieldPointer
 import org.archive.webservices.archivespark.model.{DataEnrichRoot, Derivatives, EnrichFunc, TypedEnrichable}
+import org.archive.webservices.archivespark.util.Bytes
 import org.archive.webservices.sparkling.http.HttpMessage
 import org.archive.webservices.sparkling.io.IOUtil
 
-object HttpPayload extends EnrichFunc[DataEnrichRoot[Any, HttpMessage], Any, Array[Byte]] {
+object HttpPayload extends EnrichFunc[DataEnrichRoot[Any, HttpMessage], Any, Bytes] {
   val StatusLineField = "httpStatusLine"
   val HeaderField = "httpHeader"
   val PayloadField = "payload"
@@ -44,7 +45,7 @@ object HttpPayload extends EnrichFunc[DataEnrichRoot[Any, HttpMessage], Any, Arr
     source.asInstanceOf[DataEnrichRoot[Any, HttpMessage]].access { record =>
       derivatives << record.statusLine
       derivatives << record.headers
-      derivatives << IOUtil.bytes(record.payload)
+      derivatives << Bytes(IOUtil.bytes(record.body))
     }
   }
 }

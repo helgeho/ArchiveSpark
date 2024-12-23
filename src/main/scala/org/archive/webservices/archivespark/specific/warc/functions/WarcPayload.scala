@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015-2019 Helge Holzmann (Internet Archive) <helge@archive.org>
+ * Copyright (c) 2015-2024 Helge Holzmann (Internet Archive) <helge@archive.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,11 +26,12 @@ package org.archive.webservices.archivespark.specific.warc.functions
 
 import org.archive.webservices.archivespark.model._
 import org.archive.webservices.archivespark.model.pointers.FieldPointer
+import org.archive.webservices.archivespark.util.Bytes
 import org.archive.webservices.sparkling.io.IOUtil
 import org.archive.webservices.sparkling.warc.WarcRecord
 
 class WarcPayload private (http: Boolean = true)
-    extends EnrichFunc[DataEnrichRoot[Any, WarcRecord], Any, Array[Byte]] {
+    extends EnrichFunc[DataEnrichRoot[Any, WarcRecord], Any, Bytes] {
   import WarcPayloadFields._
 
   val source: FieldPointer[DataEnrichRoot[Any, WarcRecord], Any] =
@@ -50,10 +51,10 @@ class WarcPayload private (http: Boolean = true)
         for (msg <- record.http) {
           derivatives << msg.statusLine
           derivatives << msg.headers
-          derivatives << IOUtil.bytes(msg.payload)
+          derivatives << Bytes(IOUtil.bytes(msg.body))
         }
       } else {
-        derivatives << IOUtil.bytes(record.payload)
+        derivatives << Bytes(IOUtil.bytes(record.payload))
       }
     }
   }
