@@ -44,7 +44,7 @@ http://central.maven.org/maven2/edu/stanford/nlp/stanford-corenlp/3.5.1
 class Entities (
                  properties: Properties = EntitiesConstants.DefaultProps,
                  tagFieldMapping: Seq[(String, String)] = EntitiesConstants.DefaultTagFieldMapping,
-                 filterLatin: Boolean = false) extends BoundEnrichFunc[ByteLoad.Root, String, String](EntitiesNamespace.get) {
+                 cleanLatin: Boolean = false) extends BoundEnrichFunc[ByteLoad.Root, String, String](EntitiesNamespace.get) {
   override def defaultField: String = ""
 
   override def fields: Seq[String] = tagFieldMapping.map { case (tag, field) => field }
@@ -52,7 +52,7 @@ class Entities (
   @transient lazy val pipeline: StanfordCoreNLP = new StanfordCoreNLP(properties)
 
   override def derive(source: TypedEnrichable[String], derivatives: Derivatives): Unit = {
-    val text = if (filterLatin) RegexUtil.filterLatin(source.get) else source.get
+    val text = if (cleanLatin) RegexUtil.cleanLatin(source.get) else source.get
     val mentions = WANE.entities(text, pipeline)
     for ((tag, _) <- tagFieldMapping) {
       derivatives.setNext(MultiValueEnrichable(mentions.getOrElse(tag, Set.empty).toSeq))
@@ -71,7 +71,7 @@ object EntitiesConstants {
   val DefaultProps: Properties = WANE.properties
 }
 
-object Entities extends Entities(EntitiesConstants.DefaultProps, EntitiesConstants.DefaultTagFieldMapping, filterLatin = true) {
+object Entities extends Entities(EntitiesConstants.DefaultProps, EntitiesConstants.DefaultTagFieldMapping, cleanLatin = true) {
   def apply(tagFieldMapping: (String, String)*) = new Entities(EntitiesConstants.DefaultProps, tagFieldMapping)
   def apply(props: Properties) = new Entities(props, EntitiesConstants.DefaultTagFieldMapping)
   def apply(props: Properties, tagFieldMapping: (String, String)*) = new Entities(props, tagFieldMapping)
@@ -82,6 +82,6 @@ object Entities extends Entities(EntitiesConstants.DefaultProps, EntitiesConstan
   }
 
   def onLatin(props: Properties = EntitiesConstants.DefaultProps, tagFieldMapping: Seq[(String, String)] = EntitiesConstants.DefaultTagFieldMapping): Entities = {
-    new Entities(props, EntitiesConstants.DefaultTagFieldMapping, filterLatin = true)
+    new Entities(props, EntitiesConstants.DefaultTagFieldMapping, cleanLatin = true)
   }
 }
