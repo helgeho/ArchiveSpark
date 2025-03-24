@@ -40,7 +40,7 @@ class EnrichableRDD[Root <: EnrichRoot : ClassTag](rdd: RDD[Root]) {
   def enrich[R >: Root <: EnrichRoot : ClassTag](func: EnrichFunc[R, _, _]): RDD[Root] = {
     Sparkling.initPartitions(rdd).mapPartitions { partition =>
       val records = func.initPartition(partition).asInstanceOf[Iterator[R]]
-      val enriched = func.enrichPartition(records, func).asInstanceOf[Iterator[Root]]
+      val enriched = func.enrichPartition(records).asInstanceOf[Iterator[Root]]
       enriched ++ IteratorUtil.noop(func.cleanup())
     }
   }

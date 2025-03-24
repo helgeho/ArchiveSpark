@@ -65,6 +65,8 @@ trait Enrichable extends Serializable with Copyable[Enrichable] with JsonConvert
   @transient private var _root: EnrichRoot = _
   def root[A]: TypedEnrichRoot[A] = _root.asInstanceOf[TypedEnrichRoot[A]]
 
+  def field[A](field: String): Option[A] = parent.get[A](field)
+
   def path: Seq[String] = if (_parent == null) Seq.empty else _parent.path :+ _field
   def chain: Seq[Enrichable] = if (_parent == null) Seq(this) else _parent.chain :+ this
 
@@ -154,8 +156,8 @@ trait Enrichable extends Serializable with Copyable[Enrichable] with JsonConvert
     }
   }
 
-  def apply[D](path: Seq[String]): Option[TypedEnrichable[D]] = {
-    if (path.isEmpty || (path.length == 1 && path.head == "")) Some(this.asInstanceOf[TypedEnrichable[D]])
+  def apply[A](path: Seq[String]): Option[TypedEnrichable[A]] = {
+    if (path.isEmpty || (path.length == 1 && path.head == "")) Some(this.asInstanceOf[TypedEnrichable[A]])
     else {
       if (path.head == "") {
         val remaining = path.tail
@@ -163,7 +165,7 @@ trait Enrichable extends Serializable with Copyable[Enrichable] with JsonConvert
           case Some(child) => child(remaining.tail)
           case None =>
             for (child <- _enrichments.values) {
-              val target: Option[TypedEnrichable[D]] = child[D](path)
+              val target: Option[TypedEnrichable[A]] = child[A](path)
               if (target.isDefined) return target
             }
             None
@@ -182,11 +184,11 @@ trait Enrichable extends Serializable with Copyable[Enrichable] with JsonConvert
     }
   }
 
-  def apply[D](key: String): Option[TypedEnrichable[D]] = apply(SelectorUtil.parse(key))
+  def apply[A](key: String): Option[TypedEnrichable[A]] = apply(SelectorUtil.parse(key))
 
-  def get[D : ClassTag](path: String): Option[D] = get(SelectorUtil.parse(path))
-  def get[D : ClassTag](path: Seq[String]): Option[D] = Try {
-    apply[D](path) match {
+  def get[A](path: String): Option[A] = get(SelectorUtil.parse(path))
+  def get[A](path: Seq[String]): Option[A] = Try {
+    apply[A](path) match {
       case Some(enrichable) => Some(enrichable.get)
       case None => None
     }

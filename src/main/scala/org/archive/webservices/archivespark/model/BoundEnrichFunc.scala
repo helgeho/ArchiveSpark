@@ -29,16 +29,16 @@ import org.archive.webservices.archivespark.model.pointers.{DependentFieldPointe
 abstract class BoundEnrichFunc[Root <: EnrichRoot, Source, DefaultValue] (bound: DependentFieldPointer[Root, Source]) extends EnrichFunc[Root, Source, DefaultValue] {
   def source: DependentFieldPointer[Root, Source] = bound
 
-  override def on[DependencyRoot <: EnrichRoot, S <: Source](dependency: FieldPointer[DependencyRoot, S]): EnrichFunc[DependencyRoot, Source, DefaultValue] = {
+  override def on[D <: Root, S <: Source](dependency: FieldPointer[D, S]): EnrichFunc[D, S, DefaultValue] = {
     val self = this
-    val boundOn = new DependentFieldPointer[DependencyRoot, Source](bound.func.asInstanceOf[EnrichFunc[Root, Source, _]].on(dependency), bound.fieldName)
-    new BoundEnrichFunc[DependencyRoot, Source, DefaultValue](boundOn) {
+    val boundOn = new DependentFieldPointer[D, S](bound.func.asInstanceOf[EnrichFunc[Root, S, _]].on(dependency), bound.fieldName)
+    new BoundEnrichFunc[D, S, DefaultValue](boundOn) {
       override def fields: Seq[String] = self.fields
       override def defaultField: String = self.defaultField
       override def isTransparent: Boolean = self.isTransparent
-      override def derive(source: TypedEnrichable[Source], derivatives: Derivatives): Unit = self.derive(source, derivatives)
-      override def enrichPartition[R <: EnrichRoot](partition: Iterator[R], func: EnrichFunc[R, _, _]): Iterator[R] = self.enrichPartition(partition, func)
-      override def initPartition(partition: Iterator[EnrichRoot]): Iterator[EnrichRoot] = self.initPartition(partition)
+      override def derive(source: TypedEnrichable[S], derivatives: Derivatives): Unit = self.derive(source, derivatives)
+      override def enrichPartition[R <: D](partition: Iterator[R]): Iterator[R] = self.enrichPartition(partition)
+      override def initPartition[R <: D](partition: Iterator[R]): Iterator[R] = self.initPartition(partition)
       override def cleanup(): Unit = self.cleanup()
     }
   }

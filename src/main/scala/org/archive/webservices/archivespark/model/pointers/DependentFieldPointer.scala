@@ -26,7 +26,7 @@ package org.archive.webservices.archivespark.model.pointers
 
 import org.archive.webservices.archivespark.model.{EnrichFunc, EnrichRoot, EnrichRootCompanion}
 
-class DependentFieldPointer[Root <: EnrichRoot, T](val func: EnrichFunc[Root, _, _], val fieldName: String) extends NamedFieldPointer[Root, T] {
+class DependentFieldPointer[-Root <: EnrichRoot, T](val func: EnrichFunc[Root, _, _], val fieldName: String) extends NamedFieldPointer[Root, T] {
   override def path[R <: Root](root: EnrichRootCompanion[R]): Seq[String] = func.source.pathTo(root, fieldName)
   override def init[R <: Root](root: R, excludeFromOutput: Boolean): R = func.init(root, excludeFromOutput = excludeFromOutput)
 }

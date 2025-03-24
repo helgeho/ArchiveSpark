@@ -27,7 +27,7 @@ package org.archive.webservices.archivespark.functions
 import org.archive.webservices.archivespark.model.pointers.FieldPointer
 import org.archive.webservices.archivespark.model.{DataEnrichRoot, _}
 
-class Data[T >: Null] private (field: String) extends GlobalEnrichFunc[DataEnrichRoot[Any, T], Any, T] {
+class Data[T >: Null] private (field: String) extends BasicEnrichFunc[DataEnrichRoot[Any, T], Any, T] {
   val func: EnrichFunc[DataEnrichRoot[Any, T], Any, T] = FieldPointer.root[DataEnrichRoot[Any, T], Any].mapEnrichable(field) { enrichable =>
     enrichable.asInstanceOf[DataEnrichRoot[_, T]].access { data =>
       data

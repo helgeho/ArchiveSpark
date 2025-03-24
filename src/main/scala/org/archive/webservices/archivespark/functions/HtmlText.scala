@@ -29,7 +29,7 @@ import org.archive.webservices.archivespark.model.dataloads.ByteLoad
 import org.archive.webservices.sparkling.html.HtmlProcessor
 import org.archive.webservices.sparkling.util.RegexUtil
 
-object HtmlText extends EnrichFunc[ByteLoad.Root, String, String] with GlobalEnrichFunc[ByteLoad.Root, String, String] {
+object HtmlText extends EnrichFunc[ByteLoad.Root, String, String] with BasicEnrichFunc[ByteLoad.Root, String, String] {
   val func: EnrichFunc[ByteLoad.Root, String, String] = Html.first("body").map("text") { str =>
     RegexUtil.oneLineSpaceTrim(HtmlProcessor.text(HtmlProcessor.iterateTags(str)))
   }
