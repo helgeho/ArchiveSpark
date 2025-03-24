@@ -31,19 +31,19 @@ import org.archive.webservices.archivespark.util.SelectorUtil
 import org.archive.webservices.archivespark.model.{EnrichRoot, TypedEnrichRoot}
 import org.archive.webservices.archivespark.util.SelectorUtil
 
-trait GenericFieldPointer[+R <: EnrichRoot, +T] extends Serializable { this: FieldPointer[_, _] =>
+trait GenericFieldPointer[-R <: EnrichRoot, +T] extends Serializable { this: FieldPointer[_, _] =>
 }
 
-trait FieldPointer[Root <: EnrichRoot, T] extends GenericFieldPointer[Root, T] {
+trait FieldPointer[-Root <: EnrichRoot, T] extends GenericFieldPointer[Root, T] {
   def dependencyPath: Seq[FieldPointer[Root, _]] = Seq(parent)
 
   def path[R <: Root](root: EnrichRootCompanion[R]): Seq[String]
 
-  def get(root: Root): Option[T] = enrichable(root).map(_.get)
+  def get[R <: Root](root: R): Option[T] = enrichable(root).map(_.get)
 
-  def exists(root: Root): Boolean = root[T](path(root)).isDefined
+  def exists[R <: Root](root: R): Boolean = root[T](path(root)).isDefined
 
-  def enrichable(root: Root): Option[TypedEnrichable[T]] = {
+  def enrichable[R <: Root](root: R): Option[TypedEnrichable[T]] = {
     val initialized = init(root, excludeFromOutput = false)
     initialized[T](path(initialized))
   }
@@ -54,7 +54,7 @@ trait FieldPointer[Root <: EnrichRoot, T] extends GenericFieldPointer[Root, T] {
 
   def pathTo[R <: Root](root: EnrichRootCompanion[R], field: String): Seq[String] = path(root) ++ SelectorUtil.parse(field)
 
-  def col(root: EnrichRootCompanion[Root]): Column = sql.functions.col(SelectorUtil.toString(path(root).filter(f => f != "*" && !f.startsWith("["))))
+  def col[R <: Root](root: EnrichRootCompanion[R]): Column = sql.functions.col(SelectorUtil.toString(path(root).filter(f => f != "*" && !f.startsWith("["))))
 
   def parent[A]: FieldPointer[Root, A] = new RelativeFieldPointer(this, 1, Seq.empty)
 

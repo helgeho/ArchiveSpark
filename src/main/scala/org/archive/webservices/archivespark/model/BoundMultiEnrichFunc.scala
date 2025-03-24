@@ -30,13 +30,13 @@ import org.archive.webservices.archivespark.model.pointers.FieldPointer
 abstract class BoundMultiEnrichFunc[Root <: EnrichRoot, Source, DefaultValue](bound: DependentFieldPointer[Root, Source]) extends MultiEnrichFunc[Root, Source, DefaultValue] {
   def source: DependentFieldPointer[Root, Source] = bound
 
-  override def on[DependencyRoot <: EnrichRoot, S <: Source](dependency: FieldPointer[DependencyRoot, S]): MultiEnrichFunc[DependencyRoot, Source, DefaultValue] = {
+  override def on[D <: Root, S <: Source](dependency: FieldPointer[D, S]): MultiEnrichFunc[D, S, DefaultValue] = {
     val self = this
-    val boundOn = new DependentFieldPointer[DependencyRoot, Source](bound.func.asInstanceOf[EnrichFunc[Root, Source, _]].on(dependency), bound.fieldName)
-    new BoundMultiEnrichFunc[DependencyRoot, Source, DefaultValue](boundOn) {
+    val boundOn = new DependentFieldPointer[D, S](bound.func.asInstanceOf[EnrichFunc[Root, Source, _]].on(dependency), bound.fieldName)
+    new BoundMultiEnrichFunc[D, S, DefaultValue](boundOn) {
       override def fields: Seq[String] = self.fields
       override def defaultField: String = self.defaultField
-      override def derive(source: TypedEnrichable[Source], derivatives: Derivatives): Unit = self.derive(source, derivatives)
+      override def derive(source: TypedEnrichable[S], derivatives: Derivatives): Unit = self.derive(source, derivatives)
     }
   }
 }

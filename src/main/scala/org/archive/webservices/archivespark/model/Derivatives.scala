@@ -30,7 +30,9 @@ class Derivatives(val fields: Seq[String], transparent: Boolean = false) {
 
   def get: Map[String, Enrichable] = map
 
-  def <<[T](value: T): Unit = setNext(SingleValueEnrichable(value))
+  def <<(value: Any): Unit = setNext(SingleValueEnrichable(value))
+
+  def <<?(opt: Option[Any]): Unit = for (v <- opt) setNext(SingleValueEnrichable(v))
 
   def setNext(enrichable: Enrichable): Unit = {
     set(fields(nextField), enrichable)

@@ -28,7 +28,7 @@ import org.archive.webservices.archivespark.model._
 import org.archive.webservices.archivespark.model.dataloads.TextLoad
 import org.archive.webservices.archivespark.model.pointers.DataLoadPointer
 
-object LowerCase extends EnrichFunc[TextLoad.Root, String, String] with GlobalEnrichFunc[TextLoad.Root, String, String] {
+object LowerCase extends EnrichFunc[TextLoad.Root, String, String] with BasicEnrichFunc[TextLoad.Root, String, String] {
   val func: EnrichFunc[TextLoad.Root, String, String] = DataLoadPointer(TextLoad).map("lowercase") { str =>
     str.toLowerCase
   }

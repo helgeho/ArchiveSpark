@@ -26,7 +26,7 @@ package org.archive.webservices.archivespark.model.pointers
 
 import org.archive.webservices.archivespark.model._
 
-trait MultiFieldPointer[Root <: EnrichRoot, T] extends FieldPointer[Root, Seq[T]] {
+trait MultiFieldPointer[-Root <: EnrichRoot, T] extends FieldPointer[Root, Seq[T]] {
   def single(idx: Int): FieldPointer[Root, T] = new MultiToSingleFieldPointer[Root, T](this, s"[$idx]")
   def each: FieldPointer[Root, T] = new MultiToSingleFieldPointer[Root, T](this, "*")
 
