@@ -26,10 +26,6 @@ package org.archive.webservices.archivespark.model.pointers
 
 import org.archive.webservices.archivespark.model.EnrichRoot
 
-trait GenericNamedFieldPointer[-R <: EnrichRoot, +T] extends GenericFieldPointer[R, T] { this: NamedFieldPointer[_, _] =>
-  def fieldName: String
-}
-
-trait NamedFieldPointer[-Root <: EnrichRoot, T] extends FieldPointer[Root, T] with GenericNamedFieldPointer[Root, T] {
+trait NamedFieldPointer[-Root <: EnrichRoot, T] extends FieldPointer[Root, T] {
   def fieldName: String
 }

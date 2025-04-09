@@ -26,23 +26,24 @@ package org.archive.webservices.archivespark.model
 
 import org.archive.webservices.archivespark.model.pointers.{FieldPointer, MultiFieldPointer}
 
-trait MultiEnrichFunc[-Root <: EnrichRoot, Source, DefaultValue] extends EnrichFunc[Root, Source, Seq[DefaultValue]] with MultiFieldPointer[Root, DefaultValue] {
-  override def on[D <: Root, S <: Source](dependency: FieldPointer[D, S]): MultiEnrichFunc[D, S, DefaultValue] = {
+trait MultiEnrichFunc[-Root <: UpperRoot, UpperRoot <: EnrichRoot, Source, DefaultValue] extends EnrichFunc[Root, UpperRoot, Source, Seq[DefaultValue]] with MultiFieldPointer[Root, DefaultValue] {
+  override def on[D <: UpperRoot, S <: Source](dependency: FieldPointer[D, S]): MultiEnrichFunc[D, UpperRoot, S, DefaultValue] = {
     val self = this
-    new MultiEnrichFunc[D, S, DefaultValue] {
+    new MultiEnrichFunc[D, UpperRoot, S, DefaultValue] {
       override def source: FieldPointer[D, S] = dependency
       override def fields: Seq[String] = self.fields
       override def defaultField: String = self.defaultField
       override def isTransparent: Boolean = self.isTransparent
       override def derive(source: TypedEnrichable[S], derivatives: Derivatives): Unit = self.derive(source, derivatives)
-      override def enrichPartition[R <: D](partition: Iterator[R]): Iterator[R] = self.enrichPartition(partition)
-      override def initPartition[R <: D](partition: Iterator[R]): Iterator[R] = self.initPartition(partition)
+      override def initPartition[R <: EnrichRoot](partition: Iterator[R], init: R => R): Iterator[R] = {
+        self.initPartition(partition, init)
+      }
       override def cleanup(): Unit = self.cleanup()
     }
   }
 
-  override def of[R <: Root, S <: Source](source: FieldPointer[R, S]): MultiEnrichFunc[R, S, DefaultValue] = on(source)
+  override def of[R <: UpperRoot, S <: Source](source: FieldPointer[R, S]): MultiEnrichFunc[R, UpperRoot, S, DefaultValue] = on(source)
 
-  override def onEach[R <: Root, S <: Source](source: MultiFieldPointer[R, S]): MultiEnrichFunc[R, S, DefaultValue] = on(source.each)
-  override def ofEach[R <: Root, S <: Source](source: MultiFieldPointer[R, S]): MultiEnrichFunc[R, S, DefaultValue] = onEach(source)
+  override def onEach[R <: UpperRoot, S <: Source](source: MultiFieldPointer[R, S]): MultiEnrichFunc[R, UpperRoot, S, DefaultValue] = on(source.each)
+  override def ofEach[R <: UpperRoot, S <: Source](source: MultiFieldPointer[R, S]): MultiEnrichFunc[R, UpperRoot, S, DefaultValue] = onEach(source)
 }

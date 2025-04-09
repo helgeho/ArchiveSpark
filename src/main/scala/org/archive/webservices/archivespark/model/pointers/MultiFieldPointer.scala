@@ -30,9 +30,9 @@ trait MultiFieldPointer[-Root <: EnrichRoot, T] extends FieldPointer[Root, Seq[T
   def single(idx: Int): FieldPointer[Root, T] = new MultiToSingleFieldPointer[Root, T](this, s"[$idx]")
   def each: FieldPointer[Root, T] = new MultiToSingleFieldPointer[Root, T](this, "*")
 
-  override def mapIdentity(field: String): MultiEnrichFunc[Root, Seq[T], T] = {
+  override def mapIdentity(field: String): MultiEnrichFunc[Root, EnrichRoot, Seq[T], T] = {
     val sourcePointer = this
-    new MultiEnrichFunc[Root, Seq[T], T] {
+    new MultiEnrichFunc[Root, EnrichRoot, Seq[T], T] {
       override def source: FieldPointer[Root, Seq[T]] = sourcePointer
       override def fields: Seq[String] = Seq(field)
       override def derive(source: TypedEnrichable[Seq[T]], derivatives: Derivatives): Unit = {

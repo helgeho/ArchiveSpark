@@ -30,7 +30,7 @@ import org.archive.webservices.archivespark.util.Bytes
 import org.archive.webservices.sparkling.http.HttpMessage
 import org.archive.webservices.sparkling.io.IOUtil
 
-object HttpPayload extends EnrichFunc[DataEnrichRoot[Any, HttpMessage], Any, Bytes] {
+object HttpPayload extends EnrichFunc[DataEnrichRoot[Any, HttpMessage], DataEnrichRoot[Any, HttpMessage], Any, Bytes] {
   val StatusLineField = "httpStatusLine"
   val HeaderField = "httpHeader"
   val PayloadField = "payload"

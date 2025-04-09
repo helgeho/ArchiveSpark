@@ -35,7 +35,7 @@ import org.archive.webservices.archivespark.util.{Bytes, HttpHeader}
 import org.archive.webservices.sparkling._
 import org.archive.webservices.sparkling.html.HtmlProcessor
 
-object StringContent extends EnrichFunc[ByteLoad.Root, Bytes, String] {
+object StringContent extends EnrichFunc.Basic[ByteLoad.Root, Bytes, String] {
   val MaxContentLength: Long = 1.mb
   val DefaultCharset = "UTF-8"
 

@@ -44,7 +44,7 @@ class MultiValueEnrichable[T] private (private var _children: Seq[TypedEnrichabl
     for (child <- children) child.excludeFromOutput(value, overwrite)
   }
 
-  override def enrich[D](path: Seq[String], func: EnrichFunc[_, D, _], excludeFromOutput: Boolean): Enrichable = {
+  override def enrich[D](path: Seq[String], func: EnrichFunc[_, _, D, _], excludeFromOutput: Boolean): Enrichable = {
     if (path.nonEmpty && path.head == "*") {
       var hasEnriched = false
       var lastException: Option[SerializedException] = None

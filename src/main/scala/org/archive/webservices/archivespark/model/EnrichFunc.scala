@@ -26,7 +26,13 @@ package org.archive.webservices.archivespark.model
 
 import org.archive.webservices.archivespark.model.pointers.{DependentFieldPointer, FieldPointer, MultiFieldPointer, NamedFieldPointer}
 
-trait EnrichFunc[-Root <: EnrichRoot, Source, DefaultValue] extends NamedFieldPointer[Root, DefaultValue] {
+object EnrichFunc {
+  type Basic[Root <: EnrichRoot, Source, DefaultValue] = EnrichFunc[Root, EnrichRoot, Source, DefaultValue]
+  type Root[Root <: EnrichRoot, Source, DefaultValue] = EnrichFunc[Root, Root, Source, DefaultValue]
+  type Any = EnrichFunc[_, _, _, _]
+}
+
+trait EnrichFunc[-Root <: UpperRoot, UpperRoot <: EnrichRoot, Source, DefaultValue] extends NamedFieldPointer[Root, DefaultValue] {
   def source: FieldPointer[Root, Source]
   def fields: Seq[String]
 
@@ -56,26 +62,32 @@ trait EnrichFunc[-Root <: EnrichRoot, Source, DefaultValue] extends NamedFieldPo
 
   def hasField(name: String): Boolean = fields.contains(name)
 
-  def on[D <: Root, S <: Source](dependency: FieldPointer[D, S]): EnrichFunc[D, S, DefaultValue] = {
+  def on[D <: UpperRoot, S <: Source](dependency: FieldPointer[D, S]): EnrichFunc[D, UpperRoot, S, DefaultValue] = {
     val self = this
-    new EnrichFunc[D, S, DefaultValue] {
+    new EnrichFunc[D, UpperRoot, S, DefaultValue] {
       override def source: FieldPointer[D, S] = dependency
       override def fields: Seq[String] = self.fields
       override def defaultField: String = self.defaultField
       override def isTransparent: Boolean = self.isTransparent
       override def derive(source: TypedEnrichable[S], derivatives: Derivatives): Unit = self.derive(source, derivatives)
-      override def enrichPartition[R <: D](partition: Iterator[R]): Iterator[R] = self.enrichPartition(partition)
-      override def initPartition[R <: D](partition: Iterator[R]): Iterator[R] = self.initPartition(partition)
+      override def initPartition[R <: EnrichRoot](partition: Iterator[R], init: R => R): Iterator[R] = {
+        self.initPartition(partition, init)
+      }
       override def cleanup(): Unit = self.cleanup()
     }
   }
 
-  def of[R <: Root, S <: Source](dependency: FieldPointer[R, S]): EnrichFunc[R, S, DefaultValue] = on(dependency)
+  def of[R <: UpperRoot, S <: Source](dependency: FieldPointer[R, S]): EnrichFunc[R, UpperRoot, S, DefaultValue] = on(dependency)
 
-  def onEach[R <: Root, S <: Source](dependency: MultiFieldPointer[R, S]): EnrichFunc[R, S, DefaultValue] = on(dependency.each)
-  def ofEach[R <: Root, S <: Source](dependency: MultiFieldPointer[R, S]): EnrichFunc[R, S, DefaultValue] = onEach(dependency)
+  def onEach[R <: UpperRoot, S <: Source](dependency: MultiFieldPointer[R, S]): EnrichFunc[R, UpperRoot, S, DefaultValue] = on(dependency.each)
+  def ofEach[R <: UpperRoot, S <: Source](dependency: MultiFieldPointer[R, S]): EnrichFunc[R, UpperRoot, S, DefaultValue] = onEach(dependency)
 
-  def enrichPartition[R <: Root](partition: Iterator[R]): Iterator[R] = partition.map(this.enrich)
-  def initPartition[R <: Root](partition: Iterator[R]): Iterator[R] = partition
-  def cleanup(): Unit = {}
+  override def initDependencies[R <: EnrichRoot](partition: Iterator[R]): Iterator[R] = {
+    super.initDependencies(source.initDependencies(partition))
+  }
+
+  override def cleanupDependencies(): Unit = {
+    super.cleanupDependencies()
+    source.cleanupDependencies()
+  }
 }

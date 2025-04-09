@@ -32,8 +32,8 @@ import org.archive.webservices.sparkling.util.SurtUtil
 
 import scala.util.Try
 
-object SURT extends EnrichFunc[TextLoad.Root, String, String] with BasicEnrichFunc[TextLoad.Root, String, String] {
-  val func: EnrichFunc[TextLoad.Root, String, String] = DataLoadPointer(TextLoad).mapEnrichable("SURT") { enrichable =>
+object SURT extends BasicEnrichFunc[TextLoad.Root, String, String] {
+  val func: EnrichFunc.Basic[TextLoad.Root, String, String] = DataLoadPointer(TextLoad).mapEnrichable("SURT") { enrichable =>
     Try(enrichable.root[CdxRecord].get.originalUrl).toOption match {
       case Some(baseUrl) => SurtUtil.fromUrl(enrichable.get, baseUrl)
       case None => SurtUtil.fromUrl(enrichable.get)

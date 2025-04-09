@@ -31,7 +31,7 @@ import org.archive.webservices.sparkling.io.IOUtil
 import org.archive.webservices.sparkling.warc.WarcRecord
 
 class WarcPayload private (http: Boolean = true)
-    extends EnrichFunc[DataEnrichRoot[Any, WarcRecord], Any, Bytes] {
+    extends EnrichFunc[DataEnrichRoot[Any, WarcRecord], DataEnrichRoot[Any, WarcRecord], Any, Bytes] {
   import WarcPayloadFields._
 
   val source: FieldPointer[DataEnrichRoot[Any, WarcRecord], Any] =

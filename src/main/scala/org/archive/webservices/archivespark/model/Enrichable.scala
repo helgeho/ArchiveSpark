@@ -101,7 +101,7 @@ trait Enrichable extends Serializable with Copyable[Enrichable] with JsonConvert
     enrich(fieldName, SingleValueEnrichable[Value](value))
   }
 
-  private def enrich[D](func: EnrichFunc[_, D, _], excludeFromOutput: Boolean = false): Enrichable = {
+  private def enrich[D](func: EnrichFunc[_, _, D, _], excludeFromOutput: Boolean = false): Enrichable = {
     val isEnriched = func.fields.forall(f => _enrichments.contains(f) || _enrichmentAttempts.contains(f))
     if (!isEnriched) {
       val derivatives = new Derivatives(func.fields, transparent = func.isTransparent)
@@ -142,7 +142,7 @@ trait Enrichable extends Serializable with Copyable[Enrichable] with JsonConvert
     }
   }
 
-  private[model] def enrich[D](path: Seq[String], func: EnrichFunc[_, D, _], excludeFromOutput: Boolean): Enrichable = {
+  private[model] def enrich[D](path: Seq[String], func: EnrichFunc[_, _, D, _], excludeFromOutput: Boolean): Enrichable = {
     if (path.isEmpty || (path.length == 1 && path.head == "")) enrich(func, excludeFromOutput)
     else {
       val field = path.head

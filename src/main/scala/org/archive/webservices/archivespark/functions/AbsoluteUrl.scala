@@ -33,8 +33,8 @@ import org.archive.webservices.sparkling.cdx.CdxRecord
 
 import scala.util.Try
 
-object AbsoluteUrl extends EnrichFunc[TextLoad.Root, String, String] with BasicEnrichFunc[TextLoad.Root, String, String] {
-  val func: EnrichFunc[TextLoad.Root, String, String] = DataLoadPointer(TextLoad).mapEnrichable("absolute") { enrichable =>
+object AbsoluteUrl extends BasicEnrichFunc[TextLoad.Root, String, String] {
+  val func: EnrichFunc.Basic[TextLoad.Root, String, String] = DataLoadPointer(TextLoad).mapEnrichable("absolute") { enrichable =>
     Try{enrichable.root[CdxRecord].get.originalUrl}.toOption match {
       case Some(baseUrl) => new URL(new URL(enrichable.get), baseUrl).toString
       case None => enrichable.get
