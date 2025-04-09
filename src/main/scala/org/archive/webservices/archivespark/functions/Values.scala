@@ -25,11 +25,10 @@
 package org.archive.webservices.archivespark.functions
 
 import org.archive.webservices.archivespark.model._
-import org.archive.webservices.archivespark.model.pointers.{FieldPointer, GenericFieldPointer, GenericNamedFieldPointer}
+import org.archive.webservices.archivespark.model.pointers.{FieldPointer, NamedFieldPointer}
 import org.archive.webservices.archivespark.model.{Derivatives, EnrichFunc, EnrichRoot, EnrichRootCompanion, TypedEnrichRoot}
-import org.archive.webservices.archivespark.model.pointers.{FieldPointer, GenericFieldPointer}
 
-class Values[R <: EnrichRoot] private (field: String, pointers: Seq[GenericFieldPointer[R, _]], defaultValues: Seq[Option[_]]) extends EnrichFunc[R, Any, Seq[_]] {
+class Values[R <: EnrichRoot] private (field: String, pointers: Seq[FieldPointer[R, _]], defaultValues: Seq[Option[_]]) extends EnrichFunc.Basic[R, Any, Seq[_]] {
   override def fields: Seq[String] = Seq(field)
 
   override def source: FieldPointer[R, Any] = FieldPointer.root[TypedEnrichRoot[Any], Any].asInstanceOf[FieldPointer[R, Any]]
@@ -60,15 +59,15 @@ class Values[R <: EnrichRoot] private (field: String, pointers: Seq[GenericField
 }
 
 object Values {
-  def apply[R <: EnrichRoot](resultField: String, pointers: GenericFieldPointer[R, _]*): Values[R] = new Values(resultField, pointers, Seq.empty)
-  def withDefaults[R <: EnrichRoot](resultField: String, pointers: GenericFieldPointer[R, _]*)(defaultValues: Option[_]*): Values[R] = new Values(resultField, pointers, defaultValues)
+  def apply[R <: EnrichRoot](resultField: String, pointers: FieldPointer[R, _]*): Values[R] = new Values(resultField, pointers, Seq.empty)
+  def withDefaults[R <: EnrichRoot](resultField: String, pointers: FieldPointer[R, _]*)(defaultValues: Option[_]*): Values[R] = new Values(resultField, pointers, defaultValues)
 
-  def apply[R <: EnrichRoot](pointers: GenericNamedFieldPointer[R, _]*): Values[R] = {
+  def apply[R <: EnrichRoot](pointers: NamedFieldPointer[R, _]*): Values[R] = {
     val resultField = pointers.map(_.fieldName).mkString("_")
     new Values(resultField, pointers, Seq.empty)
   }
 
-  def withDefaults[R <: EnrichRoot](pointers: GenericNamedFieldPointer[R, _]*)(defaultValues: Option[_]*): Values[R] = {
+  def withDefaults[R <: EnrichRoot](pointers: NamedFieldPointer[R, _]*)(defaultValues: Option[_]*): Values[R] = {
     val resultField = pointers.map(_.fieldName).mkString("_")
     new Values(resultField, pointers, defaultValues)
   }

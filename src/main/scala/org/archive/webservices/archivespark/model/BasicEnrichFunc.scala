@@ -27,8 +27,8 @@ package org.archive.webservices.archivespark.model
 import org.archive.webservices.archivespark.model.pointers.FieldPointer
 import org.archive.webservices.archivespark.model.pointers.FieldPointer
 
-trait BasicEnrichFunc[Root <: EnrichRoot, Source, DefaultValue] extends EnrichFunc[Root, Source, DefaultValue] {
-  def func: EnrichFunc[Root, Source, DefaultValue]
+trait BasicEnrichFunc[Root <: EnrichRoot, Source, DefaultValue] extends EnrichFunc.Basic[Root, Source, DefaultValue] {
+  def func: EnrichFunc.Basic[Root, Source, DefaultValue]
 
   def source: FieldPointer[Root, Source] = func.source
   def fields: Seq[String] = func.fields

@@ -26,7 +26,7 @@ package org.archive.webservices.archivespark.model.pointers
 
 import org.archive.webservices.archivespark.model.{EnrichRoot, EnrichRootCompanion}
 
-class SingleToMultiFieldPointer[Root <: EnrichRoot, T] (from: FieldPointer[Root, T]) extends MultiFieldPointer[Root, T] {
+class SingleToMultiFieldPointer[-Root <: EnrichRoot, T] (from: FieldPointer[Root, T]) extends MultiFieldPointer[Root, T] {
   override def path[R <: Root](root: EnrichRootCompanion[R]): Seq[String] = from.path(root)
   override def init[R <: Root](root: R, excludeFromOutput: Boolean): R = from.init(root, excludeFromOutput)
 }

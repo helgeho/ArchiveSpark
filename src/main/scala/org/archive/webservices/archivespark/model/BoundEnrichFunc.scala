@@ -24,22 +24,34 @@
 
 package org.archive.webservices.archivespark.model
 
-import org.archive.webservices.archivespark.model.pointers.{DependentFieldPointer, FieldPointer}
+import org.archive.webservices.archivespark.model.pointers.FieldPointer
 
-abstract class BoundEnrichFunc[Root <: EnrichRoot, Source, DefaultValue] (bound: DependentFieldPointer[Root, Source]) extends EnrichFunc[Root, Source, DefaultValue] {
-  def source: DependentFieldPointer[Root, Source] = bound
+abstract class BoundEnrichFunc[-Root <: UpperRoot, UpperRoot <: EnrichRoot, Source, Bound, DefaultValue] (bound: EnrichFunc[Root, UpperRoot, Source, Bound]) extends EnrichFunc[Root, UpperRoot, Source, DefaultValue] {
+  def source: FieldPointer[Root, Source] = bound.source
 
-  override def on[D <: Root, S <: Source](dependency: FieldPointer[D, S]): EnrichFunc[D, S, DefaultValue] = {
+  override def on[D <: UpperRoot, S <: Source](dependency: FieldPointer[D, S]): EnrichFunc[D, UpperRoot, S, DefaultValue] = {
     val self = this
-    val boundOn = new DependentFieldPointer[D, S](bound.func.asInstanceOf[EnrichFunc[Root, S, _]].on(dependency), bound.fieldName)
-    new BoundEnrichFunc[D, S, DefaultValue](boundOn) {
+    new BoundEnrichFunc[D, UpperRoot, S, Bound, DefaultValue](bound.on(dependency)) {
       override def fields: Seq[String] = self.fields
       override def defaultField: String = self.defaultField
       override def isTransparent: Boolean = self.isTransparent
-      override def derive(source: TypedEnrichable[S], derivatives: Derivatives): Unit = self.derive(source, derivatives)
-      override def enrichPartition[R <: D](partition: Iterator[R]): Iterator[R] = self.enrichPartition(partition)
-      override def initPartition[R <: D](partition: Iterator[R]): Iterator[R] = self.initPartition(partition)
+      def deriveBound(source: TypedEnrichable[Bound], derivatives: Derivatives): Unit = {
+        self.deriveBound(source, derivatives)
+      }
+      override def initPartition[R <: EnrichRoot](partition: Iterator[R], init: R => R): Iterator[R] = {
+        self.initPartition(partition, init)
+      }
       override def cleanup(): Unit = self.cleanup()
     }
   }
+
+  override def init[R <: Root](root: R, excludeFromOutput: Boolean): R = {
+    source.init(root, excludeFromOutput = true).enrich(source.path(root), bound, excludeFromOutput = true).enrich(bound.path(root), this, excludeFromOutput).asInstanceOf[R]
+  }
+
+  override def derive(source: TypedEnrichable[Source], derivatives: Derivatives): Unit = {
+    deriveBound(source.enrichment(bound.defaultField).get, derivatives)
+  }
+
+  def deriveBound(source: TypedEnrichable[Bound], derivatives: Derivatives): Unit
 }

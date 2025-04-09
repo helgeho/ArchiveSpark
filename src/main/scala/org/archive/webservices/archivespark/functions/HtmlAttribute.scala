@@ -26,21 +26,20 @@ package org.archive.webservices.archivespark.functions
 
 import org.archive.webservices.archivespark.model._
 import org.archive.webservices.archivespark.model.dataloads.ByteLoad
-import org.archive.webservices.archivespark.model.pointers.DependentFieldPointer
 import org.archive.webservices.sparkling.html.HtmlProcessor
 
 object HtmlAttributeNamespace {
-  def get: DependentFieldPointer[ByteLoad.Root, String] = Html.mapIdentity("attributes").get[String]("attributes")
+  def get: EnrichFunc.Basic[ByteLoad.Root, String, String] = Html.mapIdentity("attributes")
 }
 
 object HtmlAttribute {
   def apply(name: String): HtmlAttribute = new HtmlAttribute(name)
 }
 
-class HtmlAttribute private(attribute: String) extends BoundEnrichFunc[ByteLoad.Root, String, String](HtmlAttributeNamespace.get) {
+class HtmlAttribute private(attribute: String) extends BoundEnrichFunc[ByteLoad.Root, EnrichRoot, String, String, String](HtmlAttributeNamespace.get) {
   override def fields: Seq[String] = Seq(attribute)
 
-  override def derive(source: TypedEnrichable[String], derivatives: Derivatives): Unit = {
+  override def deriveBound(source: TypedEnrichable[String], derivatives: Derivatives): Unit = {
     val tags = HtmlProcessor.iterateTags(source.get)
     if (tags.hasNext) {
       val attrValue = HtmlProcessor.attributeValue(tags.next.tag, attribute)

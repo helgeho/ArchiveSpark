@@ -26,12 +26,11 @@ package org.archive.webservices.archivespark.functions
 
 import org.archive.webservices.archivespark.model._
 import org.archive.webservices.archivespark.model.dataloads.ByteLoad
-import org.archive.webservices.archivespark.model.pointers.DependentFieldPointer
 import org.archive.webservices.sparkling.html.HtmlProcessor
 import org.archive.webservices.sparkling.util.IteratorUtil
 
 object HtmlNamespace {
-  def get: DependentFieldPointer[ByteLoad.Root, String] = StringContent.mapIdentity("html").get[String]("html")
+  def get: EnrichFunc.Basic[ByteLoad.Root, String, String] = StringContent.mapIdentity("html")
 }
 
 object Html extends HtmlTag("html", 0, "html") {
@@ -47,19 +46,19 @@ object Html extends HtmlTag("html", 0, "html") {
   def all(selector: String, fieldName: String): HtmlTags = new HtmlTags(selector, fieldName)
 }
 
-class HtmlTag(tagName: String, index: Int, field: String) extends BoundEnrichFunc[ByteLoad.Root, String, String](HtmlNamespace.get) {
+class HtmlTag(tagName: String, index: Int, field: String) extends BoundEnrichFunc[ByteLoad.Root, EnrichRoot, String, String, String](HtmlNamespace.get) {
   override def fields: Seq[String] = Seq(field)
 
-  override def derive(source: TypedEnrichable[String], derivatives: Derivatives): Unit = {
+  override def deriveBound(source: TypedEnrichable[String], derivatives: Derivatives): Unit = {
     val tag = IteratorUtil.last(HtmlProcessor.printTags(source.get, Set(tagName)).take(index + 1).zipWithIndex)
     if (tag.isDefined && tag.get._2 == index) derivatives << tag.get._1
   }
 }
 
-class HtmlTags(tagName: String, field: String) extends BoundMultiEnrichFunc[ByteLoad.Root, String, String](HtmlNamespace.get) {
+class HtmlTags(tagName: String, field: String) extends BoundMultiEnrichFunc[ByteLoad.Root, EnrichRoot, String, String, String](HtmlNamespace.get) {
   override def fields: Seq[String] = Seq(field)
 
-  override def derive(source: TypedEnrichable[String], derivatives: Derivatives): Unit = {
+  override def deriveBound(source: TypedEnrichable[String], derivatives: Derivatives): Unit = {
     derivatives.setNext(MultiValueEnrichable(HtmlProcessor.printTags(source.get, Set(tagName)).toList))
   }
 }

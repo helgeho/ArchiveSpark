@@ -31,10 +31,7 @@ import org.archive.webservices.archivespark.util.SelectorUtil
 import org.archive.webservices.archivespark.model.{EnrichRoot, TypedEnrichRoot}
 import org.archive.webservices.archivespark.util.SelectorUtil
 
-trait GenericFieldPointer[-R <: EnrichRoot, +T] extends Serializable { this: FieldPointer[_, _] =>
-}
-
-trait FieldPointer[-Root <: EnrichRoot, T] extends GenericFieldPointer[Root, T] {
+trait FieldPointer[-Root <: EnrichRoot, T] extends Serializable {
   def dependencyPath: Seq[FieldPointer[Root, _]] = Seq(parent)
 
   def path[R <: Root](root: EnrichRootCompanion[R]): Seq[String]
@@ -62,9 +59,9 @@ trait FieldPointer[-Root <: EnrichRoot, T] extends GenericFieldPointer[Root, T] 
 
   def sibling[A](field: String): FieldPointer[Root, A] = new RelativeFieldPointer(this, 1, Seq(field))
 
-  def mapEnrichable[A](field: String)(f: TypedEnrichable[T] => A): EnrichFunc[Root, T, A] = {
+  def mapEnrichable[A](field: String)(f: TypedEnrichable[T] => A): EnrichFunc[Root, EnrichRoot, T, A] = {
     val sourcePointer = this
-    new EnrichFunc[Root, T, A] {
+    new EnrichFunc[Root, EnrichRoot, T, A] {
       override def source: FieldPointer[Root, T] = sourcePointer
       override def fields: Seq[String] = Seq(field)
       override def derive(source: TypedEnrichable[T], derivatives: Derivatives): Unit = {
@@ -73,11 +70,11 @@ trait FieldPointer[-Root <: EnrichRoot, T] extends GenericFieldPointer[Root, T] 
     }
   }
 
-  def map[A](field: String)(f: T => A): EnrichFunc[Root, T, A] = mapEnrichable(field)(e => f(e.get))
+  def map[A](field: String)(f: T => A): EnrichFunc[Root, EnrichRoot, T, A] = mapEnrichable[A](field)(e => f(e.get))
 
-  def mapMultiEnrichable[A](field: String)(f: TypedEnrichable[T] => Seq[A]): MultiEnrichFunc[Root, T, A] = {
+  def mapMultiEnrichable[A](field: String)(f: TypedEnrichable[T] => Seq[A]): MultiEnrichFunc[Root, EnrichRoot, T, A] = {
     val sourcePointer = this
-    new MultiEnrichFunc[Root, T, A] {
+    new MultiEnrichFunc[Root, EnrichRoot, T, A] {
       override def source: FieldPointer[Root, T] = sourcePointer
       override def fields: Seq[String] = Seq(field)
       override def derive(source: TypedEnrichable[T], derivatives: Derivatives): Unit = {
@@ -86,11 +83,11 @@ trait FieldPointer[-Root <: EnrichRoot, T] extends GenericFieldPointer[Root, T] 
     }
   }
 
-  def mapMulti[A](field: String)(f: T => Seq[A]): MultiEnrichFunc[Root, T, A] = mapMultiEnrichable(field)(e => f(e.get))
+  def mapMulti[A](field: String)(f: T => Seq[A]): MultiEnrichFunc[Root, EnrichRoot, T, A] = mapMultiEnrichable[A](field)(e => f(e.get))
 
-  def mapIdentity(field: String): EnrichFunc[Root, T, T] = {
+  def mapIdentity(field: String): EnrichFunc[Root, EnrichRoot, T, T] = {
     val sourcePointer = this
-    new EnrichFunc[Root, T, T] {
+    new EnrichFunc[Root, EnrichRoot, T, T] {
       override def source: FieldPointer[Root, T] = sourcePointer
       override def fields: Seq[String] = Seq(field)
       override def derive(source: TypedEnrichable[T], derivatives: Derivatives): Unit = {
@@ -98,6 +95,20 @@ trait FieldPointer[-Root <: EnrichRoot, T] extends GenericFieldPointer[Root, T] 
       }
     }
   }
+
+  def initPartition[R <: EnrichRoot](partition: Iterator[R], init: R => R = { root: R =>
+    this.init(root.asInstanceOf[Root], excludeFromOutput = true).asInstanceOf[R]
+  }): Iterator[R] = {
+    partition.map(init)
+  }
+
+  def initDependencies[R <: EnrichRoot](partition: Iterator[R]): Iterator[R] = {
+    initPartition(partition)
+  }
+
+  def cleanup(): Unit = {}
+
+  def cleanupDependencies(): Unit = cleanup()
 }
 
 object FieldPointer {
@@ -107,5 +118,5 @@ object FieldPointer {
   def multi[Root <: EnrichRoot, T](path: String): MultiFieldPointer[Root, T] = multi(SelectorUtil.parse(path))
   def multi[Root <: EnrichRoot, T](path: Seq[String]): MultiFieldPointer[Root, T] = apply(path).multi
 
-  def root[Root <: TypedEnrichRoot[T], T]: FieldPointer[Root, T] = new PathFieldPointer(Seq.empty)
+  def root[Root <: EnrichRoot, T]: FieldPointer[Root, T] = new PathFieldPointer(Seq.empty)
 }

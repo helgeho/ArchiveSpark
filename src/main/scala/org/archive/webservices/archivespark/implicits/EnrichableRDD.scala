@@ -33,15 +33,17 @@ import org.archive.webservices.archivespark.util.SerializedException
 import org.archive.webservices.sparkling.util.IteratorUtil
 
 import scala.collection.TraversableOnce
+import scala.language.reflectiveCalls
 import scala.reflect.ClassTag
 import scala.util.Try
 
 class EnrichableRDD[Root <: EnrichRoot : ClassTag](rdd: RDD[Root]) {
-  def enrich[R >: Root <: EnrichRoot : ClassTag](func: EnrichFunc[R, _, _]): RDD[Root] = {
+  def enrich[R >: Root <: EnrichRoot : ClassTag](func: EnrichFunc[R, _, _, _]): RDD[Root] = {
     Sparkling.initPartitions(rdd).mapPartitions { partition =>
-      val records = func.initPartition(partition).asInstanceOf[Iterator[R]]
-      val enriched = func.enrichPartition(records).asInstanceOf[Iterator[Root]]
-      enriched ++ IteratorUtil.noop(func.cleanup())
+      func.initPartition[Root](func.source.initDependencies[Root](partition), func.enrich) ++ IteratorUtil.noop {
+        func.source.cleanupDependencies()
+        func.cleanup()
+      }
     }
   }
 

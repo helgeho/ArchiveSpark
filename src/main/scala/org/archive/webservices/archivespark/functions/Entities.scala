@@ -27,14 +27,13 @@ package org.archive.webservices.archivespark.functions
 import edu.stanford.nlp.pipeline.StanfordCoreNLP
 import org.archive.webservices.archivespark.model._
 import org.archive.webservices.archivespark.model.dataloads.ByteLoad
-import org.archive.webservices.archivespark.model.pointers.DependentFieldPointer
 import org.archive.webservices.sparkling.ars.WANE
 import org.archive.webservices.sparkling.util.RegexUtil
 
 import java.util.Properties
 
 object EntitiesNamespace {
-  def get: DependentFieldPointer[ByteLoad.Root, String] = HtmlText.mapIdentity("entities").get[String]("entities")
+  def get: EnrichFunc[ByteLoad.Root, EnrichRoot, String, String] = HtmlText.mapIdentity("entities")
 }
 
 /*
@@ -44,14 +43,14 @@ http://central.maven.org/maven2/edu/stanford/nlp/stanford-corenlp/3.5.1
 class Entities (
                  properties: Properties = EntitiesConstants.DefaultProps,
                  tagFieldMapping: Seq[(String, String)] = EntitiesConstants.DefaultTagFieldMapping,
-                 cleanLatin: Boolean = false) extends BoundEnrichFunc[ByteLoad.Root, String, String](EntitiesNamespace.get) {
+                 cleanLatin: Boolean = false) extends BoundMultiEnrichFunc[ByteLoad.Root, EnrichRoot, String, String, String](EntitiesNamespace.get) {
   override def defaultField: String = ""
 
   override def fields: Seq[String] = tagFieldMapping.map { case (tag, field) => field }
 
   @transient lazy val pipeline: StanfordCoreNLP = new StanfordCoreNLP(properties)
 
-  override def derive(source: TypedEnrichable[String], derivatives: Derivatives): Unit = {
+  override def deriveBound(source: TypedEnrichable[String], derivatives: Derivatives): Unit = {
     val text = if (cleanLatin) RegexUtil.cleanLatin(source.get) else source.get
     val mentions = WANE.entities(text, pipeline)
     for ((tag, _) <- tagFieldMapping) {
