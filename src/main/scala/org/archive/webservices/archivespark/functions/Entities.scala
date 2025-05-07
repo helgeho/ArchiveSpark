@@ -54,7 +54,7 @@ class Entities (
     val text = if (cleanLatin) RegexUtil.cleanLatin(source.get) else source.get
     val mentions = WANE.entities(text, pipeline)
     for ((tag, _) <- tagFieldMapping) {
-      derivatives.setNext(MultiValueEnrichable(mentions.getOrElse(tag, Set.empty).toSeq))
+      derivatives.setNext(MultiValueEnrichable(mentions.getOrElse(tag, Set.empty).toSeq.sorted))
     }
   }
 }
