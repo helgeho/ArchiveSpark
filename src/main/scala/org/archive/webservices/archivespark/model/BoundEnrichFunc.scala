@@ -24,7 +24,7 @@
 
 package org.archive.webservices.archivespark.model
 
-import org.archive.webservices.archivespark.model.pointers.FieldPointer
+import org.archive.webservices.archivespark.model.pointers.{DependentFieldPointer, FieldPointer}
 
 abstract class BoundEnrichFunc[-Root <: UpperRoot, UpperRoot <: EnrichRoot, Source, Bound, DefaultValue] (bound: EnrichFunc[Root, UpperRoot, Source, Bound]) extends EnrichFunc[Root, UpperRoot, Source, DefaultValue] {
   def source: FieldPointer[Root, Source] = bound.source
@@ -33,7 +33,6 @@ abstract class BoundEnrichFunc[-Root <: UpperRoot, UpperRoot <: EnrichRoot, Sour
     val self = this
     new BoundEnrichFunc[D, UpperRoot, S, Bound, DefaultValue](bound.on(dependency)) {
       override def fields: Seq[String] = self.fields
-      override def defaultField: String = self.defaultField
       override def isTransparent: Boolean = self.isTransparent
       def deriveBound(source: TypedEnrichable[Bound], derivatives: Derivatives): Unit = {
         self.deriveBound(source, derivatives)
@@ -45,12 +44,48 @@ abstract class BoundEnrichFunc[-Root <: UpperRoot, UpperRoot <: EnrichRoot, Sour
     }
   }
 
+  private lazy val func = {
+    val self = this
+    new EnrichFunc[Root, UpperRoot, Bound, DefaultValue] {
+      override def source: FieldPointer[Root, Bound] = bound
+      override def fields: Seq[String] = self.fields
+      override def isTransparent: Boolean = self.isTransparent
+      override def derive(source: TypedEnrichable[Bound], derivatives: Derivatives): Unit = {
+        deriveBound(source, derivatives)
+      }
+      override def initPartition[R <: EnrichRoot](partition: Iterator[R], init: R => R): Iterator[R] = {
+        self.initPartition(partition, init)
+      }
+      override def cleanup(): Unit = self.cleanup()
+    }
+  }
+
+  override def dependencyPath: Seq[FieldPointer[Root, _]] = func.dependencyPath
+
+  override def path[R <: Root](root: EnrichRootCompanion[R]): Seq[String] = func.path(root)
+
+  override def get[T](field: String): DependentFieldPointer[Root, T] = func.get(field)
+
+  override def isEnriched[R <: Root](root: R): Boolean = func.isEnriched(root)
+
+  override def isEnriched(enrichable: Enrichable): Boolean = func.isEnriched(enrichable)
+
   override def init[R <: Root](root: R, excludeFromOutput: Boolean): R = {
-    source.init(root, excludeFromOutput = true).enrich(source.path(root), bound, excludeFromOutput = true).enrich(bound.path(root), this, excludeFromOutput).asInstanceOf[R]
+    func.init(root, excludeFromOutput)
+  }
+
+  override def enrich[R <: Root](root: R): R = func.enrich(root)
+
+  override def initDependencies[R <: EnrichRoot](partition: Iterator[R], init: R => R): Iterator[R] = {
+    func.initDependencies(partition, init)
+  }
+
+  override def cleanupDependencies(): Unit = {
+    func.cleanupDependencies()
   }
 
   override def derive(source: TypedEnrichable[Source], derivatives: Derivatives): Unit = {
-    deriveBound(source.enrichment(bound.defaultField).get, derivatives)
+    throw new RuntimeException("this should never be called in a bound function")
   }
 
   def deriveBound(source: TypedEnrichable[Bound], derivatives: Derivatives): Unit

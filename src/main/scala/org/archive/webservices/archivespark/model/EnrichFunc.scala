@@ -82,12 +82,12 @@ trait EnrichFunc[-Root <: UpperRoot, UpperRoot <: EnrichRoot, Source, DefaultVal
   def onEach[R <: UpperRoot, S <: Source](dependency: MultiFieldPointer[R, S]): EnrichFunc[R, UpperRoot, S, DefaultValue] = on(dependency.each)
   def ofEach[R <: UpperRoot, S <: Source](dependency: MultiFieldPointer[R, S]): EnrichFunc[R, UpperRoot, S, DefaultValue] = onEach(dependency)
 
-  override def initDependencies[R <: EnrichRoot](partition: Iterator[R]): Iterator[R] = {
-    super.initDependencies(source.initDependencies(partition))
+  override def initDependencies[R <: EnrichRoot](partition: Iterator[R], init: R => R): Iterator[R] = {
+    initPartition(source.initDependencies(partition), init)
   }
 
   override def cleanupDependencies(): Unit = {
-    super.cleanupDependencies()
+    cleanup()
     source.cleanupDependencies()
   }
 }

@@ -40,9 +40,8 @@ import scala.util.Try
 class EnrichableRDD[Root <: EnrichRoot : ClassTag](rdd: RDD[Root]) {
   def enrich[R >: Root <: EnrichRoot : ClassTag](func: EnrichFunc[R, _, _, _]): RDD[Root] = {
     Sparkling.initPartitions(rdd).mapPartitions { partition =>
-      func.initPartition[Root](func.source.initDependencies[Root](partition), func.enrich) ++ IteratorUtil.noop {
-        func.source.cleanupDependencies()
-        func.cleanup()
+      func.initDependencies[Root](partition, func.enrich) ++ IteratorUtil.noop {
+        func.cleanupDependencies()
       }
     }
   }

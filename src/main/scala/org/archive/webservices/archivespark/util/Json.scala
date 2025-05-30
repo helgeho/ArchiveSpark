@@ -38,7 +38,12 @@ object Json extends Serializable {
   def mapToJson(map: Map[String, Circe]): Circe = {
     if (map == null || map.isEmpty) return null
     if (map.size == 1 && map.keys.head == null) map.values.head
-    else ListMap(map.toSeq.filter{case (key, value) => value != null}.map{ case (key, value) => if (key == null) (SingleValueKey, value) else (key, value) }: _*).asJson
+    else {
+      val cleaned = map.toSeq.filter{case (key, value) => value != null}.map { case (key, value) =>
+        if (key == null) (SingleValueKey, value) else (key, value)
+      }.sortBy(_._1)
+      ListMap(cleaned: _*).asJson
+    }
   }
 
   def json[A](obj: A): Circe = if (obj == null) Circe.Null else obj match {
