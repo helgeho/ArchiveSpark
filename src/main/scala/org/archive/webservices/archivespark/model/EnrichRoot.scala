@@ -49,7 +49,7 @@ trait EnrichRoot extends Enrichable { this: TypedEnrichRoot[_] =>
     metaKey -> metaToJson
   ) ++ {
     if (ArchiveSpark.conf.includeExceptionInOutput) {
-      lastException.map(exceptionKey -> _.message.asJson)
+      lastException.map(e => exceptionKey -> Option(e.message).getOrElse(e.exception).asJson)
     } else None
   } ++ enrichments.flatMap { key =>
     val e = enrichment(key).get

@@ -96,7 +96,7 @@ class MultiValueEnrichable[T] private (private var _children: Seq[TypedEnrichabl
   }
 
   def toJson: Map[String, Circe] = {
-    val children = _children.map(c => c.toJson).filter(_.nonEmpty).map(mapToJson)
+    val children = _children.map(c => c.toJson).filter(_.nonEmpty).map(mapToJson).filter(_ != null)
     (if (isExcludedFromOutput && children.isEmpty) Map() else ListMap(
       null.asInstanceOf[String] -> Json.json(children)
     )) ++ enrichments.flatMap { key =>

@@ -26,7 +26,8 @@ package org.archive.webservices.archivespark.util
 
 import io.circe.generic.auto._
 import io.circe.syntax._
-import io.circe.{Json => Circe}
+import io.circe.{JsonObject, Json => Circe}
+import org.json4s.JsonAST.JNull
 
 import scala.collection.immutable.ListMap
 
