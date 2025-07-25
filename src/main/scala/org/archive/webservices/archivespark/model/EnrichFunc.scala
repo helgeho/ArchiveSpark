@@ -70,8 +70,8 @@ trait EnrichFunc[-Root <: UpperRoot, UpperRoot <: EnrichRoot, Source, DefaultVal
       override def defaultField: String = self.defaultField
       override def isTransparent: Boolean = self.isTransparent
       override def derive(source: TypedEnrichable[S], derivatives: Derivatives): Unit = self.derive(source, derivatives)
-      override def initPartition[R <: EnrichRoot](partition: Iterator[R], init: R => R): Iterator[R] = {
-        self.initPartition(partition, init)
+      override def initPartition[R <: EnrichRoot](partition: Iterator[R], init: Iterator[R] => Iterator[R], map: R => R): Iterator[R] = {
+        self.initPartition(partition, init, map)
       }
       override def cleanup(): Unit = self.cleanup()
     }
@@ -83,7 +83,7 @@ trait EnrichFunc[-Root <: UpperRoot, UpperRoot <: EnrichRoot, Source, DefaultVal
   def ofEach[R <: UpperRoot, S <: Source](dependency: MultiFieldPointer[R, S]): EnrichFunc[R, UpperRoot, S, DefaultValue] = onEach(dependency)
 
   override def initDependencies[R <: EnrichRoot](partition: Iterator[R], init: R => R): Iterator[R] = {
-    initPartition(source.initDependencies(partition), init)
+    initPartition(partition, (iter: Iterator[R]) => source.initDependencies(iter), init)
   }
 
   override def cleanupDependencies(): Unit = {

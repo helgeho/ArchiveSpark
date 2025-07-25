@@ -35,8 +35,8 @@ trait MultiEnrichFunc[-Root <: UpperRoot, UpperRoot <: EnrichRoot, Source, Defau
       override def defaultField: String = self.defaultField
       override def isTransparent: Boolean = self.isTransparent
       override def derive(source: TypedEnrichable[S], derivatives: Derivatives): Unit = self.derive(source, derivatives)
-      override def initPartition[R <: EnrichRoot](partition: Iterator[R], init: R => R): Iterator[R] = {
-        self.initPartition(partition, init)
+      override def initPartition[R <: EnrichRoot](partition: Iterator[R], init: Iterator[R] => Iterator[R], map: R => R): Iterator[R] = {
+        self.initPartition(partition, init, map)
       }
       override def cleanup(): Unit = self.cleanup()
     }

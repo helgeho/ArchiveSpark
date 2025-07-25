@@ -96,14 +96,14 @@ trait FieldPointer[-Root <: EnrichRoot, T] extends Serializable {
     }
   }
 
-  def initPartition[R <: EnrichRoot](partition: Iterator[R], init: R => R): Iterator[R] = {
-    partition.map(init)
+  def initPartition[R <: EnrichRoot](partition: Iterator[R], init: Iterator[R] => Iterator[R], map: R => R): Iterator[R] = {
+    init(partition).map(map)
   }
 
   def initDependencies[R <: EnrichRoot](partition: Iterator[R], init: R => R = { root: R =>
     this.init(root.asInstanceOf[Root], excludeFromOutput = true).asInstanceOf[R]
   }): Iterator[R] = {
-    initPartition(partition, init)
+    initPartition(partition, (iter: Iterator[R]) => iter, init)
   }
 
   def cleanup(): Unit = {}

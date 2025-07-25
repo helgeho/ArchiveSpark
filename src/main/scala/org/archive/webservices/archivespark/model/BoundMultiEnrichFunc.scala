@@ -37,8 +37,8 @@ abstract class BoundMultiEnrichFunc[-Root <: UpperRoot, UpperRoot <: EnrichRoot,
       override def deriveBound(source: TypedEnrichable[Bound], derivatives: Derivatives): Unit = {
         self.deriveBound(source, derivatives)
       }
-      override def initPartition[R <: EnrichRoot](partition: Iterator[R], init: R => R): Iterator[R] = {
-        self.initPartition(partition, init)
+      override def initPartition[R <: EnrichRoot](partition: Iterator[R], init: Iterator[R] => Iterator[R], map: R => R): Iterator[R] = {
+        self.initPartition(partition, init, map)
       }
       override def cleanup(): Unit = self.cleanup()
     }
@@ -53,8 +53,8 @@ abstract class BoundMultiEnrichFunc[-Root <: UpperRoot, UpperRoot <: EnrichRoot,
       override def derive(source: TypedEnrichable[Bound], derivatives: Derivatives): Unit = {
         deriveBound(source, derivatives)
       }
-      override def initPartition[R <: EnrichRoot](partition: Iterator[R], init: R => R): Iterator[R] = {
-        self.initPartition(partition, init)
+      override def initPartition[R <: EnrichRoot](partition: Iterator[R], init: Iterator[R] => Iterator[R], map: R => R): Iterator[R] = {
+        self.initPartition(partition, init, map)
       }
       override def cleanup(): Unit = self.cleanup()
     }
