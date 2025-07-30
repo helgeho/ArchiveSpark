@@ -31,6 +31,6 @@ import org.archive.webservices.sparkling.util.RegexUtil
 
 object HtmlText extends BasicEnrichFunc[ByteLoad.Root, String, String] {
   val func: EnrichFunc.Basic[ByteLoad.Root, String, String] = Html.first("body").map("text") { str =>
-    RegexUtil.oneLineSpaceTrim(HtmlProcessor.text(HtmlProcessor.iterateTags(str)))
+    RegexUtil.newLineSpaceTrim(HtmlProcessor.text(HtmlProcessor.iterateTags(str)))
   }
 }

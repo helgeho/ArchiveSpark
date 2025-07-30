@@ -24,9 +24,11 @@
 
 package org.archive.webservices.archivespark.model
 
+import scala.collection.immutable
+
 class Derivatives(val fields: Seq[String], transparent: Boolean = false) {
   private var nextField = 0
-  private var map = Map[String, Enrichable]()
+  private var map = immutable.ListMap.empty[String, Enrichable]
 
   def get: Map[String, Enrichable] = map
 
