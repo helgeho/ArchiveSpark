@@ -40,7 +40,7 @@ object Json extends Serializable {
     if (map == null || map.isEmpty) return null
     if (map.size == 1 && map.keys.head == null) map.values.head
     else {
-      map.toSeq.filter{case (_, value) => value != null}.map { case (key, value) =>
+      map.filter{case (_, value) => value != null}.map { case (key, value) =>
         if (key == null) (SingleValueKey, value) else (key, value)
       }.asJson
     }
